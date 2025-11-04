@@ -5,7 +5,7 @@ type GanttLaneProps = {
 };
 
 export default function GanttLane({ top, height, index }: GanttLaneProps) {
-  const background = index % 2 === 0 ? 'rgba(0,0,0,0.015)' : 'rgba(0,0,0,0.03)';
+  const background = index % 2 === 0 ? "rgba(0,0,0,0.015)" : "rgba(0,0,0,0.03)";
   return (
     <div
       className="absolute left-0 right-0"
@@ -14,11 +14,9 @@ export default function GanttLane({ top, height, index }: GanttLaneProps) {
         top,
         height,
         background,
-        borderTop: '1px solid rgba(0,0,0,0.06)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        borderTop: "1px solid rgba(0,0,0,0.06)",
+        borderBottom: "1px solid rgba(0,0,0,0.06)",
       }}
     />
   );
 }
-
-

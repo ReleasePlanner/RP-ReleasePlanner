@@ -1,6 +1,6 @@
 import { Button, Stack } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import PlanCard from "../features/releasePlans/components/PlanCard";
+import PlanCard from "../features/releasePlans/components/PlanCard/PlanCard";
 import { setPlanExpanded } from "../store/store";
 
 export default function ReleasePlanner() {
@@ -9,7 +9,7 @@ export default function ReleasePlanner() {
   if (!plans.length) return null;
   return (
     <div>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
         <Button size="small" variant="outlined" onClick={() => plans.forEach((p) => dispatch(setPlanExpanded({ planId: p.id, expanded: true })))}>Expand all</Button>
         <Button size="small" variant="outlined" onClick={() => plans.forEach((p) => dispatch(setPlanExpanded({ planId: p.id, expanded: false })))}>Collapse all</Button>
       </Stack>

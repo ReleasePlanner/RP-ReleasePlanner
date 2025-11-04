@@ -1,6 +1,6 @@
-import CommonDataCard from './CommonDataCard';
-import PhasesList from './PhasesList';
-import type { PlanPhase } from '../../types';
+import CommonDataCard from '../CommonDataCard/CommonDataCard';
+import PhasesList from '../PhasesList/PhasesList';
+import type { PlanPhase } from '../../../types';
 
 export type PlanLeftPaneProps = {
   owner: string;

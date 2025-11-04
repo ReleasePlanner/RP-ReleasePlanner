@@ -1,0 +1,659 @@
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useTheme } from "@mui/material/styles";
+import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
+import { daysBetween, addDays } from "../../lib/date";
+import {
+  PX_PER_DAY,
+  TRACK_HEIGHT,
+  LABEL_WIDTH,
+  LANE_GAP,
+} from "../Gantt/constants";
+import { laneTop } from "../Gantt/utils";
+import { safeScrollToX } from "../../../../utils/dom";
+import GanttLane from "../Gantt/GanttLane/GanttLane";
+import PhaseBar from "../Gantt/PhaseBar/PhaseBar";
+import TaskBar from "../Gantt/TaskBar/TaskBar";
+import type { PlanTask, PlanPhase } from "../../types";
+import PhasesList from "../Plan/PhasesList/PhasesList";
+import { useGanttDragAndDrop } from "./useGanttDragAndDrop";
+import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
+
+// header timeline moved to GanttTimeline component
+
+export type GanttChartProps = {
+  startDate: string;
+  endDate: string;
+  tasks: PlanTask[];
+  phases?: PlanPhase[];
+  onPhaseRangeChange?: (
+    phaseId: string,
+    startDate: string,
+    endDate: string
+  ) => void;
+  onAddPhase?: () => void;
+  onEditPhase?: (id: string) => void;
+  onAutoGenerate?: () => void;
+  hideMainCalendar?: boolean;
+};
+
+export default function GanttChart({
+  startDate,
+  endDate: _endDate,
+  tasks,
+  phases = [],
+  onPhaseRangeChange,
+  onAddPhase,
+  onEditPhase,
+  onAutoGenerate,
+  hideMainCalendar,
+}: GanttChartProps) {
+  const labelWidth = LABEL_WIDTH; // sticky label column width for phase names
+  // mark intentionally unused until we support non-year-spanning views
+  void _endDate;
+  // Force calendar to full year (Jan 1 to Dec 31) based on plan's start year
+  const yearStart = useMemo(() => {
+    const y = new Date(startDate).getFullYear();
+    return new Date(y, 0, 1);
+  }, [startDate]);
+  const yearEnd = useMemo(
+    () => new Date(yearStart.getFullYear(), 11, 31),
+    [yearStart]
+  );
+
+  const start = yearStart;
+  const end = yearEnd;
+  const totalDays = useMemo(
+    () => Math.max(1, daysBetween(start, end)),
+    [start, end]
+  );
+
+  const pxPerDay = PX_PER_DAY;
+  const trackHeight = TRACK_HEIGHT;
+  const width = totalDays * pxPerDay;
+
+  const days = useMemo(
+    () => Array.from({ length: totalDays }, (_, i) => addDays(start, i)),
+    [start, totalDays]
+  );
+
+  const showSelectedDayAlert = useCallback((isoDate: string) => {
+    if (typeof window !== "undefined" && typeof window.alert === "function") {
+      try {
+        window.alert(`Selected day: ${isoDate}`);
+      } catch {
+        /* ignore alert errors in test environment (jsdom) */
+      }
+    }
+  }, []);
+
+  // Auto-scroll to today by default
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const theme = useTheme();
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let index = 0;
+    if (today <= start) index = 0;
+    else if (today >= end) index = Math.max(0, days.length - 1);
+    else
+      index = Math.max(
+        0,
+        Math.min(
+          days.length - 1,
+          Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        )
+      );
+    const visibleWidth = Math.max(0, el.clientWidth);
+    const target = index * pxPerDay - visibleWidth / 2;
+    const left = Math.max(0, target);
+    safeScrollToX(el, left, "auto");
+  }, [start, end, days.length, labelWidth, pxPerDay]);
+
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } = useGanttDragAndDrop({
+    days,
+    onPhaseRangeChange,
+    containerRef,
+    contentRef,
+  });
+
+  const todayIndex = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    if (t < start || t > end) return undefined;
+    return Math.max(
+      0,
+      Math.min(
+        days.length - 1,
+        Math.floor((t.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      )
+    );
+  }, [start, end, days]);
+
+  // App mode: show a single header (months/weeks/days) and phase-only timeline on the right,
+  // with a static phases list on the left
+  if (hideMainCalendar) {
+    return (
+      <div className="border border-gray-200 rounded-md">
+        <div
+          className="grid items-start"
+          style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
+        >
+          {/* Static phase list (left) */}
+          <div className="bg-white border-r border-gray-200 p-2 pt-0">
+            <PhasesList
+              phases={phases}
+              onAdd={onAddPhase ?? (() => {})}
+              onEdit={onEditPhase ?? (() => {})}
+              onAutoGenerate={onAutoGenerate}
+              headerOffsetTopPx={28 + 24 + 24 + 1 + LANE_GAP}
+              calendarStart={start.toISOString().slice(0, 10)}
+              calendarEnd={end.toISOString().slice(0, 10)}
+            />
+          </div>
+          {/* Scrollable phase-only timeline (right) */}
+          <div ref={containerRef} className="overflow-auto">
+            <div
+              ref={contentRef}
+              className="min-w-full"
+              style={{ minWidth: width }}
+            >
+              <GanttTimeline
+                start={start}
+                totalDays={totalDays}
+                pxPerDay={pxPerDay}
+                todayIndex={todayIndex}
+                onJumpToToday={() => {
+                  const el = containerRef.current;
+                  if (!el) return;
+                  const index = typeof todayIndex === "number" ? todayIndex : 0;
+                  const visibleWidth = Math.max(0, el.clientWidth);
+                  const target = index * pxPerDay - visibleWidth / 2;
+                  const left = Math.max(0, target);
+                  safeScrollToX(el, left, "smooth");
+                }}
+              />
+              {/* Tracks: phases only */}
+              <div
+                className="relative"
+                style={{
+                  height: phases.length * (trackHeight + 8) + 8,
+                }}
+              >
+                {/* Weekend shading across tracks */}
+                {days.map((d, i) => {
+                  const dow = d.getDay();
+                  return dow === 0 || dow === 6 ? (
+                    <div
+                      key={`wk-${i}`}
+                      className="absolute top-0 pointer-events-none bg-gray-100 z-0"
+                      style={{
+                        left: i * pxPerDay,
+                        width: pxPerDay,
+                        height: "100%",
+                      }}
+                    />
+                  ) : null;
+                })}
+                {/* Phase lanes */}
+                {phases.map((_, idx) => (
+                  <GanttLane
+                    key={`lane-${idx}`}
+                    top={laneTop(idx)}
+                    height={trackHeight}
+                    index={idx}
+                  />
+                ))}
+                {/* grid lines */}
+                {days.map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute top-0 border-r border-gray-100"
+                    style={{ left: i * pxPerDay, width: 0, height: "100%" }}
+                  />
+                ))}
+                {/* Today marker across tracks */}
+                {typeof todayIndex === "number" && (
+                  <div
+                    className="absolute top-0 z-10"
+                    style={{
+                      left: todayIndex * pxPerDay,
+                      width: 0,
+                      height: "100%",
+                    }}
+                  >
+                    <TodayMarker className="h-full" />
+                  </div>
+                )}
+                {/* phase bars */}
+                {phases.map((ph, idx) => {
+                  if (!ph.startDate || !ph.endDate) return null;
+                  const ts = new Date(ph.startDate);
+                  const te = new Date(ph.endDate);
+                  const offset = Math.max(0, daysBetween(start, ts));
+                  const len = Math.max(1, daysBetween(ts, te));
+                  const top = laneTop(idx);
+                  const color = ph.color ?? theme.palette.secondary.main;
+                  const tooltip = (
+                    <div className="text-[11px] leading-[14px]">
+                      <div>
+                        <strong>{ph.name}</strong>
+                      </div>
+                      <div>
+                        {ts.toISOString().slice(0, 10)} →{" "}
+                        {te.toISOString().slice(0, 10)}
+                      </div>
+                      <div>Duration: {len} days</div>
+                      {ph.color ? <div>Color: {ph.color}</div> : null}
+                    </div>
+                  );
+                  // Build weekday-only segments so weekends keep non-working color
+                  const segments: { startIdx: number; length: number }[] = [];
+                  let segStart: number | null = null;
+                  for (let di = 0; di < len; di++) {
+                    const dayIdx = offset + di;
+                    const d = days[dayIdx];
+                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                    if (isWeekend) {
+                      if (segStart !== null) {
+                        segments.push({
+                          startIdx: segStart,
+                          length: dayIdx - segStart,
+                        });
+                        segStart = null;
+                      }
+                    } else {
+                      if (segStart === null) segStart = dayIdx;
+                    }
+                  }
+                  if (segStart !== null) {
+                    segments.push({
+                      startIdx: segStart,
+                      length: offset + len - segStart,
+                    });
+                  }
+                  if (segments.length === 0) return null;
+                  return segments.map((seg, sIdx) => {
+                    const left = seg.startIdx * pxPerDay;
+                    const width = seg.length * pxPerDay;
+                    return (
+                      <PhaseBar
+                        key={`${ph.id}-seg-${sIdx}`}
+                        left={left}
+                        top={top}
+                        width={width}
+                        height={trackHeight}
+                        color={color}
+                        label={sIdx === 0 ? ph.name : undefined}
+                        title={`${ph.name} (${ph.startDate} → ${ph.endDate})`}
+                        ariaLabel={`${ph.name} from ${ph.startDate} to ${ph.endDate}`}
+                        tooltipContent={tooltip}
+                        testIdSuffix={ph.id}
+                        onDoubleClick={() => {
+                          if (onEditPhase) onEditPhase(ph.id);
+                        }}
+                        onStartMove={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "move",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                        onStartResizeLeft={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "resize-left",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                        onStartResizeRight={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "resize-right",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                      />
+                    );
+                  });
+                })}
+              </div>
+              {/* Spacer to ensure the horizontal scrollbar appears on a separate line below the last phase */}
+              <div className="h-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-md">
+      <div
+        className="grid items-start"
+        style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
+      >
+        {/* Static phase list (left) */}
+        <div className="bg-white border-r border-gray-200 p-2">
+          <PhasesList
+            phases={phases}
+            onAdd={onAddPhase ?? (() => {})}
+            onEdit={onEditPhase ?? (() => {})}
+            onAutoGenerate={onAutoGenerate}
+            calendarStart={startDate}
+            calendarEnd={_endDate}
+            onPhaseRangeChange={onPhaseRangeChange}
+          />
+        </div>
+        {/* Scrollable calendar (right) */}
+        <div ref={containerRef} className="overflow-auto">
+          <div
+            ref={contentRef}
+            className="min-w-full"
+            style={{ minWidth: width }}
+          >
+            <GanttTimeline
+              start={start}
+              totalDays={totalDays}
+              pxPerDay={pxPerDay}
+              todayIndex={todayIndex}
+              onJumpToToday={() => {
+                const el = containerRef.current;
+                if (!el) return;
+                const index = typeof todayIndex === "number" ? todayIndex : 0;
+                const visibleWidth = Math.max(0, el.clientWidth);
+                const target = index * pxPerDay - visibleWidth / 2;
+                const left = Math.max(0, target);
+                safeScrollToX(el, left, "smooth");
+              }}
+            />
+            {/* Tracks */}
+            <div
+              className="relative"
+              style={{
+                height: (phases.length + tasks.length) * (trackHeight + 8) + 8,
+              }}
+            >
+              {/* Phase lanes: ensure each phase has an exclusive row aligned to the calendar */}
+              {phases.map((_, idx) => (
+                <GanttLane
+                  key={`lane-${idx}`}
+                  top={laneTop(idx)}
+                  height={trackHeight}
+                  index={idx}
+                />
+              ))}
+              {/* Task lanes to keep uniform row rhythm across the calendar */}
+              {tasks.map((_, tIdx) => (
+                <GanttLane
+                  key={`lane-task-${tIdx}`}
+                  top={laneTop(phases.length + tIdx)}
+                  height={trackHeight}
+                  index={phases.length + tIdx}
+                />
+              ))}
+              {/* grid lines */}
+              {/* grid lines */}
+              {days.map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute top-0 border-r border-gray-100"
+                  style={{ left: i * pxPerDay, width: 0, height: "100%" }}
+                />
+              ))}
+              {/* Today marker across tracks */}
+              {typeof todayIndex === "number" && (
+                <div
+                  className="absolute top-0"
+                  style={{
+                    left: todayIndex * pxPerDay,
+                    width: 0,
+                    height: "100%",
+                    zIndex: 4,
+                  }}
+                >
+                  <TodayMarker className="h-full" />
+                </div>
+              )}
+              {/* phase bars (aligned within their dedicated lane) */}
+              {phases.map((ph, idx) => {
+                if (!ph.startDate || !ph.endDate) return null;
+                const ts = new Date(ph.startDate);
+                const te = new Date(ph.endDate);
+                const offset = Math.max(0, daysBetween(start, ts));
+                const len = Math.max(1, daysBetween(ts, te));
+                const left = offset * pxPerDay;
+                const barWidth = len * pxPerDay;
+                const top = laneTop(idx);
+                const color = ph.color ?? theme.palette.secondary.main;
+                const tooltip = (
+                  <div className="text-[11px] leading-[14px]">
+                    <div>
+                      <strong>{ph.name}</strong>
+                    </div>
+                    <div>
+                      {ts.toISOString().slice(0, 10)} →{" "}
+                      {te.toISOString().slice(0, 10)}
+                    </div>
+                    <div>Duration: {len} days</div>
+                    {ph.color ? <div>Color: {ph.color}</div> : null}
+                  </div>
+                );
+                return (
+                  <PhaseBar
+                    key={ph.id}
+                    left={left}
+                    top={top}
+                    width={barWidth}
+                    height={trackHeight}
+                    color={color}
+                    label={ph.name}
+                    title={`${ph.name} (${ph.startDate} → ${ph.endDate})`}
+                    ariaLabel={`${ph.name} from ${ph.startDate} to ${ph.endDate}`}
+                    tooltipContent={tooltip}
+                    testIdSuffix={ph.id}
+                    onStartMove={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "move",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
+                    onStartResizeLeft={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "resize-left",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
+                    onStartResizeRight={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "resize-right",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
+                  />
+                );
+              })}
+              {/* selection preview */}
+              {drag
+                ? (() => {
+                    const a = Math.min(drag.startIdx, drag.currentIdx);
+                    const b = Math.max(drag.startIdx, drag.currentIdx);
+                    const left = a * pxPerDay;
+                    const widthSel = (b - a + 1) * pxPerDay;
+                    const top = laneTop(drag.phaseIdx);
+                    return (
+                      <PreviewContainer
+                        left={left}
+                        top={top}
+                        width={widthSel}
+                        height={trackHeight}
+                        zIndex={5}
+                      >
+                        <Preview />
+                      </PreviewContainer>
+                    );
+                  })()
+                : null}
+              {editDrag
+                ? (() => {
+                    const {
+                      mode,
+                      currentIdx,
+                      originalStartIdx,
+                      originalLen,
+                      phaseIdx,
+                      anchorIdx,
+                    } = editDrag;
+                    let newStartIdx = originalStartIdx;
+                    let newLen = originalLen;
+                    if (mode === "move") {
+                      const delta = currentIdx - anchorIdx;
+                      newStartIdx = Math.max(
+                        0,
+                        Math.min(
+                          days.length - originalLen,
+                          originalStartIdx + delta
+                        )
+                      );
+                      newLen = originalLen;
+                    } else if (mode === "resize-left") {
+                      newStartIdx = Math.max(
+                        0,
+                        Math.min(originalStartIdx + originalLen - 1, currentIdx)
+                      );
+                      newLen = Math.max(
+                        1,
+                        originalStartIdx + originalLen - newStartIdx
+                      );
+                    } else if (mode === "resize-right") {
+                      const proposedEnd = Math.max(
+                        originalStartIdx + 1,
+                        currentIdx
+                      );
+                      newLen = Math.max(
+                        1,
+                        Math.min(
+                          days.length - originalStartIdx,
+                          proposedEnd - originalStartIdx
+                        )
+                      );
+                    }
+                    const left = newStartIdx * pxPerDay;
+                    const widthSel = newLen * pxPerDay;
+                    const top = laneTop(phaseIdx);
+                    return (
+                      <PreviewContainer
+                        left={left}
+                        top={top}
+                        width={widthSel}
+                        height={trackHeight}
+                        zIndex={6}
+                      >
+                        <Preview />
+                      </PreviewContainer>
+                    );
+                  })()
+                : null}
+              {/* interactive overlays for phases (span entire lane) */}
+              {phases.map((ph, idx) => {
+                const top = laneTop(idx);
+                return (
+                  <div
+                    key={`ol-${ph.id}`}
+                    className="absolute z-10"
+                    style={{
+                      left: 0,
+                      top,
+                      width: width,
+                      height: trackHeight,
+                      cursor: "crosshair",
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const dayIdx = clientXToDayIndex(e.clientX);
+                      setDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        startIdx: dayIdx,
+                        currentIdx: dayIdx,
+                      });
+                    }}
+                    onClick={(e) => {
+                      const dayIdx = clientXToDayIndex(e.clientX);
+                      const s = days[dayIdx].toISOString().slice(0, 10);
+                      showSelectedDayAlert(s);
+                    }}
+                    onDoubleClick={() => {
+                      if (onEditPhase) onEditPhase(ph.id);
+                    }}
+                    title={`Drag to set ${ph.name} period`}
+                  />
+                );
+              })}
+              {/* task bars */}
+              {tasks.map((t, idx) => {
+                const ts = new Date(t.startDate);
+                const te = new Date(t.endDate);
+                const offset = Math.max(0, daysBetween(start, ts));
+                const len = Math.max(1, daysBetween(ts, te));
+                const left = offset * pxPerDay;
+                const barWidth = len * pxPerDay;
+                const top = laneTop(phases.length + idx);
+                const color = t.color ?? theme.palette.primary.main;
+                return (
+                  <TaskBar
+                    key={t.id}
+                    left={left}
+                    top={top}
+                    width={barWidth}
+                    height={trackHeight}
+                    color={color}
+                    label={t.title}
+                    title={`${t.title} (${t.startDate} → ${t.endDate})`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

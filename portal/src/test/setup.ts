@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { beforeAll, afterAll, afterEach } from 'vitest';
 import { server } from './server';
+import * as React from 'react';
 
 // Establish API mocking before all tests.
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
@@ -8,6 +9,9 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
 afterEach(() => server.resetHandlers());
 // Clean up after the tests are finished.
 afterAll(() => server.close());
+
+// Polyfill global React for act
+global.React = React;
 
 // jsdom polyfills
 // Element.scrollTo is not implemented in jsdom; provide a no-op mock
@@ -27,4 +31,5 @@ if (!(HTMLElement.prototype as any).scrollTo) {
 	});
 }
 
-
+// Re-export render from test-utils
+export { render, screen, waitFor } from './test-utils';

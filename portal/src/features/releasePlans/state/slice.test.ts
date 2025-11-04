@@ -38,6 +38,19 @@ describe('releasePlans slice', () => {
     expect(s.plans[0].metadata.phases?.some((ph) => ph.name === 'Phase A')).toBe(true);
   });
 
+  it('addPhase defaults dates to today and +7 days', () => {
+    let s = baseState();
+    const today = new Date();
+    const week = new Date(today);
+    week.setDate(week.getDate() + 7);
+    const startIso = today.toISOString().slice(0, 10);
+    const endIso = week.toISOString().slice(0, 10);
+    s = releasePlansReducer(s, addPhase({ planId: 'p1', name: 'Phase B' }));
+    const ph = s.plans[0].metadata.phases!.find((p) => p.name === 'Phase B')!;
+    expect(ph.startDate).toBe(startIso);
+    expect(ph.endDate).toBe(endIso);
+  });
+
   it('updatePhase updates phase fields', () => {
     let s = baseState();
     s = releasePlansReducer(s, addPhase({ planId: 'p1', name: 'Phase A' }));
