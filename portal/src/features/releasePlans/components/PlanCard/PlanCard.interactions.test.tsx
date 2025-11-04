@@ -1,7 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { store } from '../../../store/store';
-import PlanCard from '../components/PlanCard';
+import { ThemeProvider } from '@mui/material/styles';
+import { store } from '../../../../store/store';
+import PlanCard from './PlanCard';
+import { theme } from '../../../../theme';
 
 const plan = {
   id: 'p-test',
@@ -12,7 +14,9 @@ const plan = {
 it('opens Add Phase dialog and closes on cancel', () => {
   render(
     <Provider store={store}>
-      <PlanCard plan={plan as any} />
+      <ThemeProvider theme={theme}>
+        <PlanCard plan={plan as any} />
+      </ThemeProvider>
     </Provider>
   );
   fireEvent.click(screen.getByRole('button', { name: /add/i }));

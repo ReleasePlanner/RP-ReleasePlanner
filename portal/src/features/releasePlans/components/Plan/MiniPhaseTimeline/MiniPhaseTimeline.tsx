@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import type { PlanPhase } from "../../types";
-import { daysBetween, buildDaysArray, buildMonthSegments, buildWeekSegments } from "../../lib/date";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import type { PlanPhase } from "../../../types";
+import { daysBetween, buildDaysArray, buildMonthSegments, buildWeekSegments } from "../../../lib/date";
 
 type MiniPhaseTimelineProps = {
   phase: PlanPhase;
@@ -8,9 +8,10 @@ type MiniPhaseTimelineProps = {
   calendarEnd: string;
   pxPerDay?: number;
   height?: number;
+  onRangeChange?: (start: string, end: string) => void;
 };
 
-export default function MiniPhaseTimeline({ phase, calendarStart, calendarEnd, pxPerDay = 6, height = 10 }: MiniPhaseTimelineProps) {
+export default function MiniPhaseTimeline({ phase, calendarStart, calendarEnd, pxPerDay = 6, height = 10, onRangeChange }: MiniPhaseTimelineProps) {
   const { yearStart, yearEnd, totalDays, offsetDays, lenDays, days, monthSegments, weekSegments } = useMemo(() => {
     const y = new Date(calendarStart).getFullYear();
     const yearStart = new Date(y, 0, 1);
@@ -36,9 +37,48 @@ export default function MiniPhaseTimeline({ phase, calendarStart, calendarEnd, p
   const monthsRow = 16;
   const weeksRow = 14;
   const daysRow = 12;
+  const dragAreaHeight = height; // selection within phase row
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [drag, setDrag] = useState<null | { startIdx: number; currentIdx: number }>(null);
+
+  const clientXToDayIndex = useCallback((clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const x = clientX - rect.left + el.scrollLeft;
+    return Math.max(0, Math.min(totalDays - 1, Math.floor(x / pxPerDay)));
+  }, [pxPerDay, totalDays]);
+
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: MouseEvent) => {
+      setDrag((d) => (d ? { ...d, currentIdx: clientXToDayIndex(e.clientX) } : d));
+    };
+    const onUp = () => {
+      setDrag((d) => {
+        if (d) {
+          const sIdx = Math.min(d.startIdx, d.currentIdx);
+          const eIdx = Math.max(d.startIdx, d.currentIdx);
+          const s = days[sIdx]?.toISOString().slice(0, 10);
+          const e = days[eIdx]?.toISOString().slice(0, 10);
+          if (s && e && onRangeChange) onRangeChange(s, e);
+        }
+        return null;
+      });
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [drag, clientXToDayIndex, days, onRangeChange]);
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto" ref={containerRef}>
       <div className="relative bg-white" style={{ minWidth: contentWidth }}>
         {/* Months */}
         <div className="relative" style={{ height: monthsRow }}>
@@ -68,10 +108,33 @@ export default function MiniPhaseTimeline({ phase, calendarStart, calendarEnd, p
           ))}
         </div>
         {/* Phase bar */}
-        <div className="relative" style={{ height }}>
+        <div className="relative" style={{ height: dragAreaHeight }}>
           <div className="absolute" style={{ left: barLeft, top: 0, width: barWidth, height }}>
             <div className="h-full rounded" style={{ backgroundColor: phase.color ?? '#185ABD' }} />
           </div>
+          {/* Drag-select overlay */}
+          <div
+            className="absolute z-10"
+            style={{ left: 0, top: 0, width: contentWidth, height: dragAreaHeight, cursor: 'crosshair' }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const idx = clientXToDayIndex(e.clientX);
+              setDrag({ startIdx: idx, currentIdx: idx });
+            }}
+          />
+          {drag && (
+            <div
+              className="absolute z-20 bg-blue-500/20 border border-blue-400"
+              style={{
+                left: Math.min(drag.startIdx, drag.currentIdx) * pxPerDay,
+                width: (Math.abs(drag.currentIdx - drag.startIdx) + 1) * pxPerDay,
+                top: 0,
+                height: dragAreaHeight,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

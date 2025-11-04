@@ -1,14 +1,18 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
 import GanttChart from './GanttChart';
+import { theme } from '../../../../theme';
 
 it('does not render Today marker when date out of range', () => {
   render(
-    <GanttChart
-      startDate="2024-01-01"
-      endDate="2024-12-31"
-      tasks={[]}
-      phases={[]}
-    />
+    <ThemeProvider theme={theme}>
+      <GanttChart
+        startDate="2024-01-01"
+        endDate="2024-12-31"
+        tasks={[]}
+        phases={[]}
+      />
+    </ThemeProvider>
   );
   // Today label may not exist if outside 2024 (depends on current year)
   // This assertion is tolerant: absence is allowed, presence also ok.
@@ -19,13 +23,15 @@ it('does not render Today marker when date out of range', () => {
 it('handles reverse drag selection (leftwards)', () => {
   const cb = vi.fn();
   render(
-    <GanttChart
-      startDate="2025-01-01"
-      endDate="2025-12-31"
-      tasks={[]}
-      phases={[{ id: 'ph', name: 'Phase A' }] as any}
-      onPhaseRangeChange={cb}
-    />
+    <ThemeProvider theme={theme}>
+      <GanttChart
+        startDate="2025-01-01"
+        endDate="2025-12-31"
+        tasks={[]}
+        phases={[{ id: 'ph', name: 'Phase A' }] as any}
+        onPhaseRangeChange={cb}
+      />
+    </ThemeProvider>
   );
   const overlay = screen.getByTitle(/Drag to set Phase A period/);
   fireEvent.mouseDown(overlay, { clientX: 150, clientY: 0 });

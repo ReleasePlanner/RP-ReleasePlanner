@@ -1,7 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { store } from '../../../store/store';
-import PlanCard from '../components/PlanCard';
+import { ThemeProvider } from '@mui/material/styles';
+import { store } from '../../../../store/store';
+import PlanCard from './PlanCard';
+import { theme } from '../../../../theme';
 
 const plan = {
   id: 'p-expand',
@@ -12,7 +14,9 @@ const plan = {
 it('toggles expanded state and persists to store', () => {
   render(
     <Provider store={store}>
-      <PlanCard plan={plan as any} />
+      <ThemeProvider theme={theme}>
+        <PlanCard plan={plan as any} />
+      </ThemeProvider>
     </Provider>
   );
   const btn = screen.getByRole('button', { name: /expand/i });

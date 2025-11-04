@@ -1,9 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
+import { ThemeProvider } from '@mui/material/styles';
 import { releasePlansReducer } from '../features/releasePlans/slice';
 import type { ReleasePlansState } from '../features/releasePlans/types';
 import ReleasePlanner from './ReleasePlanner';
+import { theme } from '../theme';
 
 function createStoreWithPlans(plansState: ReleasePlansState) {
   return configureStore({
@@ -28,7 +30,9 @@ it('renders controls when plans exist and triggers expand/collapse actions', () 
   const store = createDefaultStore();
   render(
     <Provider store={store}>
-      <ReleasePlanner />
+      <ThemeProvider theme={theme}>
+        <ReleasePlanner />
+      </ThemeProvider>
     </Provider>
   );
   const expandAll = screen.getByRole('button', { name: /expand all/i });
@@ -44,7 +48,9 @@ it('renders null when no plans exist', () => {
   const store = createStoreWithPlans({ plans: [] });
   const { container } = render(
     <Provider store={store}>
-      <ReleasePlanner />
+      <ThemeProvider theme={theme}>
+        <ReleasePlanner />
+      </ThemeProvider>
     </Provider>
   );
   expect(container.firstChild).toBeNull();

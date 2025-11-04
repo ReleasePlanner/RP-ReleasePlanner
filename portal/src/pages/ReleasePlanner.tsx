@@ -1,6 +1,6 @@
 import { Button, Stack } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import PlanCard from "../features/releasePlans/components/PlanCard";
+import PlanCard from "../features/releasePlans/components/PlanCard/PlanCard";
 import { setPlanExpanded } from "../store/store";
 
 export default function ReleasePlanner() {

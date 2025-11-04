@@ -1,15 +1,22 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTheme } from "@mui/material/styles";
-import GanttTimeline from "./Gantt/GanttTimeline";
-import { daysBetween, addDays } from "../lib/date";
-import { PX_PER_DAY, TRACK_HEIGHT, LABEL_WIDTH, LANE_GAP } from "./Gantt/constants";
-import { laneTop } from "./Gantt/utils";
-import { safeScrollToX } from "../../../utils/dom";
-import GanttLane from "./Gantt/GanttLane";
-import PhaseBar from "./Gantt/PhaseBar";
-import TaskBar from "./Gantt/TaskBar";
-import type { PlanTask, PlanPhase } from "../types";
-import PhasesList from "./Plan/PhasesList";
+import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
+import { daysBetween, addDays } from "../../lib/date";
+import {
+  PX_PER_DAY,
+  TRACK_HEIGHT,
+  LABEL_WIDTH,
+  LANE_GAP,
+} from "../Gantt/constants";
+import { laneTop } from "../Gantt/utils";
+import { safeScrollToX } from "../../../../utils/dom";
+import GanttLane from "../Gantt/GanttLane/GanttLane";
+import PhaseBar from "../Gantt/PhaseBar/PhaseBar";
+import TaskBar from "../Gantt/TaskBar/TaskBar";
+import type { PlanTask, PlanPhase } from "../../types";
+import PhasesList from "../Plan/PhasesList/PhasesList";
+import { useGanttDragAndDrop } from "./useGanttDragAndDrop";
+import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
 
 // header timeline moved to GanttTimeline component
 
@@ -69,6 +76,16 @@ export default function GanttChart({
     [start, totalDays]
   );
 
+  const showSelectedDayAlert = useCallback((isoDate: string) => {
+    if (typeof window !== "undefined" && typeof window.alert === "function") {
+      try {
+        window.alert(`Selected day: ${isoDate}`);
+      } catch {
+        /* ignore alert errors in test environment (jsdom) */
+      }
+    }
+  }, []);
+
   // Auto-scroll to today by default
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
@@ -95,52 +112,13 @@ export default function GanttChart({
   }, [start, end, days.length, labelWidth, pxPerDay]);
 
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const [drag, setDrag] = useState<{
-    phaseId: string;
-    phaseIdx: number;
-    startIdx: number;
-    currentIdx: number;
-  } | null>(null);
 
-  const clientXToDayIndex = useCallback(
-    (clientX: number) => {
-      const container = containerRef.current;
-      const content = contentRef.current;
-      if (!container || !content) return 0;
-      const contentLeft = content.getBoundingClientRect().left;
-      // contentLeft already accounts for container.scrollLeft movement
-      const x = clientX - contentLeft;
-      const idx = Math.floor(x / pxPerDay);
-      return Math.max(0, Math.min(days.length - 1, idx));
-    },
-    [days.length, pxPerDay]
-  );
-
-  useEffect(() => {
-    function onMove(e: MouseEvent) {
-      if (!drag) return;
-      const idx = clientXToDayIndex(e.clientX);
-      setDrag((d) => (d ? { ...d, currentIdx: idx } : d));
-    }
-    function onUp() {
-      if (drag) {
-        const a = Math.min(drag.startIdx, drag.currentIdx);
-        const b = Math.max(drag.startIdx, drag.currentIdx);
-        const s = days[a].toISOString().slice(0, 10);
-        const e = days[b].toISOString().slice(0, 10);
-        if (onPhaseRangeChange) {
-          onPhaseRangeChange(drag.phaseId, s, e);
-        }
-      }
-      setDrag(null);
-    }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [drag, days, onPhaseRangeChange, clientXToDayIndex]);
+  const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } = useGanttDragAndDrop({
+    days,
+    onPhaseRangeChange,
+    containerRef,
+    contentRef,
+  });
 
   const todayIndex = useMemo(() => {
     const t = new Date();
@@ -160,7 +138,10 @@ export default function GanttChart({
   if (hideMainCalendar) {
     return (
       <div className="border border-gray-200 rounded-md">
-        <div className="grid items-start" style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}>
+        <div
+          className="grid items-start"
+          style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
+        >
           {/* Static phase list (left) */}
           <div className="bg-white border-r border-gray-200 p-2 pt-0">
             <PhasesList
@@ -169,13 +150,17 @@ export default function GanttChart({
               onEdit={onEditPhase ?? (() => {})}
               onAutoGenerate={onAutoGenerate}
               headerOffsetTopPx={28 + 24 + 24 + 1 + LANE_GAP}
-              calendarStart={start.toISOString().slice(0,10)}
-              calendarEnd={end.toISOString().slice(0,10)}
+              calendarStart={start.toISOString().slice(0, 10)}
+              calendarEnd={end.toISOString().slice(0, 10)}
             />
           </div>
           {/* Scrollable phase-only timeline (right) */}
           <div ref={containerRef} className="overflow-auto">
-            <div ref={contentRef} className="min-w-full" style={{ minWidth: width }}>
+            <div
+              ref={contentRef}
+              className="min-w-full"
+              style={{ minWidth: width }}
+            >
               <GanttTimeline
                 start={start}
                 totalDays={totalDays}
@@ -195,9 +180,24 @@ export default function GanttChart({
               <div
                 className="relative"
                 style={{
-                  height: (phases.length) * (trackHeight + 8) + 8,
+                  height: phases.length * (trackHeight + 8) + 8,
                 }}
               >
+                {/* Weekend shading across tracks */}
+                {days.map((d, i) => {
+                  const dow = d.getDay();
+                  return dow === 0 || dow === 6 ? (
+                    <div
+                      key={`wk-${i}`}
+                      className="absolute top-0 pointer-events-none bg-gray-100 z-0"
+                      style={{
+                        left: i * pxPerDay,
+                        width: pxPerDay,
+                        height: "100%",
+                      }}
+                    />
+                  ) : null;
+                })}
                 {/* Phase lanes */}
                 {phases.map((_, idx) => (
                   <GanttLane
@@ -218,18 +218,14 @@ export default function GanttChart({
                 {/* Today marker across tracks */}
                 {typeof todayIndex === "number" && (
                   <div
-                    className="absolute top-0"
+                    className="absolute top-0 z-10"
                     style={{
                       left: todayIndex * pxPerDay,
                       width: 0,
                       height: "100%",
-                      zIndex: 4,
                     }}
                   >
-                    <div
-                      className="h-full"
-                      style={{ borderLeft: `2px dashed ${theme.palette.secondary.main}` }}
-                    />
+                    <TodayMarker className="h-full" />
                   </div>
                 )}
                 {/* phase bars */}
@@ -239,27 +235,109 @@ export default function GanttChart({
                   const te = new Date(ph.endDate);
                   const offset = Math.max(0, daysBetween(start, ts));
                   const len = Math.max(1, daysBetween(ts, te));
-                  const left = offset * pxPerDay;
-                  const barWidth = len * pxPerDay;
                   const top = laneTop(idx);
                   const color = ph.color ?? theme.palette.secondary.main;
-                  return (
-                    <PhaseBar
-                      key={ph.id}
-                      left={left}
-                      top={top}
-                      width={barWidth}
-                      height={trackHeight}
-                      color={color}
-                      label={ph.name}
-                      title={`${ph.name} (${ph.startDate} → ${ph.endDate})`}
-                      ariaLabel={`${ph.name} from ${ph.startDate} to ${ph.endDate}`}
-                    />
+                  const tooltip = (
+                    <div className="text-[11px] leading-[14px]">
+                      <div>
+                        <strong>{ph.name}</strong>
+                      </div>
+                      <div>
+                        {ts.toISOString().slice(0, 10)} →{" "}
+                        {te.toISOString().slice(0, 10)}
+                      </div>
+                      <div>Duration: {len} days</div>
+                      {ph.color ? <div>Color: {ph.color}</div> : null}
+                    </div>
                   );
+                  // Build weekday-only segments so weekends keep non-working color
+                  const segments: { startIdx: number; length: number }[] = [];
+                  let segStart: number | null = null;
+                  for (let di = 0; di < len; di++) {
+                    const dayIdx = offset + di;
+                    const d = days[dayIdx];
+                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                    if (isWeekend) {
+                      if (segStart !== null) {
+                        segments.push({
+                          startIdx: segStart,
+                          length: dayIdx - segStart,
+                        });
+                        segStart = null;
+                      }
+                    } else {
+                      if (segStart === null) segStart = dayIdx;
+                    }
+                  }
+                  if (segStart !== null) {
+                    segments.push({
+                      startIdx: segStart,
+                      length: offset + len - segStart,
+                    });
+                  }
+                  if (segments.length === 0) return null;
+                  return segments.map((seg, sIdx) => {
+                    const left = seg.startIdx * pxPerDay;
+                    const width = seg.length * pxPerDay;
+                    return (
+                      <PhaseBar
+                        key={`${ph.id}-seg-${sIdx}`}
+                        left={left}
+                        top={top}
+                        width={width}
+                        height={trackHeight}
+                        color={color}
+                        label={sIdx === 0 ? ph.name : undefined}
+                        title={`${ph.name} (${ph.startDate} → ${ph.endDate})`}
+                        ariaLabel={`${ph.name} from ${ph.startDate} to ${ph.endDate}`}
+                        tooltipContent={tooltip}
+                        testIdSuffix={ph.id}
+                        onDoubleClick={() => {
+                          if (onEditPhase) onEditPhase(ph.id);
+                        }}
+                        onStartMove={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "move",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                        onStartResizeLeft={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "resize-left",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                        onStartResizeRight={(e) => {
+                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          setEditDrag({
+                            phaseId: ph.id,
+                            phaseIdx: idx,
+                            mode: "resize-right",
+                            anchorIdx,
+                            currentIdx: anchorIdx,
+                            originalStartIdx: offset,
+                            originalLen: len,
+                          });
+                        }}
+                      />
+                    );
+                  });
                 })}
               </div>
               {/* Spacer to ensure the horizontal scrollbar appears on a separate line below the last phase */}
-              <div style={{ height: 16 }} />
+              <div className="h-4" />
             </div>
           </div>
         </div>
@@ -282,6 +360,7 @@ export default function GanttChart({
             onAutoGenerate={onAutoGenerate}
             calendarStart={startDate}
             calendarEnd={_endDate}
+            onPhaseRangeChange={onPhaseRangeChange}
           />
         </div>
         {/* Scrollable calendar (right) */}
@@ -332,6 +411,7 @@ export default function GanttChart({
                 />
               ))}
               {/* grid lines */}
+              {/* grid lines */}
               {days.map((_, i) => (
                 <div
                   key={i}
@@ -350,12 +430,7 @@ export default function GanttChart({
                     zIndex: 4,
                   }}
                 >
-                  <div
-                    className="h-full"
-                    style={{
-                      borderLeft: `2px dashed ${theme.palette.secondary.main}`,
-                    }}
-                  />
+                  <TodayMarker className="h-full" />
                 </div>
               )}
               {/* phase bars (aligned within their dedicated lane) */}
@@ -369,6 +444,19 @@ export default function GanttChart({
                 const barWidth = len * pxPerDay;
                 const top = laneTop(idx);
                 const color = ph.color ?? theme.palette.secondary.main;
+                const tooltip = (
+                  <div className="text-[11px] leading-[14px]">
+                    <div>
+                      <strong>{ph.name}</strong>
+                    </div>
+                    <div>
+                      {ts.toISOString().slice(0, 10)} →{" "}
+                      {te.toISOString().slice(0, 10)}
+                    </div>
+                    <div>Duration: {len} days</div>
+                    {ph.color ? <div>Color: {ph.color}</div> : null}
+                  </div>
+                );
                 return (
                   <PhaseBar
                     key={ph.id}
@@ -380,6 +468,44 @@ export default function GanttChart({
                     label={ph.name}
                     title={`${ph.name} (${ph.startDate} → ${ph.endDate})`}
                     ariaLabel={`${ph.name} from ${ph.startDate} to ${ph.endDate}`}
+                    tooltipContent={tooltip}
+                    testIdSuffix={ph.id}
+                    onStartMove={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "move",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
+                    onStartResizeLeft={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "resize-left",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
+                    onStartResizeRight={(e) => {
+                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      setEditDrag({
+                        phaseId: ph.id,
+                        phaseIdx: idx,
+                        mode: "resize-right",
+                        anchorIdx,
+                        currentIdx: anchorIdx,
+                        originalStartIdx: offset,
+                        originalLen: len,
+                      });
+                    }}
                   />
                 );
               })}
@@ -392,24 +518,75 @@ export default function GanttChart({
                     const widthSel = (b - a + 1) * pxPerDay;
                     const top = laneTop(drag.phaseIdx);
                     return (
-                      <div
-                        className="absolute pointer-events-none"
-                        style={{
-                          left,
-                          top,
-                          width: widthSel,
-                          height: trackHeight,
-                          zIndex: 5,
-                        }}
+                      <PreviewContainer
+                        left={left}
+                        top={top}
+                        width={widthSel}
+                        height={trackHeight}
+                        zIndex={5}
                       >
-                        <div
-                          className="h-full rounded-sm"
-                          style={{
-                            border: `2px solid ${theme.palette.primary.main}`,
-                            backgroundColor: `${theme.palette.primary.main}1A`,
-                          }}
-                        />
-                      </div>
+                        <Preview />
+                      </PreviewContainer>
+                    );
+                  })()
+                : null}
+              {editDrag
+                ? (() => {
+                    const {
+                      mode,
+                      currentIdx,
+                      originalStartIdx,
+                      originalLen,
+                      phaseIdx,
+                      anchorIdx,
+                    } = editDrag;
+                    let newStartIdx = originalStartIdx;
+                    let newLen = originalLen;
+                    if (mode === "move") {
+                      const delta = currentIdx - anchorIdx;
+                      newStartIdx = Math.max(
+                        0,
+                        Math.min(
+                          days.length - originalLen,
+                          originalStartIdx + delta
+                        )
+                      );
+                      newLen = originalLen;
+                    } else if (mode === "resize-left") {
+                      newStartIdx = Math.max(
+                        0,
+                        Math.min(originalStartIdx + originalLen - 1, currentIdx)
+                      );
+                      newLen = Math.max(
+                        1,
+                        originalStartIdx + originalLen - newStartIdx
+                      );
+                    } else if (mode === "resize-right") {
+                      const proposedEnd = Math.max(
+                        originalStartIdx + 1,
+                        currentIdx
+                      );
+                      newLen = Math.max(
+                        1,
+                        Math.min(
+                          days.length - originalStartIdx,
+                          proposedEnd - originalStartIdx
+                        )
+                      );
+                    }
+                    const left = newStartIdx * pxPerDay;
+                    const widthSel = newLen * pxPerDay;
+                    const top = laneTop(phaseIdx);
+                    return (
+                      <PreviewContainer
+                        left={left}
+                        top={top}
+                        width={widthSel}
+                        height={trackHeight}
+                        zIndex={6}
+                      >
+                        <Preview />
+                      </PreviewContainer>
                     );
                   })()
                 : null}
@@ -428,6 +605,8 @@ export default function GanttChart({
                       cursor: "crosshair",
                     }}
                     onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       const dayIdx = clientXToDayIndex(e.clientX);
                       setDrag({
                         phaseId: ph.id,
@@ -435,6 +614,14 @@ export default function GanttChart({
                         startIdx: dayIdx,
                         currentIdx: dayIdx,
                       });
+                    }}
+                    onClick={(e) => {
+                      const dayIdx = clientXToDayIndex(e.clientX);
+                      const s = days[dayIdx].toISOString().slice(0, 10);
+                      showSelectedDayAlert(s);
+                    }}
+                    onDoubleClick={() => {
+                      if (onEditPhase) onEditPhase(ph.id);
                     }}
                     title={`Drag to set ${ph.name} period`}
                   />

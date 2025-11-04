@@ -1,9 +1,9 @@
 import { Button, List, Fab } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import type { PlanPhase } from "../../types";
-import PhaseListItem from "./PhaseListItem";
-import MiniPhaseTimeline from "./MiniPhaseTimeline";
-import { TRACK_HEIGHT, LANE_GAP, LABEL_WIDTH } from "../Gantt/constants";
+import type { PlanPhase } from "../../../types";
+import PhaseListItem from "../PhaseListItem/PhaseListItem";
+import MiniPhaseTimeline from "../MiniPhaseTimeline/MiniPhaseTimeline";
+import { TRACK_HEIGHT, LANE_GAP, LABEL_WIDTH } from "../../Gantt/constants";
 
 export type PhasesListProps = {
   phases: PlanPhase[];
@@ -15,6 +15,7 @@ export type PhasesListProps = {
   calendarStart?: string;
   calendarEnd?: string;
   headerOffsetTopPx?: number;
+  onPhaseRangeChange?: (id: string, start: string, end: string) => void;
 };
 
 export default function PhasesList({
@@ -27,6 +28,7 @@ export default function PhasesList({
   calendarStart,
   calendarEnd,
   headerOffsetTopPx: _headerOffsetTopPx,
+  onPhaseRangeChange,
 }: PhasesListProps) {
   return (
     <div>
@@ -89,6 +91,9 @@ export default function PhasesList({
                     calendarStart={calendarStart}
                     calendarEnd={calendarEnd}
                     height={TRACK_HEIGHT}
+                    onRangeChange={(s, e) =>
+                      onPhaseRangeChange && onPhaseRangeChange(p.id, s, e)
+                    }
                   />
                 </div>
               )}

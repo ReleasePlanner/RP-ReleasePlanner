@@ -1,24 +1,19 @@
 import {
-  Button,
   Card,
   CardContent,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Collapse,
-  TextField,
 } from "@mui/material";
 import { useCallback, useState } from "react";
 import type { Plan } from "../types";
-import GanttChart from "./GanttChart";
-import PlanHeader from "./Plan/PlanHeader";
-import ResizableSplit from "./Plan/ResizableSplit";
-import PhaseEditDialog from "./Plan/PhaseEditDialog";
-import CommonDataCard from "./Plan/CommonDataCard";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { addPhase, updatePhase, updatePlan } from "../slice";
-import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
+import GanttChart from "../GanttChart/GanttChart";
+import PlanHeader from "../Plan/PlanHeader/PlanHeader";
+import ResizableSplit from "../Plan/ResizableSplit/ResizableSplit";
+import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
+import CommonDataCard from "../Plan/CommonDataCard/CommonDataCard";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
+import { addPhase, updatePhase } from "../../slice";
+import { setPlanLeftPercent, setPlanExpanded } from "../../../../store/store";
+import AddPhaseDialog from "../Plan/AddPhaseDialog";
 
 // left pane subcomponents handle their own label formatting
 
@@ -39,15 +34,6 @@ export default function PlanCard({ plan }: PlanCardProps) {
   const expanded = savedExpanded ?? true;
   // Add Phase dialog
   const [phaseOpen, setPhaseOpen] = useState(false);
-  const [phaseName, setPhaseName] = useState("");
-  const submitPhase = useCallback(() => {
-    const name = phaseName.trim();
-    if (name) {
-      dispatch(addPhase({ planId: plan.id, name }));
-      setPhaseName("");
-      setPhaseOpen(false);
-    }
-  }, [dispatch, phaseName, plan.id]);
 
   // Edit Phase dialog (start/end/color)
   const [editOpen, setEditOpen] = useState(false);
@@ -60,8 +46,13 @@ export default function PlanCard({ plan }: PlanCardProps) {
       const ph = (plan.metadata.phases ?? []).find((x) => x.id === phaseId);
       if (!ph) return;
       setEditPhaseId(phaseId);
-      setEditStart(ph.startDate ?? "");
-      setEditEnd(ph.endDate ?? "");
+      const today = new Date();
+      const weekLater = new Date(today);
+      weekLater.setDate(weekLater.getDate() + 7);
+      const startIso = today.toISOString().slice(0, 10);
+      const endIso = weekLater.toISOString().slice(0, 10);
+      setEditStart(ph.startDate ?? startIso);
+      setEditEnd(ph.endDate ?? endIso);
       setEditColor(ph.color ?? "#217346");
       setEditOpen(true);
     },
@@ -79,21 +70,6 @@ export default function PlanCard({ plan }: PlanCardProps) {
     setEditOpen(false);
   }, [dispatch, plan.id, editPhaseId, editStart, editEnd, editColor]);
 
-  // Auto-generate phases across plan dates
-  const onAutoGenerate = useCallback(() => {
-    const { startDate, endDate } = metadata;
-    try {
-      const { generatePhases } = require("../lib/phaseGenerator");
-      const generated = generatePhases(startDate, endDate);
-      const newPlan = {
-        ...plan,
-        metadata: { ...plan.metadata, phases: generated },
-      };
-      dispatch(updatePlan(newPlan));
-    } catch {
-      // noop if generator not available
-    }
-  }, [dispatch, metadata, plan]);
   return (
     <Card variant="outlined" className="mb-6">
       <PlanHeader
@@ -146,38 +122,13 @@ export default function PlanCard({ plan }: PlanCardProps) {
           />
         </CardContent>
       </Collapse>
-      <Dialog
+      <AddPhaseDialog
         open={phaseOpen}
         onClose={() => setPhaseOpen(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>Add Phase</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Phase name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={phaseName}
-            onChange={(e) => setPhaseName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submitPhase();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPhaseOpen(false)}>Cancel</Button>
-          <Button onClick={submitPhase} variant="contained">
-            Add
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={(name) => {
+          dispatch(addPhase({ planId: plan.id, name }));
+        }}
+      />
       <PhaseEditDialog
         open={editOpen}
         start={editStart}

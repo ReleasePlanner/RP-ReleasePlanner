@@ -109,11 +109,16 @@ const releasePlansSlice = createSlice({
       const name = action.payload.name.trim();
       if (!name) return;
       const usedColors = (plan.metadata.phases ?? []).map((ph) => ph.color);
+      const today = new Date();
+      const weekLater = new Date(today);
+      weekLater.setDate(weekLater.getDate() + 7);
+      const startIso = today.toISOString().slice(0, 10);
+      const endIso = weekLater.toISOString().slice(0, 10);
       const newPhase: PlanPhase = {
         id: `phase-${Date.now()}`,
         name,
-        startDate: plan.metadata.startDate,
-        endDate: plan.metadata.endDate,
+        startDate: startIso,
+        endDate: endIso,
         color: getNextDistinctColor(usedColors, plan.metadata.phases.length),
       };
       plan.metadata.phases.push(newPhase);

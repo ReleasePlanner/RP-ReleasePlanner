@@ -24,7 +24,7 @@ it('edits fields and triggers callbacks', () => {
 
   fireEvent.change(screen.getByLabelText(/start/i), { target: { value: '2025-02-01' } });
   fireEvent.change(screen.getByLabelText(/end/i), { target: { value: '2025-02-10' } });
-  fireEvent.change(screen.getByLabelText(/color/i), { target: { value: '#000000' } });
+  fireEvent.change(screen.getByLabelText('Color', { selector: 'input' }), { target: { value: '#000000' } });
 
   expect(onStartChange).toHaveBeenCalled();
   expect(onEndChange).toHaveBeenCalled();
