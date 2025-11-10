@@ -84,21 +84,6 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/**
- * LeftDrawerContent Component
- *
- * Minimalist navigation drawer with:
- * - Elegant icon-based menu items
- * - Active route indicator with smooth transitions
- * - Clean spacing and typography hierarchy
- * - Responsive design for all breakpoints
- * - Accessibility: ARIA labels, keyboard navigation, tooltips
- *
- * @example
- * ```tsx
- * <LeftDrawerContent onClose={handleClose} />
- * ```
- */
 export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
   const dispatch = useAppDispatch();
   const theme = useTheme();

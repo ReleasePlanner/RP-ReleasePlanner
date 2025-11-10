@@ -47,7 +47,7 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
           gap: { xs: 1, sm: 2 },
@@ -58,18 +58,19 @@ export function Header() {
           <HeaderNavButton />
         </Box>
 
-        {/* Center Section - Title */}
+        {/* Center Section - Title (expands to fill middle) */}
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
           <HeaderTitle />
         </Box>
 
-        {/* Right Section - Actions */}
+        {/* Right Section - Actions (pushed to far right with marginLeft: auto) */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: isMobile ? 0.5 : 1,
             flexShrink: 0,
+            ml: "auto",
           }}
         >
           <HeaderActions />
