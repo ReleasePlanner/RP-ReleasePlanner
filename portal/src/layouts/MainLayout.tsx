@@ -127,9 +127,13 @@ export function MainLayout({ children }: PropsWithChildren) {
           ml: { md: leftOpen ? `${drawerWidth}px` : 0 },
           mr: { lg: rightOpen ? `${drawerWidth}px` : 0 },
           minHeight: 0,
+          overflow: "auto",
         }}
       >
-        <Container maxWidth="xl" className="py-6">
+        <Container
+          maxWidth="xl"
+          sx={{ py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}
+        >
           {children ?? <Outlet />}
         </Container>
       </Box>
