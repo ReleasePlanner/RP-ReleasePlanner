@@ -46,6 +46,7 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
           gap: { xs: 1, sm: 2 },
@@ -57,18 +58,17 @@ export function Header() {
         </Box>
 
         {/* Center Section - Title */}
-        <Box sx={{ display: "flex", justifyContent: "center", flexShrink: 0 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", flex: 1 }}>
           <HeaderTitle />
         </Box>
 
-        {/* Right Section - Actions (expands to fill right side, buttons aligned far right) */}
+        {/* Right Section - Actions */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-end",
             gap: { xs: 0.5, sm: 1 },
-            flex: 1,
+            flexShrink: 0,
           }}
         >
           <HeaderActions />

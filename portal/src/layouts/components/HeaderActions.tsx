@@ -49,7 +49,6 @@ export function HeaderActions() {
         display: "flex",
         alignItems: "center",
         gap: 0.5,
-        justifyContent: "flex-end",
       }}
     >
       {/* Theme Toggle Button */}
