@@ -33,10 +33,7 @@ interface FeatureCardProps {
  * />
  * ```
  */
-export function FeatureCard({
-  product,
-  onAddFeature,
-}: FeatureCardProps) {
+export function FeatureCard({ product, onAddFeature }: FeatureCardProps) {
   const theme = useTheme();
 
   return (

@@ -10,7 +10,7 @@ type UiState = {
 };
 
 const initialUiState: UiState = {
-  leftSidebarOpen: false,
+  leftSidebarOpen: true,
   rightSidebarOpen: false,
   planLeftPercentByPlanId: {},
   planExpandedByPlanId: {},
