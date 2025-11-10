@@ -9,18 +9,8 @@
  * - Material UI 7 compliant
  */
 
-import {
-  Box,
-  Fab,
-  IconButton,
-  Tooltip,
-  useTheme,
-  alpha,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Settings as SettingsIcon,
-} from "@mui/icons-material";
+import { Box, Fab, IconButton, Tooltip, useTheme, alpha } from "@mui/material";
+import { Add as AddIcon, Settings as SettingsIcon } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleRightSidebar } from "../../store/store";
 import { addPlan } from "../../features/releasePlans/slice";
