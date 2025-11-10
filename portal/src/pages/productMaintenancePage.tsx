@@ -147,10 +147,25 @@ export function ProductMaintenancePage() {
   const isEditing = editingProduct?.component !== undefined;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        width: "100%",
+        p: { xs: 2, sm: 3, md: 4 },
+      }}
+    >
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+      <Box sx={{ mb: { xs: 3, md: 4 } }}>
+        <Typography
+          variant="h4"
+          sx={{
+            mb: 1,
+            fontWeight: 600,
+            fontSize: { xs: "1.5rem", md: "2rem" },
+          }}
+        >
           Product Maintenance
         </Typography>
         <Typography variant="body2" color="text.secondary">
