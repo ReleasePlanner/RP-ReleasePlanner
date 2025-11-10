@@ -35,7 +35,7 @@ import {
   CalendarMonth,
   AccessTime,
 } from "@mui/icons-material";
-import { getAllProducts } from "../../../lib/productData";
+import { useAppSelector } from "@/store/hooks";
 import { IT_OWNERS } from "../../../constants/itOwners";
 
 export type PlanStatus = "planned" | "in_progress" | "done" | "paused";
@@ -127,7 +127,7 @@ export default function PlanHeader({
   };
 
   const duration = calculateDuration(startDate, endDate);
-  const products = getAllProducts();
+  const products = useAppSelector((state) => state.products.products);
 
   // Format date range
   const formatDateRange = (start: string, end: string): string => {

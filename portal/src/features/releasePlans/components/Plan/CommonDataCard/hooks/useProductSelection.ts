@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { getAllProducts, getProductById } from "../../../../lib/productData";
+import { useAppSelector } from "@/store/hooks";
 
 export function useProductSelection() {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
 
-  const products = getAllProducts();
+  const products = useAppSelector((state) => state.products.products);
   const selectedProduct = selectedProductId
-    ? getProductById(selectedProductId)
+    ? products.find((p) => p.id === selectedProductId)
     : undefined;
 
   const handleProductChange = (productId: string) => {
