@@ -1,14 +1,8 @@
 # Release Planner Web - Portal# Release Planner Portal
 
-
-
 Modern web application for release planning, product management, feature tracking, and calendar management.React + TypeScript + Vite + Tailwind CSS + MUI + Redux Toolkit + TanStack Query.
 
-
-
 ## 🚀 Getting Started## 📚 Documentation
-
-
 
 ```bashPara documentación completa del proyecto, incluyendo refactorización, builder patterns y arquitectura, consulta:
 
@@ -28,7 +22,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 - ❓ **[FAQs](./docs/BUILDERS_FAQ.md)** - Preguntas frecuentes
 
-```
+````
 
 portal/### Código
 
@@ -78,7 +72,7 @@ portal/### Código
 
 └── tailwind.config.js## Tech stack
 
-```
+````
 
 - **React (Vite + TS)**: fast dev/build
 
@@ -102,23 +96,23 @@ All documentation is located in the `docs/` folder:- **Redux Toolkit**: predicta
 
 src/
 
-## 🎯 Features  api/            # Query client, API modules
+## 🎯 Features api/ # Query client, API modules
 
-  layouts/        # App layouts (MainLayout)
+layouts/ # App layouts (MainLayout)
 
-### 📊 Release Planner  pages/          # Route pages (Home)
+### 📊 Release Planner pages/ # Route pages (Home)
 
-- Create and manage release plans  store/          # Redux store and typed hooks
+- Create and manage release plans store/ # Redux store and typed hooks
 
-- Gantt chart visualization  assets/         # Static assets
+- Gantt chart visualization assets/ # Static assets
 
-- Drag-and-drop timeline management  theme.ts        # MUI theme (Excel palette)
+- Drag-and-drop timeline management theme.ts # MUI theme (Excel palette)
 
-  main.tsx        # Providers (Redux, Query, Router, Theme)
+  main.tsx # Providers (Redux, Query, Router, Theme)
 
-### 🏢 Product Management  App.tsx         # Routes
+### 🏢 Product Management App.tsx # Routes
 
-- Add/Edit/Delete products  index.css       # Tailwind entry
+- Add/Edit/Delete products index.css # Tailwind entry
 
 - Manage product components```
 
@@ -158,8 +152,6 @@ Sidebars are controlled via Redux (`ui` slice), ensuring consistent behavior acr
 
 - **Theme System** - Full theming supportExamples:
 
-
-
 ## 🛠️ Technology Stack- Containers: `className="py-6"`
 
 - Text colors: `text-primary-700`
@@ -181,7 +173,6 @@ Sidebars are controlled via Redux (`ui` slice), ensuring consistent behavior acr
 - Reuse the `MainLayout` for all routes; render content via React Router `<Outlet />`
 
 ## 📱 Navigation- Prefer MUI components for form controls and accessibility
-
 
 - **Release Planner** - Main planning view
 - **Products** - Product management
@@ -213,6 +204,7 @@ npm run lint
 ### Features Architecture
 
 Each feature module follows this structure:
+
 ```
 feature/
 ├── types.ts           # TypeScript interfaces
@@ -244,6 +236,7 @@ feature/
 ## 📝 Commit History
 
 Latest commits:
+
 - Move all .md documentation files to docs folder
 - Add interactive toolbar with view, filter, and sort controls
 - Add Calendar Management feature
@@ -269,4 +262,4 @@ For detailed documentation, visit the `docs/` folder.
 
 ---
 
-*Last Updated: November 10, 2025*
+_Last Updated: November 10, 2025_
