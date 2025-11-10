@@ -28,14 +28,15 @@ export function MainLayout({ children }: PropsWithChildren) {
         display: "grid",
         gridTemplateRows: "auto 1fr auto",
         height: "100vh",
+        width: "100%",
       }}
     >
       <CssBaseline />
       <HeaderMaterial />
-      <LeftSidebar />
       <MainContent>{children}</MainContent>
-      <RightSidebar />
       <LayoutFooter />
+      <LeftSidebar />
+      <RightSidebar />
     </Box>
   );
 }

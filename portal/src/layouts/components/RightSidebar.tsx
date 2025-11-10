@@ -33,7 +33,10 @@ export function RightSidebar() {
   return (
     <Box
       component="aside"
-      sx={{ width: { lg: DRAWER_WIDTH }, flexShrink: { lg: 0 } }}
+      sx={{
+        width: { lg: DRAWER_WIDTH },
+        flexShrink: { lg: 0 },
+      }}
     >
       {/* Temporary drawer on all but large */}
       <Drawer

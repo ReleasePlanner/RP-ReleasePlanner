@@ -15,6 +15,7 @@ Descomponer los componentes monolíticos de layout (`MainLayout.tsx`, `HeaderMat
 ### MainLayout.tsx
 
 **Antes** ❌
+
 ```
 - 279 líneas de código
 - Lógica de drawers inline
@@ -24,6 +25,7 @@ Descomponer los componentes monolíticos de layout (`MainLayout.tsx`, `HeaderMat
 ```
 
 **Después** ✅
+
 ```
 - 33 líneas de código (-88% reduction)
 - Composición de componentes
@@ -35,6 +37,7 @@ Descomponer los componentes monolíticos de layout (`MainLayout.tsx`, `HeaderMat
 ### HeaderMaterial.tsx
 
 **Antes** ❌
+
 ```
 - 203 líneas
 - Todo en una función
@@ -43,6 +46,7 @@ Descomponer los componentes monolíticos de layout (`MainLayout.tsx`, `HeaderMat
 ```
 
 **Después** ✅
+
 ```
 - 43 líneas de código principal
 - 3 sub-componentes especializados
@@ -196,25 +200,27 @@ Features:
 
 ## 📐 Comparativa: Líneas de Código
 
-| Componente | Antes | Después | Reducción |
-|-----------|-------|---------|-----------|
-| MainLayout | 279 | 33 | -88% ✅ |
-| HeaderMaterial | 203 | 43 | -79% ✅ |
-| **Total** | **482** | **533* | -10% (+ 9 nuevos) |
+| Componente     | Antes   | Después | Reducción         |
+| -------------- | ------- | ------- | ----------------- |
+| MainLayout     | 279     | 33      | -88% ✅           |
+| HeaderMaterial | 203     | 43      | -79% ✅           |
+| **Total**      | **482** | \*_533_ | -10% (+ 9 nuevos) |
 
-*Incluye 9 nuevos componentes especializados
+\*Incluye 9 nuevos componentes especializados
 
 ---
 
 ## 🎯 Principios Aplicados
 
 ### 1. **Single Responsibility Principle (SRP)**
+
 ```
 ❌ Antes: Una función hacía todo (navs, header, content, footer)
 ✅ Después: Cada componente hace UNA cosa bien
 ```
 
 ### 2. **Component Composition**
+
 ```tsx
 // ✅ AFTER: Composición clara
 <MainLayout>
@@ -227,6 +233,7 @@ Features:
 ```
 
 ### 3. **TypeScript Interfaces**
+
 ```tsx
 // ✅ Todos los componentes tienen props tipadas
 interface LeftDrawerContentProps {
@@ -239,20 +246,22 @@ interface MainContentProps extends PropsWithChildren {
 ```
 
 ### 4. **JSDoc Documentation**
-```tsx
+
+````tsx
 /**
  * LeftDrawerContent Component
  *
  * Displays the navigation menu with links to main sections.
- * 
+ *
  * @example
  * ```tsx
  * <LeftDrawerContent onClose={handleClose} />
  * ```
  */
-```
+````
 
 ### 5. **Reusable Constants**
+
 ```tsx
 // ✅ Exportado para uso en múltiples componentes
 export const DRAWER_WIDTH = 260;
@@ -261,9 +270,13 @@ export const DRAWER_WIDTH = 260;
 ```
 
 ### 6. **Barrel Exports**
+
 ```tsx
 // src/layouts/components/index.ts
-export { LeftDrawerContent, DRAWER_WIDTH as LEFT_DRAWER_WIDTH } from "./LeftDrawerContent";
+export {
+  LeftDrawerContent,
+  DRAWER_WIDTH as LEFT_DRAWER_WIDTH,
+} from "./LeftDrawerContent";
 export { HeaderActions } from "./HeaderActions";
 // ... etc
 ```
@@ -273,6 +286,7 @@ export { HeaderActions } from "./HeaderActions";
 ## 🎨 Minimalismo & Best Practices
 
 ### Mantenido:
+
 - ✅ 100% Material UI (no Tailwind)
 - ✅ Theme integration completa
 - ✅ Responsive design (xs, sm, md, lg)
@@ -281,6 +295,7 @@ export { HeaderActions } from "./HeaderActions";
 - ✅ Transiciones suaves
 
 ### Mejorado:
+
 - ✅ Testabilidad (componentes aislados)
 - ✅ Reusabilidad (constantes compartidas)
 - ✅ Mantenibilidad (SRP)
@@ -292,12 +307,14 @@ export { HeaderActions } from "./HeaderActions";
 ## 🧪 Casos de Uso & Ejemplos
 
 ### Reutilizar LeftDrawerContent fuera de Drawer:
+
 ```tsx
 // ✅ Flexible component
-<LeftDrawerContent onClose={() => console.log('closed')} />
+<LeftDrawerContent onClose={() => console.log("closed")} />
 ```
 
 ### Usar DRAWER_WIDTH en otras secciones:
+
 ```tsx
 import { LEFT_DRAWER_WIDTH } from "@/layouts/components";
 
@@ -305,6 +322,7 @@ sx={{ width: LEFT_DRAWER_WIDTH, ... }}
 ```
 
 ### Montar layout personalizado:
+
 ```tsx
 // ✅ Fácil de componer
 <Box>
@@ -337,22 +355,26 @@ sx={{ width: LEFT_DRAWER_WIDTH, ... }}
 ## 🚀 Beneficios
 
 ### Para Desarrollo
+
 - Código más legible y mantenible
 - Componentes reutilizables
 - Fácil agregar nuevas funciones
 - Mejor para colaboración en equipo
 
 ### Para Testing
+
 - Componentes aislados = fácil de testear
 - Props interfaces definidas
 - Cada componente tiene responsabilidad clara
 
 ### Para Performance
+
 - Componentes más pequeños
 - Mejor tree-shaking en bundlers
 - Potencial para lazy loading
 
 ### Para UX
+
 - Minimalista design mantenido
 - Responsive en todos los devices
 - Transiciones suaves
@@ -395,7 +417,8 @@ src/
 
 **Status**: ✅ **PRODUCTION READY**
 
-**Next Steps**: 
+**Next Steps**:
+
 - Aplicar patrón similar a otros componentes grandes
 - Considerar Storybook para documentación visual
 - Escribir unit tests para cada componente

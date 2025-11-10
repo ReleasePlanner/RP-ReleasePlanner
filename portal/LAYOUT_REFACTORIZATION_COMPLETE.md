@@ -9,6 +9,7 @@
 #### MainLayout.tsx - Transformación Total
 
 **Antes** ❌
+
 ```tsx
 className="p-4 flex items-center justify-between"  // Tailwind
 <span className="font-semibold">Navigation</span>   // No MUI Typography
@@ -17,6 +18,7 @@ className="border-t border-gray-200 bg-white"     // Tailwind
 ```
 
 **Después** ✅
+
 ```tsx
 sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}
 <Typography variant="subtitle2">Navigation</Typography>
@@ -31,11 +33,13 @@ sx={{ borderTop: `1px solid ${theme.palette.divider}` }}  // Theme integration
 ### 1. **Drawer Navigation - Eliminación de Tailwind**
 
 **Left Drawer Header**:
+
 - ✅ Cambio de `className="p-4 flex..."` a `sx={{ p: 2, display: "flex", ... }}`
 - ✅ Reemplazo de `<span>` con `<Typography variant="subtitle2">`
 - ✅ IconButton con tamaño small y tooltip
 
 **Navigation Links**:
+
 - ✅ Conversión a `<Link component={RouterLink}>` de MUI
 - ✅ Propiedades sx personalizadas:
   - `fontSize: "0.875rem"` (text-sm)
@@ -45,6 +49,7 @@ sx={{ borderTop: `1px solid ${theme.palette.divider}` }}  // Theme integration
   - `fontWeight: 600` al hover
 
 **Right Drawer - Context Panel**:
+
 - ✅ Mismo patrón que left drawer
 - ✅ Tipografía consistente
 - ✅ Spacing uniforme
@@ -52,6 +57,7 @@ sx={{ borderTop: `1px solid ${theme.palette.divider}` }}  // Theme integration
 ### 2. **Footer - Modernización MUI**
 
 **Antes**:
+
 ```tsx
 <Box component="footer" className="border-t border-gray-200 bg-white">
   <Container maxWidth="xl" className="py-3 text-sm text-gray-600...">
@@ -62,19 +68,37 @@ sx={{ borderTop: `1px solid ${theme.palette.divider}` }}  // Theme integration
 ```
 
 **Después**:
+
 ```tsx
-<Box component="footer" sx={{ 
-  borderTop: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.paper 
-}}>
-  <Container maxWidth="xl" sx={{ 
-    py: { xs: 1.5, md: 2 },
-    px: { xs: 1.5, sm: 2, md: 3 },
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    fontSize: "0.875rem", color: theme.palette.text.secondary
-  }}>
+<Box
+  component="footer"
+  sx={{
+    borderTop: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+  }}
+>
+  <Container
+    maxWidth="xl"
+    sx={{
+      py: { xs: 1.5, md: 2 },
+      px: { xs: 1.5, sm: 2, md: 3 },
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      fontSize: "0.875rem",
+      color: theme.palette.text.secondary,
+    }}
+  >
     <Typography variant="caption">{year} Release Planner</Typography>
-    <Link href="#top" underline="none" sx={{ /* transiciones */ }}>
+    <Link
+      href="#top"
+      underline="none"
+      sx={
+        {
+          /* transiciones */
+        }
+      }
+    >
       Back to top
     </Link>
   </Container>
@@ -86,19 +110,22 @@ sx={{ borderTop: `1px solid ${theme.palette.divider}` }}  // Theme integration
 #### Container Padding - Antes vs Después
 
 **Antes**:
+
 ```tsx
 sx={{ py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}
 ```
 
 **Después**:
+
 ```tsx
-sx={{ 
+sx={{
   py: { xs: 2, sm: 2.5, md: 3 },
   px: { xs: 1.5, sm: 2, md: 3, lg: 4 }
 }}
 ```
 
 **Beneficios**:
+
 - Mejor uso de espacio en sm (600px-959px)
 - Padding escalonado para lg (1280px+)
 - Mejor experiencia en tablets
@@ -106,11 +133,13 @@ sx={{
 #### Header Toolbar
 
 **Antes**:
+
 ```tsx
 px: { xs: 2, sm: 3 }
 ```
 
 **Después**:
+
 ```tsx
 px: { xs: 1.5, sm: 2, md: 3, lg: 4 }
 ```
@@ -118,6 +147,7 @@ px: { xs: 1.5, sm: 2, md: 3, lg: 4 }
 ### 4. **Theme Integration**
 
 ✅ **Colores via theme.palette**:
+
 - `theme.palette.divider` → bordes
 - `theme.palette.text.primary` → texto principal
 - `theme.palette.text.secondary` → texto secundario
@@ -125,11 +155,13 @@ px: { xs: 1.5, sm: 2, md: 3, lg: 4 }
 - `theme.palette.primary.main` → acentos
 
 ✅ **Transiciones via theme.transitions**:
+
 ```tsx
-transition: theme.transitions.create(["color", "fontWeight"])
+transition: theme.transitions.create(["color", "fontWeight"]);
 ```
 
 ✅ **Breakpoints via MUI**:
+
 - xs, sm, md, lg, xl
 
 ---
@@ -149,13 +181,13 @@ transition: theme.transitions.create(["color", "fontWeight"])
 
 ### Métricas
 
-| Métrica | Valor | Status |
-|---------|-------|--------|
-| TypeScript Errors | 0 | ✅ |
-| Tailwind en Layout | 0% | ✅ |
-| MUI Compliance | 100% | ✅ |
-| Responsive Breakpoints | 4+ | ✅ |
-| Theme Integration | Complete | ✅ |
+| Métrica                | Valor    | Status |
+| ---------------------- | -------- | ------ |
+| TypeScript Errors      | 0        | ✅     |
+| Tailwind en Layout     | 0%       | ✅     |
+| MUI Compliance         | 100%     | ✅     |
+| Responsive Breakpoints | 4+       | ✅     |
+| Theme Integration      | Complete | ✅     |
 
 ---
 
@@ -181,11 +213,13 @@ transition: theme.transitions.create(["color", "fontWeight"])
 ### Estilos por Sección
 
 **Drawers**:
+
 - Header: `sx={{ p: 2, display: "flex", justifyContent: "space-between" }}`
 - Links: `sx={{ fontSize: "0.875rem", fontWeight: 500, ...transitions }}`
 - Transiciones suaves en hover
 
 **Footer**:
+
 - Border: `theme.palette.divider`
 - BG: `theme.palette.background.paper`
 - Padding: `py: { xs: 1.5, md: 2 }, px: { xs: 1.5, sm: 2, md: 3 }`
@@ -195,17 +229,20 @@ transition: theme.transitions.create(["color", "fontWeight"])
 ## 🎨 Design System Aplicado
 
 ### Tipografía
+
 - Header drawers: `Typography variant="subtitle2"` (fontWeight: 600)
 - Links: `fontSize: 0.875rem, fontWeight: 500`
 - Footer: `Typography variant="caption"`
 
 ### Spacing (MUI 8px Base)
+
 - xs: `1.5` → 12px
 - sm: `2` → 16px
 - md: `3` → 24px
 - lg: `4` → 32px
 
 ### Colores (Theme)
+
 - Primary: Links y acentos
 - Text primary: Contenido principal
 - Text secondary: Metadatos y labels
@@ -247,6 +284,7 @@ transition: theme.transitions.create(["color", "fontWeight"])
 **Status**: ✅ COMPLETE & PRODUCTION READY
 
 **El layout ahora es:**
+
 - 🎯 Minimalista
 - 📱 100% Responsivo
 - 🎨 100% Material UI

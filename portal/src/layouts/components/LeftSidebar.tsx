@@ -33,7 +33,10 @@ export function LeftSidebar() {
   return (
     <Box
       component="nav"
-      sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
+      sx={{
+        width: { md: DRAWER_WIDTH },
+        flexShrink: { md: 0 },
+      }}
     >
       {/* Temporary drawer on mobile */}
       <Drawer
