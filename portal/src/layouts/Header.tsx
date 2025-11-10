@@ -56,18 +56,19 @@ export function Header() {
           <HeaderNavButton />
         </Box>
 
-        {/* Center Section - Title (expands to fill middle) */}
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+        {/* Center Section - Title */}
+        <Box sx={{ display: "flex", justifyContent: "center", flexShrink: 0 }}>
           <HeaderTitle />
         </Box>
 
-        {/* Right Section - Actions (always at far right) */}
+        {/* Right Section - Actions (expands to fill right side, buttons aligned far right) */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
+            justifyContent: "flex-end",
             gap: { xs: 0.5, sm: 1 },
-            flexShrink: 0,
+            flex: 1,
           }}
         >
           <HeaderActions />
