@@ -17,6 +17,8 @@ export type PlanMetadata = {
   status: PlanStatus;
   description?: string;
   phases?: PlanPhase[]; // ordered list of phases
+  productId?: string; // ID of the associated product
+  itOwner?: string; // IT Owner responsible for the plan
 };
 
 export type PlanTask = {

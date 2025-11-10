@@ -29,8 +29,14 @@ export function PlanCardLayout({
   return (
     <Card variant="outlined" className="shadow-sm">
       <PlanHeader
+        id={plan.metadata.id}
         name={plan.metadata.name}
         status={plan.metadata.status}
+        startDate={plan.metadata.startDate}
+        endDate={plan.metadata.endDate}
+        productId={plan.metadata.productId}
+        itOwner={plan.metadata.itOwner}
+        description={plan.metadata.description}
         expanded={expanded}
         onToggleExpanded={onToggleExpanded}
       />
