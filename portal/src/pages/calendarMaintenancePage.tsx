@@ -6,7 +6,12 @@
 
 import { useState } from "react";
 import { Box, Typography } from "@mui/material";
-import type { CalendarDay, ViewMode, FilterType, SortBy } from "@/features/calendar/types";
+import type {
+  CalendarDay,
+  ViewMode,
+  FilterType,
+  SortBy,
+} from "@/features/calendar/types";
 import {
   CalendarSelector,
   CalendarDaysList,

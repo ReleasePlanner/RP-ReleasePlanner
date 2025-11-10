@@ -1,168 +1,92 @@
-# 📚 Documentation Index
+# Release Planner Portal
 
-Documentación completa sobre la refactorización e implementación del Builder Pattern para el proyecto Release Planner.
+React + TypeScript + Vite + Tailwind CSS + MUI + Redux Toolkit + TanStack Query.
 
-## 📑 Tabla de Contenidos
+## 📚 Documentation
 
-### 🚀 Inicio Rápido
+Para documentación completa del proyecto, incluyendo refactorización, builder patterns y arquitectura, consulta:
 
-- **[RESPUESTA_A_TU_PREGUNTA.md](./RESPUESTA_A_TU_PREGUNTA.md)** - Respuesta directa a tu sugerencia sobre builder pattern
-- **[BUILDERS_QUICK_STATUS.md](./BUILDERS_QUICK_STATUS.md)** - Estado actual y resumen ejecutivo
+→ **[docs/README.md](./docs/README.md)** - Índice central de documentación
 
-### 📖 Guías Completas
+### Documentación Rápida
 
-- **[COMPONENT_CONFIG_BUILDER.md](./COMPONENT_CONFIG_BUILDER.md)** - Guía de implementación del builder pattern
-- **[BUILDERS_REFACTORING_COMPLETE.md](./BUILDERS_REFACTORING_COMPLETE.md)** - Proceso completo de refactorización
-- **[BUILDER_QUICK_START.md](./BUILDER_QUICK_START.md)** - Guía de uso rápido con ejemplos
+- 🚀 **[Inicio Rápido](./docs/REFACTORING_SUMMARY.md)** - Resumen de cambios recientes
+- 🏗️ **[Arquitectura Builder](./docs/BUILDER_ARCHITECTURE.md)** - Diseño y patrones
+- ❓ **[FAQs](./docs/BUILDERS_FAQ.md)** - Preguntas frecuentes
 
-### 🏗️ Arquitectura y Diseño
+### Código
 
-- **[BUILDER_ARCHITECTURE.md](./BUILDER_ARCHITECTURE.md)** - Diagramas y arquitectura visual
-- **[BUILDER_PATTERN_SUMMARY.md](./BUILDER_PATTERN_SUMMARY.md)** - Resumen del patrón con comparativas
-- **[BUILDERS_VISUAL_SUMMARY.md](./BUILDERS_VISUAL_SUMMARY.md)** - Resumen visual con gráficos
-
-### ❓ Preguntas Frecuentes
-
-- **[BUILDERS_FAQ.md](./BUILDERS_FAQ.md)** - Preguntas frecuentes y respuestas
+- 📁 **[Builders](./src/builders/)** - Implementación de builder patterns
+- 📦 **[Constants](./src/constants/)** - Constantes centralizadas
+- 🎯 **[Features](./src/features/)** - Feature modules
 
 ---
 
-## 🎯 Por dónde empezar
+## Getting started
 
-### Si eres nuevo en el proyecto:
+```bash
+cd portal
+npm install
+npm run dev
+```
 
-1. Lee: **RESPUESTA_A_TU_PREGUNTA.md** (5 min)
-2. Consulta: **BUILDERS_QUICK_STATUS.md** (3 min)
-3. Aprende: **BUILDER_QUICK_START.md** (10 min)
+Build for production:
 
-### Si necesitas entender la arquitectura:
+```bash
+npm run build
+npm run preview
+```
 
-1. Estudia: **BUILDER_ARCHITECTURE.md** (15 min)
-2. Revisa: **COMPONENT_CONFIG_BUILDER.md** (20 min)
-3. Analiza: **BUILDERS_VISUAL_SUMMARY.md** (10 min)
+## Tech stack
 
-### Si tienes dudas:
+- **React (Vite + TS)**: fast dev/build
+- **Tailwind CSS**: utility-first styling; Excel-inspired palette
+- **MUI (Material Design)**: accessible, robust components
+- **Redux Toolkit**: predictable app state
+- **TanStack Query**: server state, caching, smart refetching
+- **React Router**: routing and layouts
 
-- Consulta: **BUILDERS_FAQ.md** (busca tu pregunta)
-
----
-
-## 📦 Estructura del Proyecto
+## Structure
 
 ```
 src/
-├── builders/                          ← Nuevo directorio
-│   ├── componentConfigBuilder.ts      ← Builder function
-│   └── README.md                      ← Documentación local
-│
-├── constants/
-│   ├── index.ts                       ← Re-exports builders
-│   └── ...
-│
-└── features/
-    └── releasePlans/
-        └── components/
-            └── ComponentsTab/
-                └── ComponentsTab.tsx  ← Usa buildComponentConfig()
-
-docs/
-├── index.md                           ← Este archivo
-├── COMPONENT_CONFIG_BUILDER.md
-├── BUILDER_ARCHITECTURE.md
-├── BUILDER_QUICK_START.md
-├── BUILDERS_FAQ.md
-└── ...
+  api/            # Query client, API modules
+  layouts/        # App layouts (MainLayout)
+  pages/          # Route pages (Home)
+  store/          # Redux store and typed hooks
+  assets/         # Static assets
+  theme.ts        # MUI theme (Excel palette)
+  main.tsx        # Providers (Redux, Query, Router, Theme)
+  App.tsx         # Routes
+  index.css       # Tailwind entry
 ```
 
----
+## Layout template
 
-## ✨ Cambios Principales
+The `MainLayout` implements:
 
-### Archivos Creados
+- Header (MUI AppBar) with toggles
+- Left sidebar (navigation): permanent on desktop, drawer on mobile
+- Right sidebar (context): permanent on large screens, drawer otherwise
+- Footer
+- Content container (responsive)
 
-- ✅ `src/builders/componentConfigBuilder.ts` - Builder pattern implementation
-- ✅ `src/builders/README.md` - Documentación local
+Sidebars are controlled via Redux (`ui` slice), ensuring consistent behavior across pages.
 
-### Archivos Modificados
+## Styling
 
-- ✅ `src/constants/index.ts` - Agrega re-exports de builders
-- ✅ `src/features/releasePlans/components/ComponentsTab/ComponentsTab.tsx` - Usa buildComponentConfig()
+Tailwind configured with an Excel-like primary palette (`primary` 50–900, main `#217346`). Use Tailwind utilities for layout and spacing, and MUI components for interactions and accessibility.
 
-### Archivos Eliminados
+Examples:
 
-- ✅ `src/constants/componentConfig.ts` - Movido a builders/
+- Containers: `className="py-6"`
+- Text colors: `text-primary-700`
+- Hover states: `hover:text-primary-600`
 
-### Documentación
+## Best practices
 
-- ✅ 9 archivos de documentación en `docs/`
-
----
-
-## 🔗 Enlaces Útiles
-
-| Recurso                 | Ubicación                                             |
-| ----------------------- | ----------------------------------------------------- |
-| Source code del builder | `src/builders/componentConfigBuilder.ts`              |
-| Uso del builder         | `src/features/releasePlans/components/ComponentsTab/` |
-| Documentación local     | `src/builders/README.md`                              |
-| Todas las constantes    | `src/constants/index.ts`                              |
-
----
-
-## 📊 Estadísticas
-
-| Métrica                    | Valor |
-| -------------------------- | ----- |
-| Archivos .md               | 9     |
-| Total líneas documentación | 2000+ |
-| Archivos refactorizados    | 2     |
-| Líneas de código reducidas | 57    |
-| Directorio builders        | Nuevo |
-| Directorio docs            | Nuevo |
-
----
-
-## ✅ Status de la Refactorización
-
-| Item                        | Status         |
-| --------------------------- | -------------- |
-| Builder creado              | ✅ Completo    |
-| Directorio builders         | ✅ Creado      |
-| Re-exports                  | ✅ Actualizado |
-| ComponentsTab refactorizado | ✅ Completo    |
-| Documentación               | ✅ Completa    |
-| Directorio docs             | ✅ Creado      |
-| Type errors                 | ✅ 0           |
-| Build warnings              | ✅ 0           |
-
----
-
-## 🎓 Patrones Aplicados
-
-- ✅ **Builder Pattern** - Construcción consistente de objetos
-- ✅ **Factory Pattern** - Creación de objetos según parámetros
-- ✅ **Strategy Pattern** - Diferentes enfoques por tipo
-- ✅ **Separation of Concerns** - Lógica separada de presentación
-
----
-
-## 🚀 Próximos Pasos Sugeridos
-
-1. **Code Review** - Revisar cambios con el equipo
-2. **Testing** - Agregar tests para buildComponentConfig()
-3. **Extension** - Considerar aplicar el patrón a otros builders
-4. **Monitoreo** - Verificar performance en producción
-
----
-
-## 📞 Contacto
-
-Para dudas o sugerencias sobre esta refactorización, consulta:
-
-- **BUILDERS_FAQ.md** - Preguntas frecuentes
-- **RESPUESTA_A_TU_PREGUNTA.md** - Contexto original
-
----
-
-**Última actualización:** Noviembre 9, 2025
-**Status:** ✅ Completo y documentado
+- Keep server state in TanStack Query; use Redux for UI/app settings
+- Co-locate components with pages when only used there; otherwise place in `components/`
+- Use feature folders for larger domains (e.g., `features/releases/`)
+- Reuse the `MainLayout` for all routes; render content via React Router `<Outlet />`
+- Prefer MUI components for form controls and accessibility
