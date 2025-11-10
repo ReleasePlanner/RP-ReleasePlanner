@@ -1,19 +1,17 @@
 /**
  * Product Maintenance Page
  *
- * Main page for managing products and their components
+ * Elegant, Material UI compliant page for managing products and their components
  */
 
 import { useMemo, useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
+import { PageLayout, PageToolbar, type ViewMode } from "@/components";
 import { type Product, type ComponentVersion } from "@/features/product/types";
 import {
   ProductCard,
   ComponentEditDialog,
-  ProductToolbar,
-  type ViewMode,
-  type SortBy,
 } from "@/features/product/components";
 
 /**
@@ -77,7 +75,7 @@ export function ProductMaintenancePage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [sortBy, setSortBy] = useState("name");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter and sort products
@@ -174,66 +172,36 @@ export function ProductMaintenancePage() {
 
   const isEditing = editingProduct?.component !== undefined;
 
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        width: "100%",
-        p: { xs: 2, sm: 3, md: 4 },
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            mb: 1,
-            fontWeight: 600,
-            fontSize: { xs: "1.75rem", md: "2.125rem" },
-            color: "text.primary",
-          }}
-        >
-          Product Maintenance
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontSize: { xs: "0.875rem", md: "1rem" } }}
-        >
-          Manage products and their component versions
-        </Typography>
-      </Box>
+  const sortOptions = [
+    { value: "name", label: "Sort: Name" },
+    { value: "date", label: "Sort: Date" },
+  ];
 
-      {/* Toolbar with controls */}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 3,
-          alignItems: "center",
-          flexWrap: "wrap",
-          pb: 2,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <ProductToolbar
+  return (
+    <PageLayout
+      title="Product Maintenance"
+      description="Manage products and their component versions"
+      toolbar={
+        <PageToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           sortBy={sortBy}
+          sortOptions={sortOptions}
           onSortChange={setSortBy}
           searchQuery={searchQuery}
+          searchPlaceholder="Search products..."
           onSearchChange={setSearchQuery}
         />
+      }
+      actions={
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddProduct}
           sx={{
-            ml: "auto",
             textTransform: "none",
             fontWeight: 600,
+            px: 3,
             boxShadow: 2,
             "&:hover": {
               boxShadow: 4,
@@ -242,8 +210,8 @@ export function ProductMaintenancePage() {
         >
           Add Product
         </Button>
-      </Box>
-
+      }
+    >
       {/* Products Grid/List */}
       <Box
         sx={{
@@ -252,13 +220,11 @@ export function ProductMaintenancePage() {
             viewMode === "grid"
               ? {
                   xs: "1fr",
-                  sm: "1fr",
-                  md: "repeat(2, 1fr)",
+                  sm: "repeat(auto-fill, minmax(400px, 1fr))",
                   lg: "repeat(2, 1fr)",
                 }
               : "1fr",
           gap: 3,
-          pb: 4,
         }}
       >
         {filteredAndSortedProducts.map((product) => (
@@ -289,6 +255,6 @@ export function ProductMaintenancePage() {
           }
         }}
       />
-    </Box>
+    </PageLayout>
   );
 }
