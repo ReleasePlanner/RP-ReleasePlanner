@@ -240,7 +240,7 @@ export default function GanttChart({
                   const top = laneTop(idx);
                   const color = ph.color ?? theme.palette.secondary.main;
                   const tooltip = (
-                    <div className="text-[11px] leading-[14px]">
+                    <div className="text-[11px] leading-3.5">
                       <div>
                         <strong>{ph.name}</strong>
                       </div>
@@ -447,7 +447,7 @@ export default function GanttChart({
                 const top = laneTop(idx);
                 const color = ph.color ?? theme.palette.secondary.main;
                 const tooltip = (
-                  <div className="text-[11px] leading-[14px]">
+                  <div className="text-[11px] leading-3.5">
                     <div>
                       <strong>{ph.name}</strong>
                     </div>
