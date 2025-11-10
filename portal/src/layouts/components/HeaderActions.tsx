@@ -74,7 +74,6 @@ export function HeaderActions() {
       {/* Add Release FAB - Hidden on mobile */}
       <Tooltip title="Create new release plan" placement="bottom" arrow>
         <Fab
-          color="secondary"
           size="small"
           aria-label="Create new release plan"
           onClick={handleAddRelease}
@@ -83,6 +82,8 @@ export function HeaderActions() {
             minHeight: 40,
             height: 40,
             width: 40,
+            backgroundColor: alpha(theme.palette.common.white, 0.9),
+            color: theme.palette.primary.main,
             boxShadow: theme.shadows[2],
             transition: theme.transitions.create(
               ["transform", "box-shadow", "background-color"],
@@ -95,7 +96,7 @@ export function HeaderActions() {
             "&:hover": {
               transform: "scale(1.08)",
               boxShadow: theme.shadows[4],
-              backgroundColor: theme.palette.secondary.dark,
+              backgroundColor: theme.palette.common.white,
             },
 
             // Active state
@@ -105,7 +106,7 @@ export function HeaderActions() {
 
             // Focus visible state
             "&:focus-visible": {
-              outline: `2px solid ${theme.palette.secondary.main}`,
+              outline: `2px solid ${theme.palette.common.white}`,
               outlineOffset: "2px",
             },
           }}

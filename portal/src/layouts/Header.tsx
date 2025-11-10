@@ -47,14 +47,14 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
           gap: { xs: 1, sm: 2 },
         }}
       >
         {/* Left Section - Navigation Toggle */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           <HeaderNavButton />
         </Box>
 
@@ -69,6 +69,7 @@ export function Header() {
             display: "flex",
             alignItems: "center",
             gap: isMobile ? 0.5 : 1,
+            flexShrink: 0,
           }}
         >
           <HeaderActions />

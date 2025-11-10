@@ -20,7 +20,7 @@ import {
   alpha,
   useMediaQuery,
 } from "@mui/material";
-import { useLocation, Link as RouterLink } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Close as CloseIcon,
   Dashboard as DashboardIcon,
@@ -103,6 +103,7 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const handleClose = onClose || (() => dispatch(toggleLeftSidebar()));
@@ -118,12 +119,14 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
    * Handle navigation item click
    * On mobile, closes the drawer after navigation
    */
-  const handleNavItemClick = () => {
+  const handleNavItemClick = (path: string) => {
+    // Navigate first
+    navigate(path);
+    // Then close on mobile after a brief delay
     if (isMobile) {
-      // Delay slightly to allow navigation to start before closing
       setTimeout(() => {
         handleClose();
-      }, 100);
+      }, 50);
     }
   };
 
@@ -206,11 +209,9 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
               arrow
             >
               <Button
-                component={RouterLink}
-                to={item.path}
                 fullWidth
                 startIcon={item.icon}
-                onClick={handleNavItemClick}
+                onClick={() => handleNavItemClick(item.path)}
                 sx={{
                   justifyContent: "flex-start",
                   textTransform: "none",

@@ -10,7 +10,7 @@
  * - Proper state management and accessibility
  */
 
-import { Box, Drawer, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Drawer, useTheme } from "@mui/material";
 import { LeftDrawerContent, DRAWER_WIDTH } from "./LeftDrawerContent";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -38,21 +38,12 @@ export function LeftSidebar() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const leftOpen = useAppSelector((s) => s.ui.leftSidebarOpen);
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   /**
    * Handle closing the sidebar
    * Dispatches toggle action to close
    */
   const handleClose = () => dispatch(toggleLeftSidebar());
-
-  /**
-   * Handle backdrop click (clicking outside drawer on mobile)
-   * Automatically closes the drawer
-   */
-  const handleBackdropClick = () => {
-    handleClose();
-  };
 
   return (
     <Box
@@ -65,16 +56,10 @@ export function LeftSidebar() {
       {/* Temporary drawer on mobile - Auto-closes */}
       <Drawer
         variant="temporary"
-        open={leftOpen && isMobile}
-        onClose={handleBackdropClick}
+        open={leftOpen}
+        onClose={handleClose}
         ModalProps={{
           keepMounted: true,
-          onClick: (e) => {
-            // Close on backdrop click (outside the drawer)
-            if (e.target === e.currentTarget) {
-              handleBackdropClick();
-            }
-          },
           sx: {
             backdropFilter: "blur(4px)",
           },
@@ -87,6 +72,7 @@ export function LeftSidebar() {
           "& .MuiDrawer-paper": {
             width: DRAWER_WIDTH,
             boxSizing: "border-box",
+            backgroundColor: theme.palette.background.paper,
           },
         }}
       >
@@ -103,6 +89,7 @@ export function LeftSidebar() {
             width: DRAWER_WIDTH,
             boxSizing: "border-box",
             borderRight: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.paper,
           },
         }}
       >
