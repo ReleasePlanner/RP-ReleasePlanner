@@ -1,34 +1,71 @@
-import {
-  Box,
-  Divider,
-  Drawer,
-  IconButton,
-} from "@mui/material";
+import { Box, Divider, Drawer, IconButton, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleRightSidebar } from "../store/store";
 
-const drawerWidth = 260;
+const DRAWER_WIDTH = 260;
 
+/**
+ * RightSidebar Component
+ *
+ * Responsive right sidebar with context panel.
+ * Temporary modal drawer on mobile/tablet, persistent on large screens.
+ *
+ * Features:
+ * - Context information and details display
+ * - State-managed open/close
+ * - Theme-aware styling
+ * - Responsive layout (temporary on xs-md, persistent on lg+)
+ *
+ * @example
+ * ```tsx
+ * <RightSidebar />
+ * ```
+ */
 export function RightSidebar() {
   const dispatch = useAppDispatch();
   const rightOpen = useAppSelector((s) => s.ui.rightSidebarOpen);
 
-  const rightDrawer = (
-    <Box role="complementary" sx={{ width: drawerWidth }} className="h-full">
-      <Box className="p-4 flex items-center justify-between">
-        <span className="font-semibold text-primary-700">Context</span>
+  const handleClose = () => dispatch(toggleRightSidebar());
+
+  const rightDrawerContent = (
+    <Box
+      role="complementary"
+      sx={{
+        width: DRAWER_WIDTH,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Context
+        </Typography>
         <IconButton
-          aria-label="Hide right sidebar"
+          aria-label="Close context panel"
           size="small"
-          onClick={() => dispatch(toggleRightSidebar())}
+          onClick={handleClose}
+          title="Close sidebar"
         >
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
       <Divider />
-      <Box className="p-4 text-sm text-gray-600">
-        Useful links, activity, filters, or details.
+
+      {/* Content */}
+      <Box sx={{ p: 2 }}>
+        <Typography variant="caption" color="text.secondary">
+          Useful links, activity, filters, or details.
+        </Typography>
       </Box>
     </Box>
   );
@@ -36,20 +73,21 @@ export function RightSidebar() {
   return (
     <Box
       component="aside"
-      sx={{ width: { lg: drawerWidth }, flexShrink: { lg: 0 } }}
+      sx={{ width: { lg: DRAWER_WIDTH }, flexShrink: { lg: 0 } }}
     >
-      {/* Temporary on all but large */}
+      {/* Temporary drawer on mobile/tablet */}
       <Drawer
         variant="temporary"
         anchor="right"
         open={rightOpen}
-        onClose={() => dispatch(toggleRightSidebar())}
+        onClose={handleClose}
         ModalProps={{ keepMounted: true }}
         sx={{ display: { xs: "block", lg: "none" } }}
       >
-        {rightDrawer}
+        {rightDrawerContent}
       </Drawer>
-      {/* Persistent on large screens */}
+
+      {/* Persistent drawer on large screens */}
       <Drawer
         variant="persistent"
         anchor="right"
@@ -57,12 +95,12 @@ export function RightSidebar() {
         sx={{
           display: { xs: "none", lg: "block" },
           "& .MuiDrawer-paper": {
-            width: drawerWidth,
+            width: DRAWER_WIDTH,
             boxSizing: "border-box",
           },
         }}
       >
-        {rightDrawer}
+        {rightDrawerContent}
       </Drawer>
     </Box>
   );
