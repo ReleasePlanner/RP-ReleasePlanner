@@ -114,6 +114,19 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
     return location.pathname === path;
   };
 
+  /**
+   * Handle navigation item click
+   * On mobile, closes the drawer after navigation
+   */
+  const handleNavItemClick = () => {
+    if (isMobile) {
+      // Delay slightly to allow navigation to start before closing
+      setTimeout(() => {
+        handleClose();
+      }, 100);
+    }
+  };
+
   return (
     <Box
       role="navigation"
@@ -197,6 +210,7 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
                 to={item.path}
                 fullWidth
                 startIcon={item.icon}
+                onClick={handleNavItemClick}
                 sx={{
                   justifyContent: "flex-start",
                   textTransform: "none",
