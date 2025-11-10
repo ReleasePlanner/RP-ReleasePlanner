@@ -42,6 +42,8 @@ export function LeftSidebar() {
     { to: "/release-planner", label: "Release Planner" },
     { to: "/product-maintenance", label: "Products" },
     { to: "/features", label: "Features" },
+    { to: "/calendars", label: "Calendars" },
+    { to: "/it-owners", label: "IT Owners" },
   ];
 
   const leftDrawerContent = (
