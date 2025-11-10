@@ -1,5 +1,9 @@
 import { Typography, IconButton, Chip } from "@mui/material";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
+import {
+  LOCAL_PLAN_STATUS_LABELS,
+  LOCAL_PLAN_STATUS_COLORS,
+} from "@/constants";
 import type { PlanStatus } from "../../../types";
 
 export type PlanHeaderProps = {
@@ -20,29 +24,11 @@ export function PlanHeader({
   onToggleExpanded,
 }: PlanHeaderProps) {
   const getStatusColor = (status: PlanStatus) => {
-    switch (status) {
-      case "planned":
-        return "default";
-      case "in_progress":
-        return "primary";
-      case "done":
-        return "success";
-      default:
-        return "default";
-    }
+    return LOCAL_PLAN_STATUS_COLORS[status] || "default";
   };
 
   const getStatusLabel = (status: PlanStatus) => {
-    switch (status) {
-      case "planned":
-        return "Planned";
-      case "in_progress":
-        return "In Progress";
-      case "done":
-        return "Done";
-      default:
-        return status;
-    }
+    return LOCAL_PLAN_STATUS_LABELS[status] || status;
   };
 
   return (

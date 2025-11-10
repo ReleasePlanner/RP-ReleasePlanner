@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Schedule,
 } from "@mui/icons-material";
+import { COMMON_DATA_LABELS, EMPTY_STATE_LABELS } from "@/constants";
 import { DataRow } from "./DataRow";
 
 interface CommonDataPanelProps {
@@ -15,7 +16,7 @@ interface CommonDataPanelProps {
 }
 
 function formatDateRange(startDate: string, endDate: string): string {
-  if (!startDate || !endDate) return "—";
+  if (!startDate || !endDate) return EMPTY_STATE_LABELS.NO_DATA;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -26,7 +27,7 @@ function formatDateRange(startDate: string, endDate: string): string {
 }
 
 function formatDateDisplay(dateStr: string): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return EMPTY_STATE_LABELS.NO_DATA;
 
   try {
     const date = new Date(dateStr);
@@ -48,31 +49,39 @@ export function CommonDataPanel({
 }: CommonDataPanelProps) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-      <DataRow icon={<PersonOutline />} label="Owner" value={owner || "—"} />
+      <DataRow
+        icon={<PersonOutline />}
+        label={COMMON_DATA_LABELS.OWNER}
+        value={owner || EMPTY_STATE_LABELS.NO_DATA}
+      />
 
       <Divider sx={{ my: 1, opacity: 0.6 }} />
 
       <DataRow
         icon={<CalendarToday />}
-        label="Duration"
+        label={COMMON_DATA_LABELS.DURATION}
         value={formatDateRange(startDate, endDate)}
       />
 
       <DataRow
         icon={<Schedule />}
-        label="Start Date"
+        label={COMMON_DATA_LABELS.START_DATE}
         value={formatDateDisplay(startDate)}
       />
 
       <DataRow
         icon={<Schedule />}
-        label="End Date"
+        label={COMMON_DATA_LABELS.END_DATE}
         value={formatDateDisplay(endDate)}
       />
 
       <Divider sx={{ my: 1, opacity: 0.6 }} />
 
-      <DataRow icon={<FolderOpen />} label="Plan ID" value={id || "—"} />
+      <DataRow
+        icon={<FolderOpen />}
+        label={COMMON_DATA_LABELS.PLAN_ID}
+        value={id || EMPTY_STATE_LABELS.NO_DATA}
+      />
     </Box>
   );
 }

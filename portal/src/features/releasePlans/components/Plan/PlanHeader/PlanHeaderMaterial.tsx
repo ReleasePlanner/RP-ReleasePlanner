@@ -11,7 +11,6 @@
  * ✅ Colores del sistema de tema
  */
 
-import React from "react";
 import {
   CardHeader,
   Typography,
@@ -22,13 +21,8 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import type { Theme } from "@mui/material";
-import {
-  ExpandMore,
-  CheckCircleOutline,
-  PlayCircleOutline,
-  PauseCircleOutline,
-} from "@mui/icons-material";
+import { ExpandMore } from "@mui/icons-material";
+import { getStatusConfig } from "../../../utils/statusConfig";
 
 export type PlanStatus = "planned" | "in_progress" | "done" | "paused";
 
@@ -39,51 +33,6 @@ export interface PlanHeaderProps {
   expanded: boolean;
   onToggleExpanded: () => void;
 }
-
-interface StatusConfig {
-  label: string;
-  icon: React.ReactElement;
-  color:
-    | "default"
-    | "primary"
-    | "secondary"
-    | "error"
-    | "info"
-    | "success"
-    | "warning";
-  bgColor: string;
-}
-
-const getStatusConfig = (status: PlanStatus, theme: Theme): StatusConfig => {
-  const configs: Record<PlanStatus, StatusConfig> = {
-    planned: {
-      label: "Planned",
-      icon: <PauseCircleOutline sx={{ fontSize: 14 }} />,
-      color: "default",
-      bgColor: alpha(theme.palette.grey[500], 0.08),
-    },
-    in_progress: {
-      label: "In Progress",
-      icon: <PlayCircleOutline sx={{ fontSize: 14 }} />,
-      color: "primary",
-      bgColor: alpha(theme.palette.primary.main, 0.08),
-    },
-    done: {
-      label: "Completed",
-      icon: <CheckCircleOutline sx={{ fontSize: 14 }} />,
-      color: "success",
-      bgColor: alpha(theme.palette.success.main, 0.08),
-    },
-    paused: {
-      label: "Paused",
-      icon: <PauseCircleOutline sx={{ fontSize: 14 }} />,
-      color: "warning",
-      bgColor: alpha(theme.palette.warning.main, 0.08),
-    },
-  };
-
-  return configs[status];
-};
 
 export function PlanHeader({
   name,

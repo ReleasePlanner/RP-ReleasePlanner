@@ -1,15 +1,9 @@
 import { addDays, daysBetween } from "./date";
 import type { PlanPhase } from "../types";
 import { getNextDistinctColor } from "./colors";
+import { DEFAULT_PHASE_TEMPLATE } from "@/constants";
 
-const DEFAULT_TEMPLATES = [
-  { name: "Discovery" },
-  { name: "Planning" },
-  { name: "Development" },
-  { name: "Testing" },
-  { name: "UAT" },
-  { name: "Release" },
-];
+const DEFAULT_TEMPLATES = DEFAULT_PHASE_TEMPLATE;
 
 export function generatePhases(
   startDate: string,
