@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { useMemo } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Container,
@@ -9,6 +9,9 @@ import {
   Drawer,
   IconButton,
   Tooltip,
+  Typography,
+  Link,
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -21,13 +24,24 @@ export function MainLayout({ children }: PropsWithChildren) {
   const dispatch = useAppDispatch();
   const leftOpen = useAppSelector((s) => s.ui.leftSidebarOpen);
   const rightOpen = useAppSelector((s) => s.ui.rightSidebarOpen);
+  const theme = useTheme();
 
   const year = useMemo(() => new Date().getFullYear(), []);
 
   const leftDrawer = (
-    <Box role="navigation" sx={{ width: drawerWidth }} className="h-full">
-      <Box className="p-4 flex items-center justify-between">
-        <span className="font-semibold text-primary-700">Navigation</span>
+    <Box role="navigation" sx={{ width: drawerWidth, height: "100%" }}>
+      {/* Drawer Header */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Navigation
+        </Typography>
         <Tooltip title="Hide sidebar" placement="right">
           <IconButton
             aria-label="Hide left sidebar"
@@ -39,16 +53,48 @@ export function MainLayout({ children }: PropsWithChildren) {
         </Tooltip>
       </Box>
       <Divider />
-      <Box className="p-4 space-y-2">
+      {/* Navigation Links */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+        }}
+      >
         <Link
-          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
+          component={RouterLink}
           to="/release-planner"
+          underline="none"
+          sx={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+            transition: theme.transitions.create(["color", "fontWeight"]),
+            "&:hover": {
+              color: theme.palette.primary.main,
+              fontWeight: 600,
+            },
+          }}
         >
           Release Planner
         </Link>
         <Link
-          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
+          component={RouterLink}
           to="/product-maintenance"
+          underline="none"
+          sx={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+            transition: theme.transitions.create(["color", "fontWeight"]),
+            "&:hover": {
+              color: theme.palette.primary.main,
+              fontWeight: 600,
+            },
+          }}
         >
           Products
         </Link>
@@ -57,9 +103,19 @@ export function MainLayout({ children }: PropsWithChildren) {
   );
 
   const rightDrawer = (
-    <Box role="complementary" sx={{ width: drawerWidth }} className="h-full">
-      <Box className="p-4 flex items-center justify-between">
-        <span className="font-semibold text-primary-700">Context</span>
+    <Box role="complementary" sx={{ width: drawerWidth, height: "100%" }}>
+      {/* Drawer Header */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Context
+        </Typography>
         <Tooltip title="Hide sidebar" placement="right">
           <IconButton
             aria-label="Hide right sidebar"
@@ -71,7 +127,10 @@ export function MainLayout({ children }: PropsWithChildren) {
         </Tooltip>
       </Box>
       <Divider />
-      <Box className="p-4 text-sm text-gray-600">
+      {/* Drawer Content */}
+      <Box
+        sx={{ p: 2, fontSize: "0.875rem", color: theme.palette.text.secondary }}
+      >
         Useful links, activity, filters, or details.
       </Box>
     </Box>
@@ -132,7 +191,10 @@ export function MainLayout({ children }: PropsWithChildren) {
       >
         <Container
           maxWidth="xl"
-          sx={{ py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}
+          sx={{
+            py: { xs: 2, sm: 2.5, md: 3 },
+            px: { xs: 1.5, sm: 2, md: 3, lg: 4 },
+          }}
         >
           {children ?? <Outlet />}
         </Container>
@@ -173,15 +235,42 @@ export function MainLayout({ children }: PropsWithChildren) {
       </Box>
 
       {/* Footer */}
-      <Box component="footer" className="border-t border-gray-200 bg-white">
+      <Box
+        component="footer"
+        sx={{
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+        }}
+      >
         <Container
           maxWidth="xl"
-          className="py-3 text-sm text-gray-600 flex items-center justify-between"
+          sx={{
+            py: { xs: 1.5, md: 2 },
+            px: { xs: 1.5, sm: 2, md: 3 },
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: "0.875rem",
+            color: theme.palette.text.secondary,
+          }}
         >
-          <span>© {year} Release Planner</span>
-          <a className="hover:text-primary-600" href="#top">
+          <Typography variant="caption" sx={{ fontSize: "inherit" }}>
+            © {year} Release Planner
+          </Typography>
+          <Link
+            href="#top"
+            underline="none"
+            sx={{
+              fontSize: "inherit",
+              color: theme.palette.text.secondary,
+              transition: theme.transitions.create(["color"]),
+              "&:hover": {
+                color: theme.palette.primary.main,
+              },
+            }}
+          >
             Back to top
-          </a>
+          </Link>
         </Container>
       </Box>
     </Box>

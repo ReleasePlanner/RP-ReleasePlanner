@@ -69,8 +69,8 @@ export function HeaderMaterial() {
     >
       <Toolbar
         sx={{
-          minHeight: { xs: 56, sm: 64 },
-          px: { xs: 2, sm: 3 },
+          minHeight: { xs: 56, md: 64 },
+          px: { xs: 1.5, sm: 2, md: 3, lg: 4 },
           gap: 1,
         }}
       >
