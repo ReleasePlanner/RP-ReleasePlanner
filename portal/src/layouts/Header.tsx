@@ -47,7 +47,7 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-start",
+          justifyContent: "space-between",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
           gap: { xs: 1, sm: 2 },
