@@ -44,7 +44,6 @@ export function HeaderNavButton() {
         aria-expanded="false"
         onClick={handleClick}
         sx={{
-          mr: { xs: 1, sm: 2 },
           transition: theme.transitions.create(
             ["background-color", "transform"],
             {
