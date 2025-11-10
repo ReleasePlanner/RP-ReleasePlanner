@@ -3,6 +3,7 @@ import { MainLayout } from "./layouts/MainLayout";
 import ReleasePlanner from "./pages/ReleasePlanner";
 import { ProductMaintenancePage } from "./pages/productMaintenancePage";
 import { FeatureMaintenancePage } from "./pages/featureMaintenancePage";
+import { CalendarMaintenancePage } from "./pages/calendarMaintenancePage";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           element={<ProductMaintenancePage />}
         />
         <Route path="features" element={<FeatureMaintenancePage />} />
+        <Route path="calendars" element={<CalendarMaintenancePage />} />
       </Route>
     </Routes>
   );

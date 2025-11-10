@@ -141,6 +141,24 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
         >
           Features
         </Link>
+        <Link
+          component={RouterLink}
+          to="/calendars"
+          underline="none"
+          sx={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+            transition: theme.transitions.create(["color", "fontWeight"]),
+            "&:hover": {
+              color: theme.palette.primary.main,
+              fontWeight: 600,
+            },
+          }}
+        >
+          Calendars
+        </Link>
       </Box>
     </Box>
   );
