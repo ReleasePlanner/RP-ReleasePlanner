@@ -66,37 +66,45 @@ export function ProductToolbar({
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: { xs: 1, sm: 2, md: 3 },
-        mb: 3,
+        gap: 2,
         flexWrap: "wrap",
-        py: 2,
-        px: 0,
-        borderBottom: `1px solid ${theme.palette.divider}`,
       }}
     >
       {/* View Mode Toggle */}
-      <Box sx={{ display: "flex", gap: 0.5 }}>
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, newMode) => {
-            if (newMode !== null) onViewModeChange(newMode);
-          }}
-          aria-label="view mode"
-          size="small"
-        >
-          <Tooltip title="Grid view">
-            <ToggleButton value="grid" aria-label="grid view">
-              <GridIcon fontSize="small" />
-            </ToggleButton>
-          </Tooltip>
-          <Tooltip title="List view">
-            <ToggleButton value="list" aria-label="list view">
-              <ListIcon fontSize="small" />
-            </ToggleButton>
-          </Tooltip>
-        </ToggleButtonGroup>
-      </Box>
+      <ToggleButtonGroup
+        value={viewMode}
+        exclusive
+        onChange={(_, newMode) => {
+          if (newMode !== null) onViewModeChange(newMode);
+        }}
+        aria-label="view mode"
+        size="small"
+        sx={{
+          "& .MuiToggleButton-root": {
+            px: 1.5,
+            py: 0.75,
+            border: `1px solid ${theme.palette.divider}`,
+            "&.Mui-selected": {
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              "&:hover": {
+                backgroundColor: theme.palette.primary.dark,
+              },
+            },
+          },
+        }}
+      >
+        <Tooltip title="Grid view" arrow placement="top">
+          <ToggleButton value="grid" aria-label="grid view">
+            <GridIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title="List view" arrow placement="top">
+          <ToggleButton value="list" aria-label="list view">
+            <ListIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+      </ToggleButtonGroup>
 
       {/* Sort Dropdown */}
       <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -105,6 +113,14 @@ export function ProductToolbar({
           onChange={(e) => onSortChange(e.target.value as SortBy)}
           displayEmpty
           aria-label="Sort by"
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.divider,
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.primary.main,
+            },
+          }}
         >
           <MenuItem value="name">Sort: Name</MenuItem>
           <MenuItem value="date">Sort: Date</MenuItem>
@@ -121,14 +137,19 @@ export function ProductToolbar({
           input: {
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon fontSize="small" color="action" />
               </InputAdornment>
             ),
           },
         }}
         sx={{
-          flex: { xs: "1 1 100%", sm: "0 1 200px" },
+          flex: { xs: "1 1 100%", sm: "0 1 250px" },
           minWidth: 150,
+          "& .MuiOutlinedInput-root": {
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.primary.main,
+            },
+          },
         }}
       />
     </Box>

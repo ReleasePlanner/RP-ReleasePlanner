@@ -181,23 +181,27 @@ export function ProductMaintenancePage() {
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        py: 0,
-        px: 0,
+        p: { xs: 2, sm: 3, md: 4 },
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: { xs: 1.5, md: 2 } }}>
+      <Box sx={{ mb: 4 }}>
         <Typography
           variant="h4"
           sx={{
             mb: 1,
             fontWeight: 600,
-            fontSize: { xs: "1.5rem", md: "2rem" },
+            fontSize: { xs: "1.75rem", md: "2.125rem" },
+            color: "text.primary",
           }}
         >
           Product Maintenance
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: { xs: "0.875rem", md: "1rem" } }}
+        >
           Manage products and their component versions
         </Typography>
       </Box>
@@ -210,6 +214,8 @@ export function ProductMaintenancePage() {
           mb: 3,
           alignItems: "center",
           flexWrap: "wrap",
+          pb: 2,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <ProductToolbar
@@ -224,7 +230,15 @@ export function ProductMaintenancePage() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddProduct}
-          sx={{ ml: "auto" }}
+          sx={{
+            ml: "auto",
+            textTransform: "none",
+            fontWeight: 600,
+            boxShadow: 2,
+            "&:hover": {
+              boxShadow: 4,
+            },
+          }}
         >
           Add Product
         </Button>
@@ -235,8 +249,16 @@ export function ProductMaintenancePage() {
         sx={{
           display: "grid",
           gridTemplateColumns:
-            viewMode === "grid" ? { xs: "1fr", md: "1fr 1fr" } : "1fr",
+            viewMode === "grid"
+              ? {
+                  xs: "1fr",
+                  sm: "1fr",
+                  md: "repeat(2, 1fr)",
+                  lg: "repeat(2, 1fr)",
+                }
+              : "1fr",
           gap: 3,
+          pb: 4,
         }}
       >
         {filteredAndSortedProducts.map((product) => (
@@ -249,6 +271,7 @@ export function ProductMaintenancePage() {
           />
         ))}
       </Box>
+
       {/* Edit Dialog */}
       <ComponentEditDialog
         open={openDialog}
