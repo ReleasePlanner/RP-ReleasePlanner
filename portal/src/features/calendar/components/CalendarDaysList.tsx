@@ -2,6 +2,7 @@
  * CalendarDaysList Component
  *
  * Displays calendar days with toolbar for filtering and sorting
+ * Component for rendering calendar days in grid or list view
  */
 
 import { useMemo } from "react";
@@ -14,20 +15,15 @@ import type {
   SortBy,
   ViewMode,
 } from "../types";
-import { processDays } from "../utils/calendarUtils";
+import { processDays } from "../utils";
 import { CalendarDayCard } from "./CalendarDayCard";
-import { CalendarToolbar } from "./CalendarToolbar";
 
 interface CalendarDaysListProps {
   calendar: Calendar | undefined;
   viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
   filterType: FilterType;
-  onFilterChange: (type: FilterType) => void;
   sortBy: SortBy;
-  onSortChange: (sort: SortBy) => void;
   searchQuery: string;
-  onSearchChange: (query: string) => void;
   onAddDay: () => void;
   onEditDay: (day: CalendarDay) => void;
   onDeleteDay: (dayId: string) => void;
@@ -36,13 +32,9 @@ interface CalendarDaysListProps {
 export function CalendarDaysList({
   calendar,
   viewMode,
-  onViewModeChange,
   filterType,
-  onFilterChange,
   sortBy,
-  onSortChange,
   searchQuery,
-  onSearchChange,
   onAddDay,
   onEditDay,
   onDeleteDay,
@@ -65,26 +57,11 @@ export function CalendarDaysList({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {/* Toolbar with controls */}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-        }}
-      >
-        <CalendarToolbar
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-          filterType={filterType}
-          onFilterChange={onFilterChange}
-          sortBy={sortBy}
-          onSortChange={onSortChange}
-          searchQuery={searchQuery}
-          onSearchChange={onSearchChange}
-        />
+      {/* Toolbar with controls - Simplified */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+        <Typography variant="caption" color="text.secondary">
+          {processedDays.length} day{processedDays.length !== 1 ? "s" : ""}
+        </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}

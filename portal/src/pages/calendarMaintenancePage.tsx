@@ -13,9 +13,6 @@ import {
   CalendarDayEditDialog,
   useCalendars,
   generateCalendarDayId,
-  type ViewMode,
-  type FilterType,
-  type SortBy,
 } from "@/features/calendar";
 import { MOCK_CALENDARS } from "@/features/calendar/constants";
 
@@ -37,10 +34,6 @@ export function CalendarMaintenancePage() {
 
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [filterType, setFilterType] = useState<FilterType>("all");
-  const [sortBy, setSortBy] = useState<SortBy>("date");
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Handlers
   const handleAddDay = () => {
@@ -157,14 +150,10 @@ export function CalendarMaintenancePage() {
           {/* Calendar Days List */}
           <CalendarDaysList
             calendar={selectedCalendar}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            filterType={filterType}
-            onFilterChange={setFilterType}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            viewMode="grid"
+            filterType="all"
+            sortBy="date"
+            searchQuery=""
             onAddDay={handleAddDay}
             onEditDay={handleEditDay}
             onDeleteDay={handleDeleteDay}
