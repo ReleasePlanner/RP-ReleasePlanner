@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, useTheme, Box, useMediaQuery } from "@mui/material";
+import { AppBar, Toolbar, useTheme, Box } from "@mui/material";
 import { HeaderNavButton, HeaderTitle, HeaderActions } from "./components";
 
 /**
@@ -24,7 +24,6 @@ import { HeaderNavButton, HeaderTitle, HeaderActions } from "./components";
  */
 export function Header() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <AppBar
@@ -47,7 +46,6 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-start",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
           gap: { xs: 1, sm: 2 },
@@ -63,14 +61,13 @@ export function Header() {
           <HeaderTitle />
         </Box>
 
-        {/* Right Section - Actions (pushed to far right with marginLeft: auto) */}
+        {/* Right Section - Actions (always at far right) */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: isMobile ? 0.5 : 1,
+            gap: { xs: 0.5, sm: 1 },
             flexShrink: 0,
-            ml: "auto",
           }}
         >
           <HeaderActions />
