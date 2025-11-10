@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, RefObject } from "react";
+import { useState, useEffect, useCallback, type RefObject } from "react";
 import { PX_PER_DAY } from "../Gantt/constants";
 
 type DragState = {

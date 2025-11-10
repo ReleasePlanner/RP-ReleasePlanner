@@ -5,101 +5,23 @@
  * can be used to filter and display relevant components.
  */
 
-import React from "react";
 import {
   Box,
   Typography,
   Card,
   CardContent,
   Chip,
-  Grid,
   useTheme,
   alpha,
 } from "@mui/material";
-import {
-  Web as WebIcon,
-  PhoneAndroid as MobileIcon,
-  Cloud as ServiceIcon,
-  Dashboard as PortalIcon,
-  API as ApiIcon,
-  Storage as DatabaseIcon,
-} from "@mui/icons-material";
 import { getProductById } from "../../lib/productData";
+import { buildComponentConfig, type ComponentConfig } from "@/constants";
 
 interface ComponentsTabProps {
   selectedProduct?: string;
 }
 
-interface ComponentConfig {
-  name: string;
-  icon: React.ReactElement;
-  color: "primary" | "secondary" | "success" | "info" | "warning";
-  description: string;
-}
-
-const getComponentConfig = (componentName: string): ComponentConfig => {
-  const name = componentName.toLowerCase();
-
-  if (name.includes("web") || name.includes("portal")) {
-    return {
-      name: componentName,
-      icon: <WebIcon />,
-      color: "primary",
-      description: "Frontend web application or portal",
-    };
-  }
-
-  if (name.includes("mobile") || name.includes("app")) {
-    return {
-      name: componentName,
-      icon: <MobileIcon />,
-      color: "secondary",
-      description: "Mobile application",
-    };
-  }
-
-  if (name.includes("service") || name.includes("api")) {
-    return {
-      name: componentName,
-      icon: <ServiceIcon />,
-      color: "success",
-      description: "Backend service or API",
-    };
-  }
-
-  if (name.includes("dashboard")) {
-    return {
-      name: componentName,
-      icon: <PortalIcon />,
-      color: "info",
-      description: "Dashboard or analytics interface",
-    };
-  }
-
-  if (name.includes("gateway")) {
-    return {
-      name: componentName,
-      icon: <ApiIcon />,
-      color: "warning",
-      description: "API Gateway or routing service",
-    };
-  }
-
-  // Default
-  return {
-    name: componentName,
-    icon: <DatabaseIcon />,
-    color: "primary",
-    description: "System component",
-  };
-};
-
-function ComponentCard({
-  config,
-}: {
-  component: string;
-  config: ComponentConfig;
-}) {
+function ComponentCard({ config }: { config: ComponentConfig }) {
   const theme = useTheme();
 
   return (
@@ -223,16 +145,25 @@ export function ComponentsTab({ selectedProduct }: ComponentsTabProps) {
         </Typography>
       </Box>
 
-      <Grid container spacing={2}>
-        {product.components.map((component, index) => {
-          const config = getComponentConfig(component);
-          return (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <ComponentCard component={component} config={config} />
-            </Grid>
-          );
+      {/* Responsive CSS grid to avoid MUI Grid v1/v2 typing differences */}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+          },
+        }}
+      >
+        {(product.components as any[]).map((comp) => {
+          const name = typeof comp === "string" ? comp : comp.name;
+          const key = typeof comp === "string" ? comp : comp.id;
+          const config = buildComponentConfig(name);
+          return <ComponentCard key={key} config={config} />;
         })}
-      </Grid>
+      </Box>
 
       {product.components.length === 0 && (
         <Box

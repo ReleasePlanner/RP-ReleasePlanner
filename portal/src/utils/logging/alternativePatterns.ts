@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Alternative logging patterns without decorators
  * For environments where decorators are not available

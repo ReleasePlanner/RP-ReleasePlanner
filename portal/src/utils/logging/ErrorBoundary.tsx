@@ -24,7 +24,7 @@ interface ErrorBoundaryState {
   errorId?: string;
 }
 
-interface ErrorBoundaryProps {
+export interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const enhancedErrorInfo: ErrorInfo = {
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || "",
       errorBoundary: this.props.component || "ErrorBoundary",
       errorInfo,
     };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Practical examples of optimized logging in action
  * Shows before/after comparisons and real-world usage

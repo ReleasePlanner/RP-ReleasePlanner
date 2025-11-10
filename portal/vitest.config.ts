@@ -5,6 +5,16 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["src/test/setup.ts"],
+    // Reduce parallelism to avoid EMFILE (too many open files) on Windows
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        minThreads: 1,
+        maxThreads: 1,
+      },
+    },
+    maxConcurrency: 1,
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],

@@ -1,8 +1,7 @@
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { addPhase, updatePhase } from "../slice";
 import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
-import { logger, monitoring } from "../../../utils/logging";
 import type { Plan } from "../types";
 
 /**

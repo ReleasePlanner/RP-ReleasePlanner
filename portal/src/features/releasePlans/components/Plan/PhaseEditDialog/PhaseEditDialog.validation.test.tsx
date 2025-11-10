@@ -1,7 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import PhaseEditDialog from './PhaseEditDialog';
+import { render, screen } from "@testing-library/react";
+import PhaseEditDialog from "./PhaseEditDialog";
 
-it('disables Save when end < start and shows helper text', () => {
+it("disables Save when end < start and shows helper text", () => {
   const onSave = vi.fn();
   const onCancel = vi.fn();
   const onStartChange = vi.fn();
@@ -22,9 +22,9 @@ it('disables Save when end < start and shows helper text', () => {
     />
   );
 
-  expect(screen.getByText(/End must be after or equal to Start/i)).toBeInTheDocument();
-  const saveBtn = screen.getByRole('button', { name: /save/i });
+  expect(
+    screen.getByText(/End must be after or equal to Start/i)
+  ).toBeInTheDocument();
+  const saveBtn = screen.getByRole("button", { name: /save/i });
   expect(saveBtn).toBeDisabled();
 });
-
-

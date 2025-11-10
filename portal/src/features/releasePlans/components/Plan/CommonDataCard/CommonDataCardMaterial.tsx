@@ -29,11 +29,15 @@ import {
   Schedule,
 } from "@mui/icons-material";
 
+import type { Product } from "./types";
 export interface CommonDataCardProps {
   owner: string;
   startDate: string;
   endDate: string;
   id: string;
+  selectedProduct?: string;
+  products?: Product[];
+  onProductChange?: (productId: string) => void;
 }
 
 interface DataItemProps {

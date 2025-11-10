@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Grid,
   IconButton,
   Tooltip,
   useTheme,
@@ -121,13 +120,23 @@ export function ComponentsPanel({
 
       {/* Components display */}
       {viewMode === "grid" ? (
-        <Grid container spacing={2}>
+        <Box
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2,1fr)",
+              md: "repeat(3,1fr)",
+            },
+          }}
+        >
           {selectedProduct.components.map((comp) => (
-            <Grid item xs={12} sm={6} md={4} key={comp.id}>
+            <Box key={comp.id}>
               <ComponentCard component={comp} />
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {selectedProduct.components.map((comp) => (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { useTheme } from "@mui/material/styles";
 import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
 import { daysBetween, addDays } from "../../lib/date";
@@ -87,7 +87,8 @@ export default function GanttChart({
   }, []);
 
   // Auto-scroll to today by default
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // Non-null assertions keep refs compatible with hook types expecting HTMLDivElement
+  const containerRef = useRef<HTMLDivElement>(null!);
   const theme = useTheme();
   useEffect(() => {
     const el = containerRef.current;
@@ -111,14 +112,15 @@ export default function GanttChart({
     safeScrollToX(el, left, "auto");
   }, [start, end, days.length, labelWidth, pxPerDay]);
 
-  const contentRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null!);
 
-  const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } = useGanttDragAndDrop({
-    days,
-    onPhaseRangeChange,
-    containerRef,
-    contentRef,
-  });
+  const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } =
+    useGanttDragAndDrop({
+      days,
+      onPhaseRangeChange,
+      containerRef,
+      contentRef,
+    });
 
   const todayIndex = useMemo(() => {
     const t = new Date();

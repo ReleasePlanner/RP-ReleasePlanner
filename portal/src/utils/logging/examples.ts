@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Examples of optimized logging usage
  * Demonstrates concise decorator patterns

@@ -88,7 +88,7 @@ export const logUtils = {
   logComponentLifecycle: (
     componentName: string,
     lifecycle: string,
-    props?: any
+    props?: Record<string, unknown>
   ) => {
     logger.debug(`Component ${componentName} ${lifecycle}`, {
       component: componentName,
@@ -160,10 +160,7 @@ export const loggingConfig = {
    */
   setupDevelopment: () => {
     logger.setLevel(LogLevel.DEBUG);
-    logger.setContext({
-      environment: "development",
-      timestamp: new Date(),
-    });
+    logger.setContext({ timestamp: new Date() });
   },
 
   /**
@@ -171,10 +168,7 @@ export const loggingConfig = {
    */
   setupProduction: () => {
     logger.setLevel(LogLevel.INFO);
-    logger.setContext({
-      environment: "production",
-      timestamp: new Date(),
-    });
+    logger.setContext({ timestamp: new Date() });
   },
 
   /**

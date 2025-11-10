@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Grid,
   IconButton,
   Tooltip,
   useTheme,
@@ -11,9 +10,9 @@ import {
   ViewList as ListViewIcon,
   ViewModule as GridViewIcon,
 } from "@mui/icons-material";
-import { ComponentCard } from "./ComponentCard";
-import { ComponentListItem } from "./ComponentListItem";
-import type { Product, ViewMode } from "../types";
+import { ComponentCard } from "./components/ComponentCard";
+import { ComponentListItem } from "./components/ComponentListItem";
+import type { Product, ViewMode } from "./types";
 
 interface ComponentsPanelProps {
   selectedProduct?: Product;
@@ -121,13 +120,23 @@ export function ComponentsPanel({
 
       {/* Components display */}
       {viewMode === "grid" ? (
-        <Grid container spacing={2}>
+        <Box
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2,1fr)",
+              md: "repeat(3,1fr)",
+            },
+          }}
+        >
           {selectedProduct.components.map((component) => (
-            <Grid item xs={12} sm={6} md={4} key={component.id}>
+            <Box key={component.id}>
               <ComponentCard component={component} />
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {selectedProduct.components.map((component) => (

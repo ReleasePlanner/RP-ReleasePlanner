@@ -13,8 +13,8 @@ import type { PlanTask, PlanPhase } from "../types";
 export function useGanttChart({
   startDate,
   endDate: _endDate,
-  tasks,
-  phases = [],
+  tasks: _tasks,
+  phases: _phases = [],
   onPhaseRangeChange,
 }: {
   startDate: string;
@@ -28,8 +28,8 @@ export function useGanttChart({
   ) => void;
 }) {
   const theme = useTheme();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
+  const contentRef = useRef<HTMLDivElement>(null!);
 
   // Force calendar to full year (Jan 1 to Dec 31) based on plan's start year
   const yearStart = useMemo(() => {
