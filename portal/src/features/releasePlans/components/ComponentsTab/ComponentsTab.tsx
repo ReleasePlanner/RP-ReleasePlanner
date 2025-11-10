@@ -15,7 +15,7 @@ import {
   alpha,
 } from "@mui/material";
 import { getProductById } from "../../lib/productData";
-import { buildComponentConfig, type ComponentConfig } from "@/constants";
+import { buildComponentConfig, type ComponentConfig } from "@/builders";
 
 interface ComponentsTabProps {
   selectedProduct?: string;

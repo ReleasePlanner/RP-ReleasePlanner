@@ -59,13 +59,6 @@ export {
   DEFAULT_FEATURE_VALUES,
 } from "./defaults";
 
-// Component configuration builder
-export {
-  buildComponentConfig,
-  getAvailableComponentTypes,
-  type ComponentConfig,
-} from "./componentConfig";
-
 // Common UI labels and icons
 export {
   COMMON_DATA_LABELS,
