@@ -154,10 +154,11 @@ export function ProductMaintenancePage() {
         height: "100%",
         width: "100%",
         p: { xs: 2, sm: 3, md: 4 },
+        pt: 0,
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: { xs: 3, md: 4 } }}>
+      <Box sx={{ mb: { xs: 2, md: 3 } }}>
         <Typography
           variant="h4"
           sx={{
