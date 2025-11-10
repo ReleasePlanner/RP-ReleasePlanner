@@ -262,7 +262,8 @@ docs/                            ← NUEVO directorio
 
 ### Product Maintenance
 
-**[PRODUCT_MAINTENANCE.md](./PRODUCT_MAINTENANCE.md)** - Gestión de Productos y Versiones
+**[PRODUCT_MAINTENANCE.md](./PRODUCT_MAINTENANCE.md)** - Guía de la funcionalidad
+**[REFACTOR_PRODUCT_MAINTENANCE.md](./REFACTOR_PRODUCT_MAINTENANCE.md)** - Refactorización y componentes
 
 **Características:**
 
@@ -271,15 +272,16 @@ docs/                            ← NUEVO directorio
 - Tipos de componentes: Web, Services, Mobile
 - Tracking: Versión actual vs anterior
 - Interface intuitiva con MUI + Tailwind
+- **Componentes reutilizables** (ProductCard, ComponentsTable, ComponentEditDialog)
 
 **Ruta:** `/product-maintenance`
 
-**Archivos:**
+**Estructura:**
 
 - `src/features/productMaintenance/types.ts` - Definiciones de tipos
 - `src/features/productMaintenance/constants.ts` - Configuración
-- `src/features/productMaintenance/ProductMaintenancePage.tsx` - Página principal
-- `src/features/productMaintenance/index.ts` - Barrel export
+- `src/features/productMaintenance/components/` - Componentes reutilizables
+- `src/pages/productMaintenancePage.tsx` - Página principal
 
 ---
 
@@ -293,6 +295,7 @@ docs/                            ← NUEVO directorio
 | **Arquitectura**        | `docs/BUILDER_ARCHITECTURE.md`           |
 | **FAQs**                | `docs/BUILDERS_FAQ.md`                   |
 | **Product Maintenance** | `docs/PRODUCT_MAINTENANCE.md`            |
+| **PM Refactorización**  | `docs/REFACTOR_PRODUCT_MAINTENANCE.md`   |
 
 ---
 
