@@ -24,3 +24,4 @@ export { MainContent } from "./MainContent";
 export { HeaderActions } from "./HeaderActions";
 export { HeaderTitle } from "./HeaderTitle";
 export { HeaderNavButton } from "./HeaderNavButton";
+export { ThemeToggle } from "./ThemeToggle";

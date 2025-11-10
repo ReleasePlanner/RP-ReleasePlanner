@@ -5,6 +5,7 @@ import { releasePlansReducer } from "../features/releasePlans/slice";
 type UiState = {
   leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
+  darkMode: boolean;
   planLeftPercentByPlanId?: Record<string, number>;
   planExpandedByPlanId?: Record<string, boolean>;
 };
@@ -12,6 +13,7 @@ type UiState = {
 const initialUiState: UiState = {
   leftSidebarOpen: true,
   rightSidebarOpen: false,
+  darkMode: false,
   planLeftPercentByPlanId: {},
   planExpandedByPlanId: {},
 };
@@ -31,6 +33,9 @@ const uiSlice = createSlice({
     },
     toggleRightSidebar(state) {
       state.rightSidebarOpen = !state.rightSidebarOpen;
+    },
+    toggleDarkMode(state) {
+      state.darkMode = !state.darkMode;
     },
     setPlanLeftPercent(
       state,
@@ -58,6 +63,7 @@ export const {
   setRightSidebarOpen,
   toggleLeftSidebar,
   toggleRightSidebar,
+  toggleDarkMode,
   setPlanLeftPercent,
   setPlanExpanded,
 } = uiSlice.actions;
