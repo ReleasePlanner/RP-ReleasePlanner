@@ -1,6 +1,7 @@
 # 🚀 Component Config Builder - Quick Reference
 
 ## Import
+
 ```typescript
 import { buildComponentConfig, type ComponentConfig } from "@/constants";
 ```
@@ -8,18 +9,18 @@ import { buildComponentConfig, type ComponentConfig } from "@/constants";
 ## Usage
 
 ### Basic Usage
+
 ```typescript
 const config = buildComponentConfig("User Portal");
 ```
 
 ### In Components
+
 ```typescript
 function MyComponent() {
-  const configs = components.map(comp => 
-    buildComponentConfig(comp.name)
-  );
-  
-  return configs.map(config => (
+  const configs = components.map((comp) => buildComponentConfig(comp.name));
+
+  return configs.map((config) => (
     <ComponentCard key={config.name} config={config} />
   ));
 }
@@ -28,12 +29,15 @@ function MyComponent() {
 ## Available Builder Functions
 
 ### `buildComponentConfig(componentName: string): ComponentConfig`
+
 Constructs a ComponentConfig object from a component name.
 
 **Parameters:**
+
 - `componentName` (string) - Name of the component
 
 **Returns:**
+
 ```typescript
 {
   name: string;
@@ -44,19 +48,22 @@ Constructs a ComponentConfig object from a component name.
 ```
 
 **Examples:**
+
 ```typescript
-buildComponentConfig("User Portal")
-buildComponentConfig("Mobile App")
-buildComponentConfig("API Service")
-buildComponentConfig("Analytics Dashboard")
+buildComponentConfig("User Portal");
+buildComponentConfig("Mobile App");
+buildComponentConfig("API Service");
+buildComponentConfig("Analytics Dashboard");
 ```
 
 ---
 
 ### `getAvailableComponentTypes(): Record<string, ComponentTypeConfig>`
+
 Get all available component types for documentation or validation.
 
 **Returns:**
+
 ```typescript
 {
   web: { keywords: [...], color: "...", description: "..." },
@@ -68,6 +75,7 @@ Get all available component types for documentation or validation.
 ```
 
 **Usage:**
+
 ```typescript
 const types = getAvailableComponentTypes();
 
@@ -83,27 +91,28 @@ Object.entries(types).forEach(([type, config]) => {
 
 The builder uses keyword matching to determine component type:
 
-| Type | Keywords | Icon | Color | Description |
-|------|----------|------|-------|-------------|
-| **web** | web, portal | WebIcon | primary | Frontend web application |
-| **mobile** | mobile, app | MobileIcon | secondary | Mobile application |
-| **service** | service, api | ServiceIcon | success | Backend service or API |
-| **dashboard** | dashboard | PortalIcon | info | Dashboard interface |
-| **gateway** | gateway | ApiIcon | warning | API Gateway service |
-| **default** | *(any other)* | DatabaseIcon | primary | System component |
+| Type          | Keywords      | Icon         | Color     | Description              |
+| ------------- | ------------- | ------------ | --------- | ------------------------ |
+| **web**       | web, portal   | WebIcon      | primary   | Frontend web application |
+| **mobile**    | mobile, app   | MobileIcon   | secondary | Mobile application       |
+| **service**   | service, api  | ServiceIcon  | success   | Backend service or API   |
+| **dashboard** | dashboard     | PortalIcon   | info      | Dashboard interface      |
+| **gateway**   | gateway       | ApiIcon      | warning   | API Gateway service      |
+| **default**   | _(any other)_ | DatabaseIcon | primary   | System component         |
 
 ---
 
 ## Real-World Examples
 
 ### Example 1: Component Grid
+
 ```typescript
 import { buildComponentConfig } from "@/constants";
 
 function ComponentGrid({ components }: { components: string[] }) {
   return (
     <Grid container spacing={2}>
-      {components.map(name => {
+      {components.map((name) => {
         const config = buildComponentConfig(name);
         return (
           <Grid item xs={12} sm={6} md={4} key={name}>
@@ -125,10 +134,11 @@ function ComponentGrid({ components }: { components: string[] }) {
 ```
 
 ### Example 2: Validation Dropdown
+
 ```typescript
 function ComponentTypeSelector() {
   const types = getAvailableComponentTypes();
-  
+
   return (
     <Select>
       {Object.entries(types).map(([type, config]) => (
@@ -142,10 +152,11 @@ function ComponentTypeSelector() {
 ```
 
 ### Example 3: Component Status Badge
+
 ```typescript
 function ComponentBadge({ componentName }: { componentName: string }) {
   const config = buildComponentConfig(componentName);
-  
+
   return (
     <Chip
       icon={config.icon}
@@ -169,7 +180,7 @@ import { type ComponentConfig } from "@/constants";
 // Type-safe function
 function handleComponent(config: ComponentConfig) {
   const { name, icon, color, description } = config;
-  
+
   // All properties are type-checked
   console.log(`${name} is ${description}`);
 }
@@ -197,8 +208,9 @@ const COMPONENT_TYPE_MAP = {
 ```
 
 3. Use immediately:
+
 ```typescript
-buildComponentConfig("S3 Bucket")  // Matches "storage" type
+buildComponentConfig("S3 Bucket"); // Matches "storage" type
 ```
 
 ---
@@ -215,9 +227,10 @@ buildComponentConfig("S3 Bucket")  // Matches "storage" type
 ## Common Patterns
 
 ### Filter by type
+
 ```typescript
 function filterByType(components: string[], type: string) {
-  return components.filter(name => {
+  return components.filter((name) => {
     const config = buildComponentConfig(name);
     return config.description.includes(type);
   });
@@ -225,10 +238,11 @@ function filterByType(components: string[], type: string) {
 ```
 
 ### Group by color
+
 ```typescript
 function groupByColor(components: string[]) {
   const groups: Record<string, string[]> = {};
-  components.forEach(name => {
+  components.forEach((name) => {
     const config = buildComponentConfig(name);
     groups[config.color] ??= [];
     groups[config.color].push(config.name);
@@ -238,10 +252,11 @@ function groupByColor(components: string[]) {
 ```
 
 ### Create icon map
+
 ```typescript
 function createIconMap(components: string[]) {
   return Object.fromEntries(
-    components.map(name => {
+    components.map((name) => {
       const config = buildComponentConfig(name);
       return [name, config.icon];
     })
@@ -290,4 +305,3 @@ describe("buildComponentConfig", () => {
 - 📚 [Full Documentation](./COMPONENT_CONFIG_BUILDER.md)
 - 📋 [Constants Guide](./src/constants/README.md)
 - 🔗 [Source Code](./src/constants/componentConfig.ts)
-

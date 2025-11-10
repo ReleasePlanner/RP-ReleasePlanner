@@ -259,6 +259,7 @@ Consumer gets fully typed object
 ## 🚀 Usage Patterns
 
 ### Pattern 1: Simple Mapping
+
 ```
 components: string[]
     ↓
@@ -270,6 +271,7 @@ render <ComponentCard config={config} />
 ```
 
 ### Pattern 2: Filtering
+
 ```
 components: string[]
     ↓
@@ -279,6 +281,7 @@ filtered: string[]
 ```
 
 ### Pattern 3: Grouping
+
 ```
 components: string[]
     ↓
@@ -292,6 +295,7 @@ groups: Record<Color, ComponentConfig[]>
 ## 📈 Scalability
 
 ### Current State (5 types)
+
 ```
 COMPONENT_TYPE_MAP = {
   web: {...},      ─┐
@@ -303,6 +307,7 @@ COMPONENT_TYPE_MAP = {
 ```
 
 ### Future Growth
+
 ```
 If need to add 10 more types:
 ├─ Edit: COMPONENT_TYPE_MAP only
@@ -362,18 +367,17 @@ buildComponentConfig()
 
 ## 📊 Summary Chart
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Code Location** | ComponentsTab.tsx | componentConfig.ts |
-| **Lines** | ~60 | ~130 (but reusable) |
-| **Reusable** | ❌ No | ✅ Yes |
-| **Testable** | ⚠️ Hard | ✅ Easy |
-| **Extendable** | ⚠️ Difficult | ✅ Simple |
-| **Maintainable** | ❌ Low | ✅ High |
-| **Follows SOLID** | ❌ Partial | ✅ Full |
-| **Documentation** | ❌ None | ✅ Complete |
+| Aspect            | Before            | After               |
+| ----------------- | ----------------- | ------------------- |
+| **Code Location** | ComponentsTab.tsx | componentConfig.ts  |
+| **Lines**         | ~60               | ~130 (but reusable) |
+| **Reusable**      | ❌ No             | ✅ Yes              |
+| **Testable**      | ⚠️ Hard           | ✅ Easy             |
+| **Extendable**    | ⚠️ Difficult      | ✅ Simple           |
+| **Maintainable**  | ❌ Low            | ✅ High             |
+| **Follows SOLID** | ❌ Partial        | ✅ Full             |
+| **Documentation** | ❌ None           | ✅ Complete         |
 
 ---
 
 **Esta arquitectura permite que el código sea escalable, mantenible y preparado para cambios futuros.** 🎯
-

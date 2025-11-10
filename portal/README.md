@@ -2,6 +2,26 @@
 
 React + TypeScript + Vite + Tailwind CSS + MUI + Redux Toolkit + TanStack Query.
 
+## 📚 Documentation
+
+Para documentación completa del proyecto, incluyendo refactorización, builder patterns y arquitectura, consulta:
+
+→ **[docs/README.md](./docs/README.md)** - Índice central de documentación
+
+### Documentación Rápida
+
+- 🚀 **[Inicio Rápido](./docs/REFACTORING_SUMMARY.md)** - Resumen de cambios recientes
+- 🏗️ **[Arquitectura Builder](./docs/BUILDER_ARCHITECTURE.md)** - Diseño y patrones
+- ❓ **[FAQs](./docs/BUILDERS_FAQ.md)** - Preguntas frecuentes
+
+### Código
+
+- 📁 **[Builders](./src/builders/)** - Implementación de builder patterns
+- 📦 **[Constants](./src/constants/)** - Constantes centralizadas
+- 🎯 **[Features](./src/features/)** - Feature modules
+
+---
+
 ## Getting started
 
 ```bash
@@ -70,4 +90,3 @@ Examples:
 - Use feature folders for larger domains (e.g., `features/releases/`)
 - Reuse the `MainLayout` for all routes; render content via React Router `<Outlet />`
 - Prefer MUI components for form controls and accessibility
-
