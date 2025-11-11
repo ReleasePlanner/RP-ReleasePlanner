@@ -106,50 +106,60 @@ export default function PlanLeftPane({
           scrollButtons="auto"
           allowScrollButtonsMobile
           sx={{
-            minHeight: 48,
+            minHeight: 40,
+            "& .MuiTabs-flexContainer": {
+              gap: 0.5,
+            },
             "& .MuiTab-root": {
-              minHeight: 48,
-              py: 1,
-              px: 2,
+              minHeight: 40,
+              minWidth: "auto",
+              py: 0.75,
+              px: { xs: 1.5, sm: 2 },
               textTransform: "none",
               fontWeight: 500,
-              fontSize: "0.875rem",
+              fontSize: { xs: "0.8125rem", sm: "0.875rem" },
               color: "text.secondary",
+              letterSpacing: "0.01em",
               "&.Mui-selected": {
                 color: "primary.main",
+                fontWeight: 600,
+              },
+              "& .MuiTab-iconWrapper": {
+                marginRight: { xs: 0.5, sm: 0.75 },
+                marginBottom: 0,
               },
             },
             "& .MuiTabs-indicator": {
-              height: 3,
+              height: 2,
             },
           }}
         >
           <Tab
-            icon={<InfoIcon sx={{ fontSize: 18 }} />}
+            icon={<InfoIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
             iconPosition="start"
             label="Data"
             {...a11yProps(0)}
           />
           <Tab
-            icon={<ExtensionIcon sx={{ fontSize: 18 }} />}
+            icon={<ExtensionIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
             iconPosition="start"
             label="Features"
             {...a11yProps(1)}
           />
           <Tab
-            icon={<InventoryIcon sx={{ fontSize: 18 }} />}
+            icon={<InventoryIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
             iconPosition="start"
             label="Components"
             {...a11yProps(2)}
           />
           <Tab
-            icon={<CalendarIcon sx={{ fontSize: 18 }} />}
+            icon={<CalendarIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
             iconPosition="start"
             label="Calendars"
             {...a11yProps(3)}
           />
           <Tab
-            icon={<LinkIcon sx={{ fontSize: 18 }} />}
+            icon={<LinkIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
             iconPosition="start"
             label="References"
             {...a11yProps(4)}
