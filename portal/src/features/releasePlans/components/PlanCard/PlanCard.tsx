@@ -203,9 +203,6 @@ export default function PlanCard({ plan }: PlanCardProps) {
             startDate={metadata.startDate}
             endDate={metadata.endDate}
             id={metadata.id}
-            phases={metadata.phases || []}
-            onAddPhase={() => setPhaseOpen(true)}
-            onEditPhase={openEditOptimized}
             selectedProduct={selectedProduct}
             products={products}
             onProductChange={handleProductChange}

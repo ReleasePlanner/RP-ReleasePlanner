@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Tabs, Tab, Stack } from "@mui/material";
+import { Box, Tabs, Tab } from "@mui/material";
 import {
   Info as InfoIcon,
   Extension as ExtensionIcon,
@@ -8,8 +8,6 @@ import {
   Link as LinkIcon,
 } from "@mui/icons-material";
 import { CommonDataCard } from "../CommonDataCard";
-import PhasesList from "../PhasesList/PhasesList";
-import type { PlanPhase } from "../../../types";
 import type { Product } from "../CommonDataCard/types";
 
 export type PlanLeftPaneProps = {
@@ -17,9 +15,6 @@ export type PlanLeftPaneProps = {
   startDate: string;
   endDate: string;
   id: string;
-  phases: PlanPhase[];
-  onAddPhase: () => void;
-  onEditPhase: (id: string) => void;
   selectedProduct: string;
   products: Product[];
   onProductChange: (productId: string) => void;
@@ -68,9 +63,6 @@ export default function PlanLeftPane({
   startDate,
   endDate,
   id,
-  phases,
-  onAddPhase,
-  onEditPhase,
   selectedProduct,
   products,
   onProductChange,
@@ -175,7 +167,7 @@ export default function PlanLeftPane({
       >
         {/* Tab 1: Common Data */}
         <TabPanel value={tabValue} index={0}>
-          <Stack spacing={2} sx={{ p: 2 }}>
+          <Box sx={{ p: 2 }}>
             <CommonDataCard
               owner={owner}
               startDate={startDate}
@@ -185,12 +177,7 @@ export default function PlanLeftPane({
               products={products}
               onProductChange={onProductChange}
             />
-            <PhasesList
-              phases={phases}
-              onAdd={onAddPhase}
-              onEdit={onEditPhase}
-            />
-          </Stack>
+          </Box>
         </TabPanel>
 
         {/* Tab 2: Features */}
