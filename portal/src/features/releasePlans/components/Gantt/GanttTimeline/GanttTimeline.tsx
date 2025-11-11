@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTheme } from "@mui/material/styles";
 import {
   buildDaysArray,
   buildMonthSegments,
@@ -12,6 +13,7 @@ import {
   WeeksRow,
   DaysRow,
   TIMELINE_DIMENSIONS,
+  getTimelineColors,
 } from "./index";
 import type { PlanMilestone } from "../../../types";
 
@@ -34,6 +36,9 @@ export default function GanttTimeline({
   onJumpToToday,
   onDayClick, // Add this
 }: GanttTimelineProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+
   // Use start time (number) in deps so changes to the Date value are detected
   const startTime = start instanceof Date ? start.getTime() : 0;
 
@@ -65,8 +70,12 @@ export default function GanttTimeline({
 
   return (
     <div
-      className="sticky top-0 z-10 bg-white border-b border-gray-200"
-      style={{ height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT }}
+      className="sticky top-0 z-10 border-b"
+      style={{
+        height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
+        backgroundColor: colors.BACKGROUND,
+        borderColor: colors.BORDER,
+      }}
     >
       {/* Today marker */}
       {shouldShowTodayMarker && (

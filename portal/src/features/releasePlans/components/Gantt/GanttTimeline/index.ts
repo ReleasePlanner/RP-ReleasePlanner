@@ -13,4 +13,5 @@ export {
   TIMELINE_DIMENSIONS,
   TIMELINE_COLORS,
   TIMELINE_POSITIONS,
+  getTimelineColors,
 } from "./constants";

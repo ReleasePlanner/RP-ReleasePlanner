@@ -1,4 +1,5 @@
-import { TIMELINE_COLORS, TIMELINE_POSITIONS } from "./constants";
+import { getTimelineColors, TIMELINE_POSITIONS } from "./constants";
+import { useTheme } from "@mui/material/styles";
 
 export type TodayMarkerProps = {
   todayIndex: number;
@@ -11,6 +12,9 @@ export function TodayMarker({
   pxPerDay,
   totalHeight,
 }: TodayMarkerProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+  
   return (
     <div
       className="absolute top-0"
@@ -23,7 +27,7 @@ export function TodayMarker({
     >
       <div
         className="h-full"
-        style={{ borderLeft: `2px solid ${TIMELINE_COLORS.TODAY_MARKER}` }}
+        style={{ borderLeft: `2px solid ${colors.TODAY_MARKER}` }}
       />
       <div
         className="absolute left-1/2 -translate-x-1/2"
@@ -31,7 +35,12 @@ export function TodayMarker({
       >
         <span
           aria-hidden="true"
-          className="text-[10px] px-1 py-0.5 rounded bg-gray-100 border border-gray-300 text-gray-700"
+          className="text-[10px] px-1 py-0.5 rounded border"
+          style={{
+            backgroundColor: colors.BUTTON_BG,
+            borderColor: colors.BORDER,
+            color: colors.BUTTON_TEXT,
+          }}
         >
           Today
         </span>
@@ -45,6 +54,9 @@ export type TodayButtonProps = {
 };
 
 export function TodayButton({ onJumpToToday }: TodayButtonProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+  
   return (
     <div
       className="absolute"
@@ -55,7 +67,17 @@ export function TodayButton({ onJumpToToday }: TodayButtonProps) {
     >
       <button
         aria-label="Jump to today"
-        className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+        className="text-xs px-2 py-1 rounded transition-colors"
+        style={{
+          backgroundColor: colors.BUTTON_BG,
+          color: colors.BUTTON_TEXT,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = colors.BUTTON_BG_HOVER;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = colors.BUTTON_BG;
+        }}
         onClick={onJumpToToday}
         type="button"
       >
@@ -66,6 +88,9 @@ export function TodayButton({ onJumpToToday }: TodayButtonProps) {
 }
 
 export function TimelineLegend() {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+  
   return (
     <div
       className="absolute"
@@ -74,13 +99,20 @@ export function TimelineLegend() {
         right: TIMELINE_POSITIONS.LEGEND.right,
       }}
     >
-      <div className="flex items-center gap-3 text-[10px] text-gray-600 bg-white/80 rounded border border-gray-200 px-2 py-1">
+      <div 
+        className="flex items-center gap-3 text-[10px] rounded border px-2 py-1"
+        style={{
+          backgroundColor: colors.BACKGROUND_OVERLAY,
+          borderColor: colors.BORDER,
+          color: colors.TEXT_SECONDARY,
+        }}
+      >
         <div className="flex items-center gap-1">
           <span
             className="inline-block w-3 h-3 rounded-sm border"
             style={{
-              backgroundColor: TIMELINE_COLORS.WEEKEND_BG,
-              borderColor: TIMELINE_COLORS.WEEKEND_BORDER,
+              backgroundColor: colors.WEEKEND_BG,
+              borderColor: colors.WEEKEND_BORDER,
             }}
           />
           <span>Weekend</span>
@@ -90,7 +122,7 @@ export function TimelineLegend() {
             className="inline-block h-3"
             style={{
               width: 0,
-              borderLeft: `2px dashed ${TIMELINE_COLORS.TODAY_MARKER}`,
+              borderLeft: `2px dashed ${colors.TODAY_MARKER}`,
             }}
           />
           <span>Current day</span>

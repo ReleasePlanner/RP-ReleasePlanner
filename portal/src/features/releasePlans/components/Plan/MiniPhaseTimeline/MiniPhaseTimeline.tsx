@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useTheme, alpha } from "@mui/material";
 import type { PlanPhase } from "../../../types";
 import {
   daysBetween,
@@ -10,7 +11,7 @@ import {
 type MiniPhaseTimelineProps = {
   phase: PlanPhase;
   calendarStart: string;
-  calendarEnd: string;
+  // Remove calendarEnd if not needed
   pxPerDay?: number;
   height?: number;
   onRangeChange?: (start: string, end: string) => void;
@@ -19,7 +20,7 @@ type MiniPhaseTimelineProps = {
 export default function MiniPhaseTimeline({
   phase,
   calendarStart,
-  calendarEnd: _calendarEnd,
+  // Remove calendarEnd from destructuring
   pxPerDay = 6,
   height = 10,
   onRangeChange,
@@ -109,19 +110,33 @@ export default function MiniPhaseTimeline({
     };
   }, [drag, clientXToDayIndex, days, onRangeChange]);
 
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const backgroundColor = isDark ? theme.palette.background.paper : "#ffffff";
+  const textPrimary = isDark ? "rgba(255, 255, 255, 0.95)" : "#374151";
+  const textSecondary = isDark ? "rgba(255, 255, 255, 0.75)" : "#6b7280";
+  const textMuted = isDark ? "rgba(255, 255, 255, 0.65)" : "#9ca3af";
+  const borderLight = isDark ? "rgba(255, 255, 255, 0.2)" : "#e5e7eb";
+  const borderMedium = isDark ? "rgba(255, 255, 255, 0.15)" : "#d1d5db";
+
   return (
     <div className="overflow-auto" ref={containerRef}>
-      <div className="relative bg-white" style={{ minWidth: contentWidth }}>
+      <div
+        className="relative"
+        style={{ minWidth: contentWidth, backgroundColor }}
+      >
         {/* Months */}
         <div className="relative" style={{ height: monthsRow }}>
           {monthSegments.map((m, idx) => (
             <div
               key={idx}
-              className="absolute top-0 text-[10px] text-gray-700 flex items-center justify-center border-r border-gray-200"
+              className="absolute top-0 text-[10px] flex items-center justify-center border-r"
               style={{
                 left: m.startIndex * pxPerDay,
                 width: m.length * pxPerDay,
                 height: monthsRow,
+                color: textPrimary,
+                borderColor: borderLight,
               }}
             >
               {m.label}
@@ -133,11 +148,13 @@ export default function MiniPhaseTimeline({
           {weekSegments.map((w, idx) => (
             <div
               key={idx}
-              className="absolute top-0 text-[9px] text-gray-500 flex items-center justify-center border-r border-gray-100"
+              className="absolute top-0 text-[9px] flex items-center justify-center border-r"
               style={{
                 left: w.startIndex * pxPerDay,
                 width: w.length * pxPerDay,
                 height: weeksRow,
+                color: textSecondary,
+                borderColor: borderMedium,
               }}
             >
               {w.label}
@@ -149,8 +166,14 @@ export default function MiniPhaseTimeline({
           {days.map((d, i) => (
             <div
               key={i}
-              className="absolute top-0 border-r border-gray-100 text-[9px] text-gray-400 flex items-center justify-center"
-              style={{ left: i * pxPerDay, width: pxPerDay, height: daysRow }}
+              className="absolute top-0 border-r text-[9px] flex items-center justify-center"
+              style={{
+                left: i * pxPerDay,
+                width: pxPerDay,
+                height: daysRow,
+                color: textMuted,
+                borderColor: borderMedium,
+              }}
               title={d.toISOString().slice(0, 10)}
             >
               {d.getDate()}
@@ -187,7 +210,7 @@ export default function MiniPhaseTimeline({
           />
           {drag && (
             <div
-              className="absolute z-20 bg-blue-500/20 border border-blue-400"
+              className="absolute z-20 border"
               style={{
                 left: Math.min(drag.startIdx, drag.currentIdx) * pxPerDay,
                 width:
@@ -195,6 +218,10 @@ export default function MiniPhaseTimeline({
                 top: 0,
                 height: dragAreaHeight,
                 pointerEvents: "none",
+                backgroundColor: isDark
+                  ? alpha(theme.palette.primary.main, 0.2)
+                  : alpha(theme.palette.primary.main, 0.1),
+                borderColor: theme.palette.primary.main,
               }}
             />
           )}

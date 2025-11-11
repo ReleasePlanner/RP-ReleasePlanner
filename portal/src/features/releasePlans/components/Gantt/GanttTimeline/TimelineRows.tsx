@@ -1,5 +1,5 @@
-import { TIMELINE_DIMENSIONS, TIMELINE_COLORS } from "./constants";
-import { Tooltip } from "@mui/material";
+import { TIMELINE_DIMENSIONS, getTimelineColors } from "./constants";
+import { Tooltip, useTheme } from "@mui/material";
 import { Flag as FlagIcon } from "@mui/icons-material";
 import type { PlanMilestone } from "../../../types";
 
@@ -28,6 +28,9 @@ export type MonthsRowProps = {
 };
 
 export function MonthsRow({ monthSegments, pxPerDay }: MonthsRowProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+
   return (
     <TimelineRow height={TIMELINE_DIMENSIONS.MONTHS_ROW_HEIGHT}>
       {monthSegments.map((m) => (
@@ -38,8 +41,8 @@ export function MonthsRow({ monthSegments, pxPerDay }: MonthsRowProps) {
             left: m.startIndex * pxPerDay,
             width: m.length * pxPerDay,
             height: TIMELINE_DIMENSIONS.MONTHS_ROW_HEIGHT,
-            color: TIMELINE_COLORS.TEXT_PRIMARY,
-            borderColor: TIMELINE_COLORS.BORDER_LIGHT,
+            color: colors.TEXT_PRIMARY,
+            borderColor: colors.BORDER_LIGHT,
           }}
         >
           {m.label}
@@ -61,17 +64,21 @@ export type WeeksRowProps = {
 };
 
 export function WeeksRow({ weekSegments, pxPerDay }: WeeksRowProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+
   return (
     <TimelineRow height={TIMELINE_DIMENSIONS.WEEKS_ROW_HEIGHT}>
       {weekSegments.map((w) => (
         <div
           key={w.startIndex}
-          className="absolute top-0 text-[10px] flex items-center justify-center border-r border-gray-100"
+          className="absolute top-0 text-[10px] flex items-center justify-center border-r"
           style={{
             left: w.startIndex * pxPerDay,
             width: w.length * pxPerDay,
             height: TIMELINE_DIMENSIONS.WEEKS_ROW_HEIGHT,
-            color: TIMELINE_COLORS.TEXT_SECONDARY,
+            color: colors.TEXT_SECONDARY,
+            borderColor: colors.BORDER_LIGHT,
           }}
         >
           {w.label}
@@ -94,6 +101,9 @@ export function DaysRow({
   milestones = new Map(), // Add this
   onDayClick, // Add this
 }: DaysRowProps) {
+  const theme = useTheme();
+  const colors = getTimelineColors(theme);
+
   return (
     <TimelineRow height={TIMELINE_DIMENSIONS.DAYS_ROW_HEIGHT}>
       {days.map((d, i) => {
@@ -104,15 +114,14 @@ export function DaysRow({
         return (
           <div
             key={d.getTime()}
-            className="absolute top-0 border-r border-gray-100 text-[10px] flex items-center justify-center relative"
+            className="absolute top-0 border-r text-[10px] flex items-center justify-center"
             style={{
               left: i * pxPerDay,
               width: pxPerDay,
               height: TIMELINE_DIMENSIONS.DAYS_ROW_HEIGHT,
-              color: TIMELINE_COLORS.TEXT_MUTED,
-              backgroundColor: isWeekend
-                ? TIMELINE_COLORS.WEEKEND_BG
-                : undefined,
+              color: colors.TEXT_MUTED,
+              backgroundColor: isWeekend ? colors.WEEKEND_BG : undefined,
+              borderColor: colors.BORDER_LIGHT,
               cursor: onDayClick ? "pointer" : "default",
             }}
             title={milestone ? milestone.name : d.toISOString().slice(0, 10)}
@@ -156,8 +165,12 @@ export function DaysRow({
                     top: -2,
                     right: 2,
                     fontSize: "12px",
-                    color: "#f59e0b", // Amber color for milestones
-                    filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.2))",
+                    color:
+                      theme.palette.mode === "dark" ? "#fbbf24" : "#f59e0b", // Lighter amber for dark mode
+                    filter:
+                      theme.palette.mode === "dark"
+                        ? "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+                        : "drop-shadow(0 1px 2px rgba(0,0,0,0.2))",
                   }}
                 />
               </Tooltip>

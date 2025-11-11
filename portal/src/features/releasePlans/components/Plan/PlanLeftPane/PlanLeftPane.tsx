@@ -194,7 +194,10 @@ export default function PlanLeftPane({
               textTransform: "none",
               fontWeight: 500,
               fontSize: "0.875rem",
-              color: theme.palette.text.secondary,
+              color:
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.7)"
+                  : theme.palette.text.secondary,
               letterSpacing: "0.015em",
               transition: theme.transitions.create(
                 ["color", "background-color"],
@@ -203,16 +206,25 @@ export default function PlanLeftPane({
                 }
               ),
               "&:hover": {
-                color: theme.palette.text.primary,
-                backgroundColor: alpha(theme.palette.action.hover, 0.04),
+                color:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.95)"
+                    : theme.palette.text.primary,
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? alpha(theme.palette.action.hover, 0.08)
+                    : alpha(theme.palette.action.hover, 0.04),
               },
               "&.Mui-selected": {
                 color: theme.palette.primary.main,
                 fontWeight: 600,
-                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? alpha(theme.palette.primary.main, 0.12)
+                    : alpha(theme.palette.primary.main, 0.04),
               },
               "&.Mui-disabled": {
-                opacity: 0.4,
+                opacity: theme.palette.mode === "dark" ? 0.3 : 0.4,
               },
             },
             "& .MuiTabs-indicator": {
@@ -243,7 +255,10 @@ export default function PlanLeftPane({
           flexGrow: 1,
           overflow: "auto",
           minHeight: 0,
-          bgcolor: "grey.50",
+          bgcolor:
+            theme.palette.mode === "dark"
+              ? theme.palette.background.default
+              : "grey.50",
         }}
       >
         {/* Tab 1: Common Data */}

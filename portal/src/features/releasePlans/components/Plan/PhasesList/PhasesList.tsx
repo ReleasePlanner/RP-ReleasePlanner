@@ -1,4 +1,4 @@
-import { Button, List, Fab } from "@mui/material";
+import { Button, List, Fab, useTheme } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import type { PlanPhase } from "../../../types";
 import PhaseListItem from "../PhaseListItem/PhaseListItem";
@@ -30,6 +30,11 @@ export default function PhasesList({
   headerOffsetTopPx: _headerOffsetTopPx,
   onPhaseRangeChange,
 }: PhasesListProps) {
+  const theme = useTheme();
+  const backgroundColor = theme.palette.mode === "dark" 
+    ? theme.palette.background.paper 
+    : "#ffffff";
+  
   return (
     <div>
       {/* Align first phase with the first calendar row below header, compensating toolbar height (TRACK_HEIGHT + LANE_GAP) */}
@@ -44,8 +49,12 @@ export default function PhasesList({
       <List dense disablePadding>
         {/* Add button row inside the list, aligned to the right within the title column */}
         <div
-          className="relative bg-white"
-          style={{ height: TRACK_HEIGHT, marginBottom: LANE_GAP }}
+          className="relative"
+          style={{ 
+            height: TRACK_HEIGHT, 
+            marginBottom: LANE_GAP,
+            backgroundColor,
+          }}
         >
           <div
             className="flex items-center h-full"
@@ -66,8 +75,12 @@ export default function PhasesList({
         {phases.map((p) => (
           <div
             key={p.id}
-            className="relative bg-white"
-            style={{ height: TRACK_HEIGHT, marginBottom: LANE_GAP }}
+            className="relative"
+            style={{ 
+              height: TRACK_HEIGHT, 
+              marginBottom: LANE_GAP,
+              backgroundColor,
+            }}
           >
             <div className="flex items-stretch gap-3 h-full">
               <div

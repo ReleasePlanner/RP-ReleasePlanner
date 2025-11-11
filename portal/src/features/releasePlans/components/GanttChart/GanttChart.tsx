@@ -21,6 +21,7 @@ import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
 import { useAppSelector } from "@/store/hooks";
 import type { CalendarDay } from "@/features/calendar/types";
 import type { PlanMilestone } from "../../types";
+import { getTimelineColors } from "../Gantt/GanttTimeline/constants";
 
 // header timeline moved to GanttTimeline component
 
@@ -230,17 +231,30 @@ export default function GanttChart({
     [milestones, onMilestoneAdd, onMilestoneUpdate]
   );
 
+  const colors = getTimelineColors(theme);
+
   // App mode: show a single header (months/weeks/days) and phase-only timeline on the right,
   // with a static phases list on the left
   if (hideMainCalendar) {
     return (
-      <div className="border border-gray-200 rounded-md">
+      <div
+        className="border rounded-md"
+        style={{
+          borderColor: colors.BORDER,
+        }}
+      >
         <div
           className="grid items-start"
           style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
         >
           {/* Static phase list (left) */}
-          <div className="bg-white border-r border-gray-200 p-2 pt-0">
+          <div
+            className="border-r p-2 pt-0"
+            style={{
+              backgroundColor: colors.BACKGROUND,
+              borderColor: colors.BORDER,
+            }}
+          >
             <PhasesList
               phases={phases}
               onAdd={onAddPhase ?? (() => {})}
@@ -294,11 +308,12 @@ export default function GanttChart({
                   const weekendBg = isWeekend ? (
                     <div
                       key={`wk-${i}`}
-                      className="absolute top-0 pointer-events-none bg-gray-100 z-0"
+                      className="absolute top-0 pointer-events-none z-0"
                       style={{
                         left: i * pxPerDay,
                         width: pxPerDay,
                         height: "100%",
+                        backgroundColor: colors.WEEKEND_BG,
                       }}
                     />
                   ) : null;
@@ -359,9 +374,20 @@ export default function GanttChart({
                           left: i * pxPerDay,
                           width: pxPerDay,
                           height: "100%",
-                          backgroundColor: "rgba(128, 128, 128, 0.2)", // Gray overlay
-                          borderLeft: "2px solid rgba(128, 128, 128, 0.5)",
-                          borderRight: "2px solid rgba(128, 128, 128, 0.5)",
+                          backgroundColor:
+                            theme.palette.mode === "dark"
+                              ? "rgba(255, 255, 255, 0.15)" // Increased opacity for better visibility
+                              : "rgba(128, 128, 128, 0.2)",
+                          borderLeft: `2px solid ${
+                            theme.palette.mode === "dark"
+                              ? "rgba(255, 255, 255, 0.3)" // Increased opacity
+                              : "rgba(128, 128, 128, 0.5)"
+                          }`,
+                          borderRight: `2px solid ${
+                            theme.palette.mode === "dark"
+                              ? "rgba(255, 255, 255, 0.3)" // Increased opacity
+                              : "rgba(128, 128, 128, 0.5)"
+                          }`,
                           cursor: "help",
                         }}
                       />
@@ -388,8 +414,13 @@ export default function GanttChart({
                 {days.map((_, i) => (
                   <div
                     key={i}
-                    className="absolute top-0 border-r border-gray-100"
-                    style={{ left: i * pxPerDay, width: 0, height: "100%" }}
+                    className="absolute top-0 border-r"
+                    style={{
+                      left: i * pxPerDay,
+                      width: 0,
+                      height: "100%",
+                      borderColor: colors.BORDER_LIGHT,
+                    }}
                   />
                 ))}
                 {/* Today marker across tracks */}
@@ -523,13 +554,24 @@ export default function GanttChart({
   }
 
   return (
-    <div className="border border-gray-200 rounded-md">
+    <div
+      className="border rounded-md"
+      style={{
+        borderColor: colors.BORDER,
+      }}
+    >
       <div
         className="grid items-start"
         style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
       >
         {/* Static phase list (left) */}
-        <div className="bg-white border-r border-gray-200 p-2">
+        <div
+          className="border-r p-2"
+          style={{
+            backgroundColor: colors.BACKGROUND,
+            borderColor: colors.BORDER,
+          }}
+        >
           <PhasesList
             phases={phases}
             onAdd={onAddPhase ?? (() => {})}
@@ -594,8 +636,13 @@ export default function GanttChart({
                 return (
                   <div
                     key={i}
-                    className="absolute top-0 border-r border-gray-100"
-                    style={{ left: i * pxPerDay, width: 0, height: "100%" }}
+                    className="absolute top-0 border-r"
+                    style={{
+                      left: i * pxPerDay,
+                      width: 0,
+                      height: "100%",
+                      borderColor: colors.BORDER_LIGHT,
+                    }}
                   />
                 );
               })}
