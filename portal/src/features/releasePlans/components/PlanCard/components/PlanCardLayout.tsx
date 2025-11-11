@@ -27,7 +27,20 @@ export function PlanCardLayout({
   right,
 }: PlanCardLayoutProps) {
   return (
-    <Card variant="outlined" className="shadow-sm">
+    <Card
+      variant="elevation"
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        boxShadow:
+          "0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(0,0,0,0.02)",
+        transition: "all 0.3s ease-in-out",
+        "&:hover": {
+          boxShadow:
+            "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.02)",
+        },
+      }}
+    >
       <PlanHeader
         id={plan.metadata.id}
         name={plan.metadata.name}
@@ -41,7 +54,7 @@ export function PlanCardLayout({
         onToggleExpanded={onToggleExpanded}
       />
 
-      <Divider />
+      <Divider sx={{ borderColor: "rgba(0,0,0,0.06)" }} />
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent

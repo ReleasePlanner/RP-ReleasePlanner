@@ -60,9 +60,16 @@ const DataItem: React.FC<DataItemProps> = ({
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: 1.5,
-        py: 1,
-        px: 0.5,
+        gap: 2,
+        py: 1.5,
+        px: 1.5,
+        borderRadius: 1.5,
+        bgcolor: alpha(theme.palette[color].main, 0.04),
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          bgcolor: alpha(theme.palette[color].main, 0.08),
+          transform: "translateX(4px)",
+        },
       }}
     >
       <Box
@@ -70,12 +77,13 @@ const DataItem: React.FC<DataItemProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           borderRadius: "50%",
-          backgroundColor: alpha(theme.palette[color].main, 0.08),
+          backgroundColor: alpha(theme.palette[color].main, 0.12),
           color: theme.palette[color].main,
           flexShrink: 0,
+          boxShadow: `0 2px 4px ${alpha(theme.palette[color].main, 0.15)}`,
         }}
       >
         {icon}
@@ -85,11 +93,11 @@ const DataItem: React.FC<DataItemProps> = ({
           variant="body2"
           color="text.secondary"
           sx={{
-            fontSize: "0.75rem",
-            fontWeight: 500,
+            fontSize: "0.6875rem",
+            fontWeight: 600,
             textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            mb: 0.25,
+            letterSpacing: "0.8px",
+            mb: 0.5,
           }}
         >
           {label}
@@ -98,8 +106,9 @@ const DataItem: React.FC<DataItemProps> = ({
           variant="body1"
           color="text.primary"
           sx={{
-            fontWeight: 500,
-            lineHeight: 1.2,
+            fontWeight: 600,
+            lineHeight: 1.3,
+            fontSize: "0.9375rem",
           }}
         >
           {value}
@@ -147,22 +156,28 @@ export function CommonDataCard({
 
   return (
     <Card
-      variant="outlined"
+      variant="elevation"
       sx={{
-        borderColor: alpha(theme.palette.divider, 0.08),
         borderRadius: 2,
         backgroundColor: theme.palette.background.paper,
-        boxShadow: "none",
-        transition: theme.transitions.create(["box-shadow", "border-color"], {
+        boxShadow:
+          "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(0,0,0,0.02)",
+        transition: theme.transitions.create(["box-shadow", "transform"], {
           duration: theme.transitions.duration.short,
         }),
         "&:hover": {
-          borderColor: alpha(theme.palette.primary.main, 0.12),
-          boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.04)}`,
+          transform: "translateY(-1px)",
+          boxShadow:
+            "0 4px 8px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.02)",
         },
       }}
     >
-      <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+      <CardContent
+        sx={{
+          p: 2.5,
+          "&:last-child": { pb: 2.5 },
+        }}
+      >
         {/* Header minimalista */}
         <Box
           sx={{
@@ -198,11 +213,14 @@ export function CommonDataCard({
         </Box>
 
         <Divider
-          sx={{ mb: 2, borderColor: alpha(theme.palette.divider, 0.06) }}
+          sx={{
+            mb: 2.5,
+            borderColor: alpha(theme.palette.divider, 0.1),
+          }}
         />
 
         {/* Datos organizados verticalmente con mejor jerarquía */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
           <DataItem
             icon={<PersonOutline sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             label="Owner"

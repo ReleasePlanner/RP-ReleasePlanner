@@ -83,10 +83,15 @@ export default function PlanLeftPane({
         flexDirection: "column",
         height: "100%",
         bgcolor: "background.paper",
-        borderRadius: 1,
+        borderRadius: 2,
         overflow: "hidden",
-        border: 1,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)",
+        border: "1px solid",
         borderColor: "divider",
+        transition: "box-shadow 0.2s ease-in-out",
+        "&:hover": {
+          boxShadow: "0 2px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.08)",
+        },
       }}
     >
       {/* Tabs Header - Fixed */}
@@ -173,6 +178,7 @@ export default function PlanLeftPane({
           flexGrow: 1,
           overflow: "auto",
           minHeight: 0,
+          bgcolor: "grey.50",
         }}
       >
         {/* Tab 1: Common Data */}

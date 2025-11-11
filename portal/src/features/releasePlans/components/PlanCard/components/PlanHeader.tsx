@@ -89,12 +89,14 @@ export function PlanHeader({
   return (
     <Box
       sx={{
-        px: 2,
-        py: 2,
+        px: 2.5,
+        py: 2.5,
         display: "flex",
         flexDirection: "column",
         gap: 2,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        bgcolor: alpha(theme.palette.background.paper, 0.7),
+        backdropFilter: "blur(8px)",
       }}
     >
       {/* First Row: ID, Name, Status, Expand Button */}
