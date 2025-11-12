@@ -7,9 +7,9 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import BorderColorOutlinedIcon from "@mui/icons-material/BorderColorOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 
 export type PhaseListItemProps = {
   id: string;
@@ -37,6 +37,22 @@ export default function PhaseListItem({
   const phaseColor = color ?? theme.palette.secondary.main;
   const secondary =
     startDate && endDate ? `${startDate} → ${endDate}` : undefined;
+  
+  // Consistent icon button styles
+  const iconButtonBaseStyles = {
+    width: 24,
+    height: 24,
+    minWidth: 24,
+    minHeight: 24,
+    padding: 0.25,
+    borderRadius: 0,
+    transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+  };
+
+  const iconBaseStyles = {
+    fontSize: 14.5,
+  };
+
   return (
     <ListItem
       disableGutters
@@ -45,31 +61,71 @@ export default function PhaseListItem({
       sx={{
         minHeight: "unset",
         height: "100%",
+        width: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         minWidth: 0,
-        pr: 0.5,
+        pr: 0,
+        pl: 0,
+        px: 0,
+        overflow: "visible",
       }}
     >
-      {/* Color indicator */}
       <Box
         sx={{
-          width: "4px",
-          height: "70%",
-          minHeight: "24px",
-          bgcolor: phaseColor,
-          borderRadius: "2px",
-          mr: 1.25,
+          display: "flex",
+          alignItems: "center",
           flexShrink: 0,
-          opacity: 0.85,
-          boxShadow: `0 0 0 1px ${alpha(phaseColor, 0.2)}`,
-          transition: "opacity 0.2s ease",
-          "&:hover": {
-            opacity: 1,
-          },
+          position: "relative",
         }}
-      />
+      >
+        {/* Edit icon positioned at the left edge of color indicator */}
+        <Tooltip title="Editar fase" arrow placement="top">
+          <IconButton
+            size="small"
+            aria-label="Edit phase"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(id);
+            }}
+            sx={{
+              ...iconButtonBaseStyles,
+              mr: 0.125,
+              color: alpha(theme.palette.text.secondary, 0.65),
+              "&:hover": {
+                bgcolor: alpha(theme.palette.primary.main, isDark ? 0.12 : 0.08),
+                color: theme.palette.primary.main,
+              },
+              "&:focus-visible": {
+                bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.12),
+                color: theme.palette.primary.main,
+                outline: "none",
+              },
+              "&:active": {
+                transform: "scale(0.95)",
+                bgcolor: alpha(theme.palette.primary.main, isDark ? 0.2 : 0.15),
+              },
+            }}
+          >
+            <BorderColorOutlinedIcon sx={iconBaseStyles} />
+          </IconButton>
+        </Tooltip>
+        
+        {/* Color indicator */}
+        <Box
+          sx={{
+            width: "3px",
+            height: "56%",
+            minHeight: "18px",
+            bgcolor: phaseColor,
+            borderRadius: "1.5px",
+            flexShrink: 0,
+            opacity: 0.85,
+            transition: "opacity 0.2s ease",
+          }}
+        />
+      </Box>
       
       <ListItemText
         primary={name}
@@ -79,35 +135,36 @@ export default function PhaseListItem({
           sx: {
             fontSize: "0.8125rem",
             fontWeight: 500,
-            lineHeight: 1.4,
+            lineHeight: 1.5,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            color: isDark
-              ? alpha(theme.palette.text.primary, 0.95)
-              : theme.palette.text.primary,
+            color: theme.palette.text.primary,
+            letterSpacing: "-0.01em",
           },
         }}
         secondaryTypographyProps={{
           variant: "caption",
           sx: {
             fontSize: "0.6875rem",
-            lineHeight: 1.3,
+            lineHeight: 1.4,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
             mt: 0.25,
-            color: isDark
-              ? alpha(theme.palette.text.secondary, 0.7)
-              : theme.palette.text.secondary,
+            color: theme.palette.text.secondary,
+            opacity: 0.8,
           },
         }}
         sx={{
           my: 0,
           py: 0,
-          pr: 0.5,
+          pr: 0,
+          pl: 0.25,
           minWidth: 0,
           flex: "1 1 0%",
+          overflow: "hidden",
+          maxWidth: `calc(100% - 85px)`,
         }}
       />
       
@@ -115,83 +172,75 @@ export default function PhaseListItem({
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 0.25,
+          gap: 0.125,
           flexShrink: 0,
           ml: 0.5,
+          minWidth: "fit-content",
+          overflow: "visible",
+          position: "relative",
+          zIndex: 10,
         }}
       >
         {onView && (
-          <Tooltip title="Ver" arrow placement="top">
+          <Tooltip title="Ver detalles" arrow placement="top">
             <IconButton
               size="small"
               aria-label="View phase"
-              onClick={() => onView(id)}
-              edge="end"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView(id);
+              }}
               sx={{
-                padding: "4px",
-                color: isDark
-                  ? alpha(theme.palette.text.secondary, 0.7)
-                  : theme.palette.text.secondary,
+                ...iconButtonBaseStyles,
+                color: alpha(theme.palette.text.secondary, 0.65),
                 "&:hover": {
-                  bgcolor: isDark
-                    ? alpha(theme.palette.action.hover, 0.08)
-                    : alpha(theme.palette.action.hover, 0.05),
-                  color: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.info.main, isDark ? 0.12 : 0.08),
+                  color: theme.palette.info.main,
                 },
-                transition: "all 0.15s ease",
+                "&:focus-visible": {
+                  bgcolor: alpha(theme.palette.info.main, isDark ? 0.16 : 0.12),
+                  color: theme.palette.info.main,
+                  outline: "none",
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                  bgcolor: alpha(theme.palette.info.main, isDark ? 0.2 : 0.15),
+                },
               }}
             >
-              <VisibilityOutlinedIcon sx={{ fontSize: 14 }} />
+              <RemoveRedEyeOutlinedIcon sx={iconBaseStyles} />
             </IconButton>
           </Tooltip>
         )}
         
-        <Tooltip title="Editar" arrow placement="top">
-          <IconButton
-            size="small"
-            aria-label="Edit phase"
-            onClick={() => onEdit(id)}
-            edge="end"
-            sx={{
-              padding: "4px",
-              color: isDark
-                ? alpha(theme.palette.text.secondary, 0.7)
-                : theme.palette.text.secondary,
-              "&:hover": {
-                bgcolor: isDark
-                  ? alpha(theme.palette.action.hover, 0.08)
-                  : alpha(theme.palette.action.hover, 0.05),
-                color: theme.palette.primary.main,
-              },
-              transition: "all 0.15s ease",
-            }}
-          >
-            <EditOutlinedIcon sx={{ fontSize: 14 }} />
-          </IconButton>
-        </Tooltip>
-        
         {onDelete && (
-          <Tooltip title="Eliminar" arrow placement="top">
+          <Tooltip title="Eliminar fase" arrow placement="top">
             <IconButton
               size="small"
               aria-label="Delete phase"
-              onClick={() => onDelete(id)}
-              edge="end"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(id);
+              }}
               sx={{
-                padding: "4px",
-                color: isDark
-                  ? alpha(theme.palette.text.secondary, 0.7)
-                  : theme.palette.text.secondary,
+                ...iconButtonBaseStyles,
+                color: alpha(theme.palette.text.secondary, 0.65),
                 "&:hover": {
-                  bgcolor: isDark
-                    ? alpha(theme.palette.error.main, 0.15)
-                    : alpha(theme.palette.error.main, 0.1),
+                  bgcolor: alpha(theme.palette.error.main, isDark ? 0.12 : 0.08),
                   color: theme.palette.error.main,
                 },
-                transition: "all 0.15s ease",
+                "&:focus-visible": {
+                  bgcolor: alpha(theme.palette.error.main, isDark ? 0.16 : 0.12),
+                  color: theme.palette.error.main,
+                  outline: "none",
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                  bgcolor: alpha(theme.palette.error.main, isDark ? 0.2 : 0.15),
+                },
               }}
             >
-              <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+              <DeleteOutlineIcon sx={iconBaseStyles} />
             </IconButton>
           </Tooltip>
         )}

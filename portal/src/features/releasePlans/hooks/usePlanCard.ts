@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { addPhase, updatePhase } from "../slice";
 import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
-import type { Plan } from "../types";
+import type { Plan, PlanPhase } from "../types";
 
 /**
  * Custom hook for PlanCard business logic
@@ -25,10 +25,7 @@ export function usePlanCard(plan: Plan) {
   // Dialog state
   const [phaseOpen, setPhaseOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editPhaseId, setEditPhaseId] = useState<string | null>(null);
-  const [editStart, setEditStart] = useState("");
-  const [editEnd, setEditEnd] = useState("");
-  const [editColor, setEditColor] = useState("#217346");
+  const [editingPhase, setEditingPhase] = useState<PlanPhase | null>(null);
 
   // Actions
   const handleToggleExpanded = useCallback(() => {
@@ -49,32 +46,11 @@ export function usePlanCard(plan: Plan) {
         (phase) => phase.id === phaseId
       );
       if (!ph) return;
-
-      setEditPhaseId(phaseId);
-      const today = new Date();
-      const weekLater = new Date(today);
-      weekLater.setDate(weekLater.getDate() + 7);
-      const startIso = today.toISOString().slice(0, 10);
-      const endIso = weekLater.toISOString().slice(0, 10);
-      setEditStart(ph.startDate ?? startIso);
-      setEditEnd(ph.endDate ?? endIso);
-      setEditColor(ph.color ?? "#217346");
+      setEditingPhase(ph);
       setEditOpen(true);
     },
     [plan.metadata.phases]
   );
-
-  const saveEdit = useCallback(() => {
-    if (!editPhaseId) return;
-    dispatch(
-      updatePhase({
-        planId: plan.id,
-        phaseId: editPhaseId,
-        changes: { startDate: editStart, endDate: editEnd, color: editColor },
-      })
-    );
-    setEditOpen(false);
-  }, [dispatch, plan.id, editPhaseId, editStart, editEnd, editColor]);
 
   const handleAddPhase = useCallback(
     (name: string) => {
@@ -103,23 +79,17 @@ export function usePlanCard(plan: Plan) {
     expanded,
     phaseOpen,
     editOpen,
-    editStart,
-    editEnd,
-    editColor,
+    editingPhase,
 
     // Actions
     handleToggleExpanded,
     handleLeftPercentChange,
     openEdit,
-    saveEdit,
     handleAddPhase,
     handlePhaseRangeChange,
 
     // Dialog controls
     setPhaseOpen,
     setEditOpen,
-    setEditStart,
-    setEditEnd,
-    setEditColor,
   };
 }

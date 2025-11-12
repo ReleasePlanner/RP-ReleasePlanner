@@ -60,7 +60,7 @@ export function PlanCardLayout({
 
       <Divider sx={{ borderColor: theme.palette.divider }} />
 
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
+      <Collapse in={expanded} timeout={200} unmountOnExit>
         <CardContent
           sx={{
             p: 0,

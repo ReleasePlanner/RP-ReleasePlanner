@@ -3,6 +3,7 @@ import { useTheme } from "@mui/material/styles";
 import type {
   Plan,
   PlanStatus,
+  PlanPhase,
   GanttCellData,
   GanttCellComment,
   GanttCellFile,
@@ -50,20 +51,14 @@ export default function PlanCard({ plan }: PlanCardProps) {
     expanded,
     phaseOpen,
     editOpen,
-    editStart,
-    editEnd,
-    editColor,
+    editingPhase,
     handleToggleExpanded,
     handleLeftPercentChange,
     openEdit,
-    saveEdit,
     handleAddPhase,
     handlePhaseRangeChange,
     setPhaseOpen,
     setEditOpen,
-    setEditStart,
-    setEditEnd,
-    setEditColor,
   } = usePlanCard(plan);
 
   const dispatch = useAppDispatch();
@@ -344,6 +339,15 @@ export default function PlanCard({ plan }: PlanCardProps) {
     : undefined;
 
   // Consolidate all references: plan references + cell data references + milestones
+  // Optimized: Create phases map once for O(1) lookups instead of O(n) searches
+  const phasesMap = useMemo(() => {
+    const map = new Map<string, PlanPhase>();
+    (metadata.phases || []).forEach((phase) => {
+      map.set(phase.id, phase);
+    });
+    return map;
+  }, [metadata.phases]);
+
   const consolidatedReferences = useMemo(() => {
     const allReferences: PlanReference[] = [];
 
@@ -356,9 +360,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
     // 2. Generate references from cellData (comments, files, links)
     const cellData = metadata.cellData || [];
     cellData.forEach((cell) => {
-      const phase = cell.phaseId
-        ? metadata.phases?.find((p) => p.id === cell.phaseId)
-        : undefined;
+      const phase = cell.phaseId ? phasesMap.get(cell.phaseId) : undefined;
 
       // Comments
       if (cell.comments && cell.comments.length > 0) {
@@ -462,19 +464,25 @@ export default function PlanCard({ plan }: PlanCardProps) {
       const createdB = b.createdAt || "";
       return createdB.localeCompare(createdA);
     });
-  }, [metadata.references, metadata.cellData, metadata.milestones, metadata.phases]);
+  }, [metadata.references, metadata.cellData, metadata.milestones, phasesMap]);
 
   // Products are now loaded directly in PlanLeftPane from Redux store
 
-  // ⭐ Lifecycle logging - Automatic mount/unmount tracking
+  // ⭐ Lifecycle logging - Automatic mount/unmount tracking (deferred for performance)
   useEffect(() => {
-    log.lifecycle(
-      "mount",
-      `Plan ${plan.id} with ${tasks.length} tasks, ${
-        metadata.phases?.length || 0
-      } phases`
-    );
-    return () => log.lifecycle("unmount");
+    // Defer logging to avoid blocking initial render
+    const timeoutId = setTimeout(() => {
+      log.lifecycle(
+        "mount",
+        `Plan ${plan.id} with ${tasks.length} tasks, ${
+          metadata.phases?.length || 0
+        } phases`
+      );
+    }, 0);
+    return () => {
+      clearTimeout(timeoutId);
+      log.lifecycle("unmount");
+    };
   }, [log, plan.id, tasks.length, metadata.phases?.length]);
 
   // ⭐ Enhanced handlers with optimized logging + tracking + performance
@@ -612,23 +620,6 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
-  const saveEditOptimized = () => {
-    return L.all(
-      () => {
-        saveEdit();
-        return {
-          changes: { editStart, editEnd, editColor },
-          planId: plan.id,
-        };
-      },
-      {
-        component: "PlanCard",
-        message: "Saving phase edit",
-        action: "save_phase_edit",
-        time: true,
-      }
-    );
-  };
 
   const handlePhaseRangeChangeOptimized = (
     phaseId: string,
@@ -777,14 +768,24 @@ export default function PlanCard({ plan }: PlanCardProps) {
 
       <PhaseEditDialog
         open={editOpen}
-        start={editStart}
-        end={editEnd}
-        color={editColor}
-        onStartChange={setEditStart}
-        onEndChange={setEditEnd}
-        onColorChange={setEditColor}
+        phase={editingPhase}
+        planPhases={metadata.phases || []}
         onCancel={() => setEditOpen(false)}
-        onSave={saveEditOptimized}
+        onSave={(updatedPhase) => {
+          dispatch(
+            updatePhase({
+              planId: plan.id,
+              phaseId: updatedPhase.id,
+              changes: {
+                name: updatedPhase.name,
+                startDate: updatedPhase.startDate,
+                endDate: updatedPhase.endDate,
+                color: updatedPhase.color,
+              },
+            })
+          );
+          setEditOpen(false);
+        }}
       />
 
       {/* Milestone Edit Dialog */}

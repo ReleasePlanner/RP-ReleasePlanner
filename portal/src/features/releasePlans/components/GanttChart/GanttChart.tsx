@@ -119,30 +119,35 @@ export default function GanttChart({
     }
   }, []);
 
-  // Auto-scroll to today by default
+  // Auto-scroll to today by default - deferred for performance
   // Non-null assertions keep refs compatible with hook types expecting HTMLDivElement
   const containerRef = useRef<HTMLDivElement>(null!);
   const theme = useTheme();
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let index = 0;
-    if (today <= start) index = 0;
-    else if (today >= end) index = Math.max(0, days.length - 1);
-    else
-      index = Math.max(
-        0,
-        Math.min(
-          days.length - 1,
-          Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-        )
-      );
-    const visibleWidth = Math.max(0, el.clientWidth);
-    const target = index * pxPerDay - visibleWidth / 2;
-    const left = Math.max(0, target);
-    safeScrollToX(el, left, "auto");
+    // Defer scroll to avoid blocking initial render
+    const timeoutId = setTimeout(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let index = 0;
+      if (today <= start) index = 0;
+      else if (today >= end) index = Math.max(0, days.length - 1);
+      else
+        index = Math.max(
+          0,
+          Math.min(
+            days.length - 1,
+            Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+          )
+        );
+      const visibleWidth = Math.max(0, el.clientWidth);
+      const target = index * pxPerDay - visibleWidth / 2;
+      const left = Math.max(0, target);
+      safeScrollToX(el, left, "auto");
+    }, 100); // Small delay to allow initial render
+
+    return () => clearTimeout(timeoutId);
   }, [start, end, days.length, labelWidth, pxPerDay]);
 
   const contentRef = useRef<HTMLDivElement>(null!);

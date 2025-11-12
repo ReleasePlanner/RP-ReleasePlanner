@@ -188,10 +188,10 @@ export default function PlanLeftPane({
           borderColor: "divider",
           bgcolor: "background.paper",
           flexShrink: 0,
-          height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT, // Match timeline height (76px)
+          height: 48,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end",
+          justifyContent: "center",
         }}
       >
         <Tabs
@@ -202,30 +202,33 @@ export default function PlanLeftPane({
           scrollButtons="auto"
           allowScrollButtonsMobile
           sx={{
-            minHeight: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
-            height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
+            minHeight: 48,
+            height: 48,
             "& .MuiTabs-flexContainer": {
               gap: 0,
               height: "100%",
-              alignItems: "flex-end",
+              alignItems: "center",
             },
             "& .MuiTab-root": {
-              minHeight: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
-              height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
+              minHeight: 48,
+              height: 48,
               minWidth: "auto",
+              maxWidth: "none",
               py: 0,
-              px: 2.5,
+              px: 1,
+              pt: 0,
+              pb: 0,
               textTransform: "none",
               fontWeight: 500,
-              fontSize: "0.875rem",
+              fontSize: "0.75rem",
               color:
                 theme.palette.mode === "dark"
                   ? "rgba(255, 255, 255, 0.7)"
                   : theme.palette.text.secondary,
-              letterSpacing: "0.015em",
+              letterSpacing: "0.01em",
               display: "flex",
-              alignItems: "flex-end",
-              paddingBottom: "8px",
+              alignItems: "center",
+              justifyContent: "center",
               transition: theme.transitions.create(
                 ["color", "background-color"],
                 {

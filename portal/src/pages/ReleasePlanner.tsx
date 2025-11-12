@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import {
   Box,
   Stack,
@@ -45,7 +45,8 @@ import {
 } from "../features/releasePlans/slice";
 import type { Plan, PlanStatus } from "../features/releasePlans/types";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import PlanCard from "../features/releasePlans/components/PlanCard/PlanCard";
+// Lazy load PlanCard for better performance - only load when expanded
+const PlanCard = lazy(() => import("../features/releasePlans/components/PlanCard/PlanCard"));
 import { setPlanExpanded } from "../store/store";
 
 type ViewMode = "grid" | "list";
@@ -162,6 +163,20 @@ export default function ReleasePlanner() {
 
   // Get all expanded states at once
   const expandedStates = useAppSelector((s) => s.ui.planExpandedByPlanId ?? {});
+
+  // Optimized click handler with useCallback - immediate dispatch for instant feedback
+  const handlePlanToggle = useCallback(
+    (planId: string, currentExpanded: boolean) => {
+      // Dispatch immediately for instant UI feedback
+      dispatch(
+        setPlanExpanded({
+          planId,
+          expanded: !currentExpanded,
+        })
+      );
+    },
+    [dispatch]
+  );
 
   const getStatusChipProps = (status: PlanStatus) => {
     switch (status) {
@@ -459,14 +474,7 @@ export default function ReleasePlanner() {
               return (
                 <Box key={p.id}>
                   <ListItemButton
-                    onClick={() =>
-                      dispatch(
-                        setPlanExpanded({
-                          planId: p.id,
-                          expanded: !expanded,
-                        })
-                      )
-                    }
+                    onClick={() => handlePlanToggle(p.id, expanded)}
                     sx={{
                       px: 2,
                       py: 1,
@@ -603,7 +611,7 @@ export default function ReleasePlanner() {
                     />
                   </ListItemButton>
 
-                  {/* Expanded Content */}
+                  {/* Expanded Content - Lazy loaded for performance */}
                   {expanded && (
                     <Box
                       sx={{
@@ -617,7 +625,23 @@ export default function ReleasePlanner() {
                             : alpha(theme.palette.background.default, 0.3),
                       }}
                     >
-                      <PlanCard plan={p} />
+                      <Suspense
+                        fallback={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              minHeight: 400,
+                              color: "text.secondary",
+                            }}
+                          >
+                            <Typography variant="body2">Cargando plan...</Typography>
+                          </Box>
+                        }
+                      >
+                        <PlanCard plan={p} />
+                      </Suspense>
                     </Box>
                   )}
                 </Box>

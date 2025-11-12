@@ -66,8 +66,7 @@ export default function PhasesList({
         }}
       >
         {/* Add button row */}
-        <Paper
-          elevation={0}
+        <Box
           sx={{
             height: TRACK_HEIGHT,
             marginBottom: `${LANE_GAP}px`,
@@ -75,14 +74,6 @@ export default function PhasesList({
             alignItems: "center",
             justifyContent: "flex-end",
             px: 1,
-            bgcolor: "transparent",
-            borderRadius: 1,
-            transition: "background-color 0.2s ease",
-            "&:hover": {
-              bgcolor: isDark
-                ? alpha(theme.palette.action.hover, 0.05)
-                : alpha(theme.palette.action.hover, 0.03),
-            },
           }}
         >
           <Tooltip title="Agregar fase" arrow placement="left">
@@ -90,26 +81,21 @@ export default function PhasesList({
               size="small"
               onClick={onAdd}
               sx={{
-                width: 28,
-                height: 28,
-                bgcolor: isDark
-                  ? alpha(theme.palette.primary.main, 0.15)
-                  : alpha(theme.palette.primary.main, 0.1),
                 color: theme.palette.primary.main,
                 "&:hover": {
-                  bgcolor: isDark
-                    ? alpha(theme.palette.primary.main, 0.25)
-                    : alpha(theme.palette.primary.main, 0.2),
-                  transform: "scale(1.1)",
+                  bgcolor: alpha(theme.palette.primary.main, isDark ? 0.08 : 0.04),
                 },
-                transition: "all 0.2s ease",
-                boxShadow: theme.shadows[1],
+                "&:focus-visible": {
+                  bgcolor: alpha(theme.palette.primary.main, isDark ? 0.12 : 0.08),
+                  outline: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                  outlineOffset: 2,
+                },
               }}
             >
-              <AddOutlinedIcon sx={{ fontSize: 16 }} />
+              <AddOutlinedIcon />
             </IconButton>
           </Tooltip>
-        </Paper>
+        </Box>
 
         {/* Phase items */}
         {phases.map((p, index) => (
@@ -121,17 +107,18 @@ export default function PhasesList({
               marginBottom: index < phases.length - 1 ? `${LANE_GAP}px` : 0,
               display: "flex",
               alignItems: "stretch",
-              borderRadius: 1,
-              overflow: "hidden",
+              borderRadius: 1.5,
+              overflow: "visible",
               bgcolor: "transparent",
-              border: `1px solid transparent`,
-              transition: "all 0.2s ease",
+              border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {
-                bgcolor: isDark
-                  ? alpha(theme.palette.action.hover, 0.05)
-                  : alpha(theme.palette.action.hover, 0.03),
-                borderColor: theme.palette.divider,
-                boxShadow: theme.shadows[1],
+                bgcolor: alpha(
+                  theme.palette.action.hover,
+                  isDark ? 0.06 : 0.04
+                ),
+                borderColor: alpha(theme.palette.divider, 0.2),
+                boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, isDark ? 0.3 : 0.1)}`,
               },
             }}
           >
@@ -139,9 +126,14 @@ export default function PhasesList({
               sx={{
                 width: LABEL_WIDTH,
                 pr: 1,
+                pl: 0.5,
                 display: "flex",
                 alignItems: "center",
                 flexShrink: 0,
+                overflow: "visible",
+                minWidth: LABEL_WIDTH,
+                position: "relative",
+                zIndex: 1,
               }}
             >
               <PhaseListItem

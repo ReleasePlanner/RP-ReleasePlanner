@@ -156,15 +156,23 @@ export function PlanComponentsTab({
           </Typography>
           <Tooltip title="Add components from product" arrow placement="top">
             <Button
-              variant="contained"
+              variant="outlined"
               size="small"
               startIcon={<AddIcon />}
               onClick={() => setSelectDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                fontSize: "0.875rem",
-                px: 1.5,
-                py: 0.5,
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                px: 1.75,
+                py: 0.625,
+                borderRadius: 1,
+                borderColor: alpha(theme.palette.primary.main, 0.5),
+                color: theme.palette.primary.main,
+                "&:hover": {
+                  borderColor: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                },
               }}
             >
               Add Components
@@ -336,13 +344,14 @@ export function PlanComponentsTab({
                             size="small"
                             onClick={() => handleEditVersion(component)}
                             sx={{
-                              color: theme.palette.text.secondary,
+                              color: alpha(theme.palette.text.secondary, 0.7),
                               "&:hover": {
                                 color: theme.palette.primary.main,
-                                bgcolor: alpha(
-                                  theme.palette.primary.main,
-                                  0.08
-                                ),
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                              },
+                              "&:focus-visible": {
+                                outline: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                                outlineOffset: 2,
                               },
                             }}
                           >
@@ -356,10 +365,14 @@ export function PlanComponentsTab({
                               handleDeleteComponent(component.planComponentId)
                             }
                             sx={{
-                              color: theme.palette.text.secondary,
+                              color: alpha(theme.palette.text.secondary, 0.7),
                               "&:hover": {
                                 color: theme.palette.error.main,
                                 bgcolor: alpha(theme.palette.error.main, 0.08),
+                              },
+                              "&:focus-visible": {
+                                outline: `2px solid ${alpha(theme.palette.error.main, 0.5)}`,
+                                outlineOffset: 2,
                               },
                             }}
                           >
