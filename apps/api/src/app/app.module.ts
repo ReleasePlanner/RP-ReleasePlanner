@@ -23,6 +23,7 @@ import { SecurityMiddleware } from '../common/middleware/security.middleware';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CacheModule } from '../common/cache/cache.module';
+import { PrometheusMetricsModule } from '../common/metrics/prometheus.module';
 import databaseConfig from '../config/database.config';
 import redisConfig from '../config/redis.config';
 import { HealthController } from './health.controller';
@@ -34,6 +35,7 @@ import { HealthController } from './health.controller';
       load: [databaseConfig, redisConfig],
     }),
     CacheModule,
+    PrometheusMetricsModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

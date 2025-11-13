@@ -1,0 +1,121 @@
+# Prometheus Alert Rules
+# Define alertas para monitoreo proactivo
+
+groups:
+  - name: release_planner_alerts
+    interval: 30s
+    rules:
+      # Alertas de API
+      - alert: APIDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "API está caída"
+          description: "La API de Release Planner no responde desde hace más de 1 minuto"
+
+      - alert: APIHighResponseTime
+        expr: http_request_duration_seconds{job="api",quantile="0.95"} > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Tiempo de respuesta alto en API"
+          description: "El tiempo de respuesta del percentil 95 es mayor a 2 segundos"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{job="api",status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Tasa de errores alta en API"
+          description: "La tasa de errores 5xx es mayor al 10%"
+
+      # Alertas de PostgreSQL
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL está caído"
+          description: "PostgreSQL no responde desde hace más de 1 minuto"
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends{datname="releaseplanner"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "Alto número de conexiones en PostgreSQL"
+          description: "El número de conexiones activas es mayor a 80"
+
+      - alert: PostgreSQLHighDiskUsage
+        expr: (pg_database_size_bytes{datname="releaseplanner"} / 1024 / 1024 / 1024) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "Alto uso de disco en PostgreSQL"
+          description: "El tamaño de la base de datos es mayor a 50GB"
+
+      # Alertas de Redis
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis está caído"
+          description: "Redis no responde desde hace más de 1 minuto"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Alto uso de memoria en Redis"
+          description: "El uso de memoria en Redis es mayor al 90%"
+
+      # Alertas del sistema
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Alto uso de CPU"
+          description: "El uso de CPU es mayor al 80%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Alto uso de memoria"
+          description: "El uso de memoria es mayor al 85%"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Alto uso de disco"
+          description: "El uso de disco es mayor al 85%"
+

@@ -50,7 +50,7 @@ async function bootstrap() {
       if (!origin) {
         return callback(null, true);
       }
-
+      
       if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
         callback(null, true);
       } else {
@@ -110,7 +110,6 @@ async function bootstrap() {
     .addTag('it-owners', 'Gestión de propietarios IT')
     .addTag('plans', 'Gestión de planes de release')
     .addTag('health', 'Health check endpoints')
-    .addTag('metrics', 'Prometheus metrics endpoint')
     .addServer(`http://localhost:${process.env.PORT || 3000}`, 'Development server')
     .build();
 
@@ -128,7 +127,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-
+  
   Logger.log(
     `🚀 Release Planner API is running on: http://localhost:${port}/${globalPrefix}`,
     'Bootstrap'
@@ -138,14 +137,9 @@ async function bootstrap() {
     'Bootstrap'
   );
   Logger.log(
-    `📊 Prometheus Metrics: http://localhost:${port}/api/metrics`,
-    'Bootstrap'
-  );
-  Logger.log(
     `📄 OpenAPI JSON: http://localhost:${port}/api/docs-json`,
     'Bootstrap'
   );
 }
 
 bootstrap();
-

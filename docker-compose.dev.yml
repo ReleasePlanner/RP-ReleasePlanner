@@ -24,6 +24,30 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=5432"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: release-planner-redis-dev
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - release-planner-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=6379"
 
   # Backend API - NestJS (desarrollo con nodemon/watch)
   api:
@@ -41,6 +65,9 @@ services:
       DATABASE_USER: ${POSTGRES_USER:-releaseplanner}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-releaseplanner123}
       DATABASE_NAME: ${POSTGRES_DB:-releaseplanner}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
       FRONTEND_URL: http://localhost:5173
     ports:
       - "${API_PORT:-3000}:3000"
@@ -58,10 +85,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - release-planner-network
     restart: unless-stopped
     command: npx nx serve api
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=3000"
+      - "prometheus.path=/api/metrics"
 
   # Frontend - React (desarrollo con Vite)
   frontend:
@@ -100,5 +133,7 @@ networks:
 
 volumes:
   postgres_data_dev:
+    driver: local
+  redis_data_dev:
     driver: local
 
