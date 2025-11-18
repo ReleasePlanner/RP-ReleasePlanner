@@ -17,6 +17,7 @@ import { CountryModule } from '../countries/country.module';
 import { PlanModule } from '../release-plans/plan.module';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
+import { FileModule } from '../files/file.module';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { TransformInterceptor } from '../common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from '../common/interceptors/logging.interceptor';
@@ -75,6 +76,7 @@ import { HealthController } from './health.controller';
     FeatureCategoryModule,
     CountryModule,
     PlanModule,
+    FileModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

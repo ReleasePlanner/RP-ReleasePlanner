@@ -8,8 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseRepository } from '../../common/database/base.repository';
 import { Product } from '../domain/product.entity';
-import { ComponentVersion } from '../domain/component-version.entity';
-import { ComponentType } from '../../component-types/domain/component-type.entity';
+import { ProductComponentVersion } from '../domain/component-version.entity';
+import { ProductComponent } from '../../component-types/domain/component-type.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
 import { NotFoundException } from '../../common/exceptions/business-exception';
 import { validateString, validateId } from '@rp-release-planner/rp-shared';
@@ -27,8 +27,8 @@ export class ProductRepository
   constructor(
     @InjectRepository(Product)
     repository: Repository<Product>,
-    @InjectRepository(ComponentType)
-    private readonly componentTypeRepository: Repository<ComponentType>,
+    @InjectRepository(ProductComponent)
+    private readonly componentTypeRepository: Repository<ProductComponent>,
   ) {
     super(repository);
   }
@@ -97,7 +97,7 @@ export class ProductRepository
 
         // Handle components separately if provided
         if (updates.components !== undefined) {
-          const ComponentVersion = require('../domain/component-version.entity').ComponentVersion;
+          const ProductComponentVersion = require('../domain/component-version.entity').ProductComponentVersion;
           
           // Check if this is a partial update from external transaction (e.g., plan update)
           // In this case, we should NOT delete components that are not in the updates array
@@ -151,7 +151,7 @@ export class ProductRepository
               : c.currentVersion;
             
             // Handle componentTypeId if provided (preferred method)
-            let componentType: ComponentType | undefined;
+            let componentType: ProductComponent | undefined;
             if (c.componentTypeId) {
               try {
                 componentType = await this.componentTypeRepository.findOne({
@@ -161,13 +161,13 @@ export class ProductRepository
                   console.error(`ProductRepository.update - Component Type with id "${c.componentTypeId}" not found`);
                   throw new Error(`Component Type with id "${c.componentTypeId}" not found`);
                 }
-                console.log(`ProductRepository.update - Found ComponentType by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
+                console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
               } catch (error) {
-                console.error(`ProductRepository.update - Error finding ComponentType by ID "${c.componentTypeId}":`, error);
+                console.error(`ProductRepository.update - Error finding ProductComponent by ID "${c.componentTypeId}":`, error);
                 throw error;
               }
             } else if (c.type) {
-              // Fallback: try to find ComponentType by code (for backward compatibility)
+              // Fallback: try to find ProductComponent by code (for backward compatibility)
               // Normalize type to lowercase for case-insensitive matching
               const normalizedType = c.type.toLowerCase().trim();
               try {
@@ -181,12 +181,12 @@ export class ProductRepository
                   });
                 }
                 if (componentType) {
-                  console.log(`ProductRepository.update - Found ComponentType by code/name "${normalizedType}": ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
-                } else {
-                  console.warn(`ProductRepository.update - ComponentType not found for code/name "${normalizedType}", will use enum type fallback`);
+                  console.log(`ProductRepository.update - Found ProductComponent by code/name "${normalizedType}": ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
+                  } else {
+                  console.warn(`ProductRepository.update - ProductComponent not found for code/name "${normalizedType}", will use enum type fallback`);
                 }
               } catch (error) {
-                console.error(`ProductRepository.update - Error finding ComponentType by code/name "${normalizedType}":`, error);
+                console.error(`ProductRepository.update - Error finding ProductComponent by code/name "${normalizedType}":`, error);
                 // Don't throw, allow fallback to enum type
               }
             }
@@ -221,7 +221,7 @@ export class ProductRepository
                     }
                     existingComponent.type = normalizedType as any;
                   } else {
-                    // ComponentType is the same, but ensure type is normalized (componentType.code might have changed case)
+                    // ProductComponent is the same, but ensure type is normalized (componentType.code might have changed case)
                     let normalizedType = (componentType.code || '').toLowerCase();
                     // Map 'service' to 'services' to match enum values
                     if (normalizedType === 'service') {
@@ -260,10 +260,10 @@ export class ProductRepository
             // Otherwise, create a new component
             // Note: If c.id exists but component doesn't exist in entity, we ignore the id
             // and create a new component (the id might be invalid or from another product)
-            let newComponent: ComponentVersion;
+            let newComponent: ProductComponentVersion;
             if (componentType) {
-              // Use ComponentType entity
-              newComponent = new ComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
+              // Use ProductComponent entity
+              newComponent = new ProductComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
             } else if (c.type) {
               // Fallback to enum type - normalize to lowercase to match enum values (web, services, mobile)
               let normalizedType = c.type.toLowerCase();
@@ -271,7 +271,7 @@ export class ProductRepository
               if (normalizedType === 'service') {
                 normalizedType = 'services';
               }
-              newComponent = new ComponentVersion(normalizedType, c.currentVersion, previousVersion, c.name);
+              newComponent = new ProductComponentVersion(normalizedType, c.currentVersion, previousVersion, c.name);
             } else {
               throw new Error('Component type is required (either componentTypeId or type must be provided)');
             }
@@ -321,8 +321,8 @@ export class ProductRepository
             // This prevents TypeORM from trying to process them incorrectly
             if (componentsToRemove.length > 0) {
               console.log('ProductRepository.update - removing orphaned components:', componentsToRemove.map((c: any) => c.id));
-              const ComponentVersionRepository = this.repository.manager.getRepository(ComponentVersion);
-              await ComponentVersionRepository.remove(componentsToRemove);
+              const ProductComponentVersionRepository = this.repository.manager.getRepository(ProductComponentVersion);
+              await ProductComponentVersionRepository.remove(componentsToRemove);
             }
           } else {
             console.log('ProductRepository.update - Partial update detected: preserving all existing components, only updating versions');

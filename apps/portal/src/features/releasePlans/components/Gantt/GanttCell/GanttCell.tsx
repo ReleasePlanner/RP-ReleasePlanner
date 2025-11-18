@@ -6,7 +6,7 @@ import {
   Link as LinkIcon,
   Flag as MilestoneIcon,
 } from "@mui/icons-material";
-import type { GanttCellData, PlanReference } from "../../../types";
+import type { PlanReference } from "../../../types";
 import { getTimelineColors } from "../GanttTimeline/constants";
 
 export type GanttCellProps = {
@@ -16,9 +16,9 @@ export type GanttCellProps = {
   top: number;
   width: number;
   height: number;
-  cellData?: GanttCellData;
+  // Note: cellData has been removed - use cellReferences instead
+  cellReferences?: PlanReference[]; // References for this specific cell (day-level with phaseId)
   milestoneReference?: PlanReference; // Full milestone reference with title, description, etc.
-  onCellDataChange?: (data: GanttCellData) => void;
   onAddComment?: (phaseId: string, date: string) => void;
   onAddFile?: (phaseId: string, date: string) => void;
   onAddLink?: (phaseId: string, date: string) => void;
@@ -32,9 +32,8 @@ export default function GanttCell({
   top,
   width,
   height,
-  cellData,
+  cellReferences = [],
   milestoneReference,
-  onCellDataChange,
   onAddComment,
   onAddFile,
   onAddLink,
@@ -95,11 +94,26 @@ export default function GanttCell({
     }
   }, [handleClose, onToggleMilestone, phaseId, date]);
 
-  // Show milestone if cellData has isMilestone flag OR if there's a milestoneReference
-  const isMilestone = (cellData?.isMilestone ?? false) || milestoneReference !== undefined;
-  const commentsCount = cellData?.comments?.length ?? 0;
-  const filesCount = cellData?.files?.length ?? 0;
-  const linksCount = cellData?.links?.length ?? 0;
+  // Show milestone if there's a milestoneReference
+  const isMilestone = milestoneReference !== undefined;
+  
+  // Count references by type for this cell
+  const cellRefsByType = useMemo(() => {
+    const refs = cellReferences.filter(ref => 
+      ref.phaseId === phaseId && 
+      (ref.date === date || ref.calendarDayId) // Match by date or calendarDayId
+    );
+    
+    return {
+      comments: refs.filter(r => r.type === 'note' && !r.url), // Notes without URL are comments
+      files: refs.filter(r => r.type === 'document' && r.files && r.files.length > 0),
+      links: refs.filter(r => r.type === 'link' || (r.type === 'document' && r.url)),
+    };
+  }, [cellReferences, phaseId, date]);
+  
+  const commentsCount = cellRefsByType.comments.length;
+  const filesCount = cellRefsByType.files.length;
+  const linksCount = cellRefsByType.links.length;
   const hasData = commentsCount > 0 || filesCount > 0 || linksCount > 0;
   
   // Calculate total data items count
@@ -225,18 +239,18 @@ export default function GanttCell({
                 borderLeft: `8px solid transparent`,
                 borderRight: `8px solid transparent`,
                 borderTop: `12px solid ${
-                  cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main
+                  milestoneReference?.milestoneColor ?? theme.palette.warning.main
                 }`,
                 zIndex: 3,
                 filter: `drop-shadow(0 2px 4px ${alpha(
-                  cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main,
+                  milestoneReference?.milestoneColor ?? theme.palette.warning.main,
                   0.4
                 )})`,
                 transition: "all 0.2s ease",
                 "&:hover": {
                   transform: "scale(1.15)",
                   filter: `drop-shadow(0 3px 6px ${alpha(
-                    cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main,
+                    milestoneReference?.milestoneColor ?? theme.palette.warning.main,
                     0.6
                   )})`,
                 },

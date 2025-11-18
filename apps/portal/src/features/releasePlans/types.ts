@@ -27,78 +27,73 @@ export type PlanMilestone = {
   phaseId?: string; // Phase ID if milestone is associated with a specific phase
 };
 
-// Gantt Cell data - represents intersection of phase and day
-export type GanttCellComment = {
-  id: string;
-  text: string;
-  author: string;
-  createdAt: string; // ISO date
-  updatedAt?: string; // ISO date
-};
+// Note: GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink have been removed
+// References (comments, files, links) are now handled via plan_references table
+// with plan_reference_type to specify if they are at plan, period, or day level
 
-export type GanttCellFile = {
+// Content type: what the reference contains
+export type PlanReferenceType = "link" | "document" | "note" | "milestone";
+
+// Reference level: where the reference is attached (plan, period, day)
+export type PlanReferenceLevel = "plan" | "period" | "day";
+
+export type PlanReferenceFile = {
   id: string;
   name: string;
-  url: string;
-  size?: number; // bytes
-  mimeType?: string;
-  uploadedAt: string; // ISO date
+  size: number; // bytes
+  type: string; // MIME type
+  url?: string; // URL if file is uploaded to server
+  file?: File; // File object for new uploads
 };
-
-export type GanttCellLink = {
-  id: string;
-  title: string;
-  url: string;
-  description?: string;
-  createdAt: string; // ISO date
-};
-
-export type GanttCellData = {
-  phaseId?: string; // Optional - if not provided, data is at day level (not phase-specific)
-  date: string; // ISO date (YYYY-MM-DD)
-  isMilestone?: boolean;
-  milestoneColor?: string; // Custom color for milestone marker
-  comments?: GanttCellComment[];
-  files?: GanttCellFile[];
-  links?: GanttCellLink[];
-};
-
-export type PlanReferenceType = "link" | "document" | "note" | "milestone";
 
 export type PlanReference = {
   id: string;
-  type: PlanReferenceType;
+  type: PlanReferenceType; // Content type: link, document, note, milestone
   title: string;
-  url?: string; // For links only
+  url?: string; // For links and documents
   description?: string; // For notes and general description
   createdAt: string; // ISO date
   updatedAt?: string; // ISO date
-  // Optional fields to associate reference with specific day or cell
-  date?: string; // ISO date (YYYY-MM-DD) - if set, reference is associated with this specific day
-  phaseId?: string; // If set along with date, reference is associated with a specific cell (phase + day)
-  // If only date is set (no phaseId), reference is associated with the entire day
-  // If neither date nor phaseId is set, reference is at plan level (general)
+  
+  // Reference level: where the reference is attached (plan, period, day)
+  planReferenceTypeId?: string; // ID of plan_reference_type (plan, period, day)
+  planReferenceType?: { id: string; name: PlanReferenceLevel }; // Reference type details
+  
+  // For 'period' type: specific day within the period
+  periodDay?: string; // ISO date (YYYY-MM-DD)
+  
+  // For 'day' type: specific calendar day and phase
+  calendarDayId?: string; // ID of calendar_day
+  calendarDay?: { id: string; name: string; date: string; type: string }; // Calendar day details
+  phaseId?: string; // For 'day' type: phase associated with the day
+  
+  // Legacy fields (kept for backward compatibility)
+  date?: string; // ISO date (YYYY-MM-DD) - deprecated, use periodDay or calendarDayId
+  
   // For milestone type:
   milestoneColor?: string; // Custom color for milestone marker (hex color, e.g., "#FF5733")
+  
+  // For document type:
+  files?: PlanReferenceFile[]; // Files attached to document reference
 };
 
 export type PlanMetadata = {
   id: string;
   name: string;
-  owner: string;
+  owner: string; // Owner name from owners table (via JOIN) - populated from itOwner relationship
   startDate: string; // ISO date
   endDate: string; // ISO date
   status: PlanStatus;
   description?: string;
   phases?: PlanPhase[]; // ordered list of phases
   productId?: string; // ID of the associated product
-  itOwner?: string; // IT Owner responsible for the plan
+  itOwner?: string; // IT Owner ID responsible for the plan (references owners table)
   featureIds?: string[]; // IDs of features associated with this plan
   components?: PlanComponent[]; // Components with final versions for this plan
   calendarIds?: string[]; // IDs of calendars associated with this plan
   milestones?: PlanMilestone[]; // Milestones for this plan
-  references?: PlanReference[]; // References (links, documents, notes) for this plan
-  cellData?: GanttCellData[]; // Cell-specific data (comments, files, links, milestones)
+  references?: PlanReference[]; // References (links, documents, notes, milestones) for this plan
+  // Note: cellData has been removed - references are now handled via plan_references table
 };
 
 export type PlanTask = {

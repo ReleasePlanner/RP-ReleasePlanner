@@ -1,15 +1,16 @@
 /**
- * Base Phase Entity (TypeORM)
+ * Phase Entity (TypeORM)
  * 
- * Domain entity representing a base phase template
+ * Domain entity representing a phase template
+ * Previously named BasePhase, renamed to Phase
  */
 import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
 
-@Entity('base_phases')
+@Entity('phases')
 @Index(['name'], { unique: true })
 @Index(['color'], { unique: true })
-export class BasePhase extends BaseEntity {
+export class Phase extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 

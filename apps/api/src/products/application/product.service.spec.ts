@@ -6,7 +6,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductService } from './product.service';
 import { IProductRepository } from '../infrastructure/product.repository';
 import { Product } from '../domain/product.entity';
-import { ComponentVersion, ComponentType } from '../domain/component-version.entity';
+import { ProductComponentVersion, ComponentTypeEnum } from '../domain/component-version.entity';
+
+// Alias for backward compatibility in tests
+const ComponentVersion = ProductComponentVersion;
+const ComponentType = ComponentTypeEnum;
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';

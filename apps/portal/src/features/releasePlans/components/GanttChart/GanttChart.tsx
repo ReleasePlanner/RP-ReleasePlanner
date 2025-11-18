@@ -50,10 +50,9 @@ export type GanttChartProps = {
   onEditPhase?: (id: string) => void;
   onAutoGenerate?: () => void;
   hideMainCalendar?: boolean;
-  // Cell data props
-  cellData?: import("../../types").GanttCellData[];
-  milestoneReferences?: PlanReference[]; // Milestone references for tooltips
-  onCellDataChange?: (data: import("../../types").GanttCellData) => void;
+  // References props (replaces cellData)
+  references?: PlanReference[]; // All references for the plan
+  milestoneReferences?: PlanReference[]; // Milestone references for tooltips (subset of references)
   onAddCellComment?: (phaseId: string, date: string) => void;
   onAddCellFile?: (phaseId: string, date: string) => void;
   onAddCellLink?: (phaseId: string, date: string) => void;
@@ -80,9 +79,8 @@ export default function GanttChart({
   onEditPhase,
   onAutoGenerate,
   hideMainCalendar,
-  cellData = [],
+  references = [],
   milestoneReferences = [],
-  onCellDataChange,
   onAddCellComment,
   onAddCellFile,
   onAddCellLink,
@@ -471,7 +469,7 @@ export default function GanttChart({
                 safeScrollToX(el, left, "smooth");
               }}
               onDayClick={handleDayClick}
-              cellData={cellData}
+              references={references}
               onAddCellComment={(date) => {
                 if (onAddCellComment) {
                   onAddCellComment("", date);
@@ -677,8 +675,12 @@ export default function GanttChart({
                 {phases.map((ph, phaseIdx) => {
                   return days.map((day, dayIdx) => {
                     const dateKey = day.toISOString().slice(0, 10);
-                    const cellDataForCell = cellData.find(
-                      (cd) => cd.phaseId === ph.id && cd.date === dateKey
+                    // Filter references for this specific cell (day-level with phaseId)
+                    const cellRefs = references.filter(
+                      (ref) =>
+                        ref.phaseId === ph.id &&
+                        (ref.date === dateKey || ref.calendarDayId) &&
+                        ref.type !== "milestone" // Milestones are handled separately
                     );
                     const milestoneKey = `${ph.id}-${dateKey}`;
                     const milestoneRef = milestoneReferencesMap.get(milestoneKey);
@@ -694,9 +696,8 @@ export default function GanttChart({
                         top={top}
                         width={pxPerDay}
                         height={trackHeight}
-                        cellData={cellDataForCell}
+                        cellReferences={cellRefs}
                         milestoneReference={milestoneRef}
-                        onCellDataChange={onCellDataChange}
                         onAddComment={onAddCellComment}
                         onAddFile={onAddCellFile}
                         onAddLink={onAddCellLink}
@@ -895,7 +896,7 @@ export default function GanttChart({
                 safeScrollToX(el, left, "smooth");
               }}
               onDayClick={handleDayClick}
-              cellData={cellData}
+              references={references}
               onAddCellComment={(date) => {
                 if (onAddCellComment) {
                   onAddCellComment("", date);
@@ -1136,9 +1137,15 @@ export default function GanttChart({
               {phases.map((ph, phaseIdx) => {
                 return days.map((day, dayIdx) => {
                   const dateKey = day.toISOString().slice(0, 10);
-                  const cellDataForCell = cellData.find(
-                    (cd) => cd.phaseId === ph.id && cd.date === dateKey
+                  // Filter references for this specific cell (day-level with phaseId)
+                  const cellRefs = references.filter(
+                    (ref) =>
+                      ref.phaseId === ph.id &&
+                      (ref.date === dateKey || ref.calendarDayId) &&
+                      ref.type !== "milestone" // Milestones are handled separately
                   );
+                  const milestoneKey = `${ph.id}-${dateKey}`;
+                  const milestoneRef = milestoneReferencesMap.get(milestoneKey);
                   const top = laneTop(phaseIdx);
                   const left = dayIdx * pxPerDay;
 
@@ -1151,8 +1158,8 @@ export default function GanttChart({
                       top={top}
                       width={pxPerDay}
                       height={trackHeight}
-                      cellData={cellDataForCell}
-                      onCellDataChange={onCellDataChange}
+                      cellReferences={cellRefs}
+                      milestoneReference={milestoneRef}
                       onAddComment={onAddCellComment}
                       onAddFile={onAddCellFile}
                       onAddLink={onAddCellLink}

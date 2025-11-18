@@ -11,7 +11,7 @@ import { Plan } from '../domain/plan.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
 import { validateId } from '@rp-release-planner/rp-shared';
 import { NotFoundException } from '../../common/exceptions/business-exception';
-import { ITOwner } from '../../it-owners/domain/it-owner.entity';
+import { Owner } from '../../owners/domain/owner.entity';
 
 export interface IPlanRepository extends IRepository<Plan> {
   findByProductId(productId: string): Promise<Plan[]>;
@@ -111,10 +111,8 @@ export class PlanRepository
         'tasks',
         'milestones',
         'references',
-        'cellData',
-        'cellData.comments',
-        'cellData.files',
-        'cellData.links',
+        'references.planReferenceType',
+        'references.calendarDay',
       ],
     });
   }
@@ -147,9 +145,9 @@ export class PlanRepository
             plan."calendarIds",
             plan."createdAt",
             plan."updatedAt",
-            it_owners.name as "ownerName"
+            owners.name as "ownerName"
           FROM plans plan
-          LEFT JOIN it_owners ON it_owners.id::text = plan."itOwner"
+          LEFT JOIN owners ON owners.id::text = plan."itOwner"
           ORDER BY plan."createdAt" DESC
         `;
         
@@ -170,10 +168,8 @@ export class PlanRepository
             'tasks',
             'milestones',
             'references', // IMPORTANT: Load references from plan_references table
-            'cellData',
-            'cellData.comments',
-            'cellData.files',
-            'cellData.links',
+            'references.planReferenceType',
+            'references.calendarDay',
           ],
         });
         
@@ -210,10 +206,8 @@ export class PlanRepository
               'tasks',
               'milestones',
               'references',
-              'cellData',
-              'cellData.comments',
-              'cellData.files',
-              'cellData.links',
+              'references.planReferenceType',
+              'references.calendarDay',
             ],
           });
           

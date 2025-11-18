@@ -5,10 +5,8 @@ import type {
   Plan,
   PlanPhase,
   BasePhase,
-  GanttCellData,
-  GanttCellComment,
-  GanttCellFile,
-  GanttCellLink,
+  // Note: GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink have been removed
+  // References (comments, files, links) are now handled via plan_references table
   PlanReference,
 } from "./types";
 import { getNextDistinctColor } from "./lib/colors";
@@ -229,226 +227,30 @@ const releasePlansSlice = createSlice({
       });
     },
     /**
-     * Updates cell data for a specific phase and date
+     * Note: updateCellData has been removed - cell data is now handled via plan_references table
+     * This action is kept for backward compatibility but is deprecated
      */
-    updateCellData(
-      state,
-      action: PayloadAction<{
-        planId: string;
-        cellData: GanttCellData;
-      }>
-    ) {
-      const plan = state.plans.find((p) => p.id === action.payload.planId);
-      if (!plan) return;
-      if (!plan.metadata.cellData) plan.metadata.cellData = [];
-
-      const { phaseId, date } = action.payload.cellData;
-      const existingIndex = plan.metadata.cellData.findIndex(
-        (cd) => cd.phaseId === phaseId && cd.date === date
-      );
-
-      if (existingIndex >= 0) {
-        plan.metadata.cellData[existingIndex] = action.payload.cellData;
-      } else {
-        plan.metadata.cellData.push(action.payload.cellData);
-      }
-    },
+    // updateCellData(...) - REMOVED
     /**
-     * Toggles milestone status for a cell
+     * Note: toggleCellMilestone has been removed - milestones are now handled via plan_references table
+     * This action is kept for backward compatibility but is deprecated
      */
-    toggleCellMilestone(
-      state,
-      action: PayloadAction<{
-        planId: string;
-        phaseId?: string; // Optional - if undefined, milestone is at day level
-        date: string;
-        milestoneColor?: string;
-      }>
-    ) {
-      const plan = state.plans.find((p) => p.id === action.payload.planId);
-      if (!plan) return;
-      if (!plan.metadata.cellData) plan.metadata.cellData = [];
-
-      const { phaseId, date, milestoneColor } = action.payload;
-      const existingIndex = plan.metadata.cellData.findIndex(
-        (cd) => cd.phaseId === phaseId && cd.date === date
-      );
-
-      if (existingIndex >= 0) {
-        const cellData = plan.metadata.cellData[existingIndex];
-        cellData.isMilestone = !cellData.isMilestone;
-        if (cellData.isMilestone && milestoneColor) {
-          cellData.milestoneColor = milestoneColor;
-        } else if (!cellData.isMilestone) {
-          cellData.milestoneColor = undefined;
-        }
-      } else {
-        plan.metadata.cellData.push({
-          phaseId,
-          date,
-          isMilestone: true,
-          milestoneColor,
-        });
-      }
-    },
+    // toggleCellMilestone(...) - REMOVED
     /**
-     * Adds a comment to a cell
+     * Note: addCellComment has been removed - comments are now handled via plan_references table
+     * This action is kept for backward compatibility but is deprecated
      */
-    addCellComment(
-      state,
-      action: PayloadAction<{
-        planId: string;
-        phaseId?: string; // Optional - if undefined, comment is at day level
-        date: string;
-        comment: GanttCellComment;
-      }>
-    ) {
-      const plan = state.plans.find((p) => p.id === action.payload.planId);
-      if (!plan) return;
-      if (!plan.metadata.cellData) plan.metadata.cellData = [];
-      if (!plan.metadata.references) plan.metadata.references = [];
-
-      const { phaseId, date, comment } = action.payload;
-      const existingIndex = plan.metadata.cellData.findIndex(
-        (cd) => cd.phaseId === phaseId && cd.date === date
-      );
-
-      if (existingIndex >= 0) {
-        const cellData = plan.metadata.cellData[existingIndex];
-        if (!cellData.comments) cellData.comments = [];
-        cellData.comments.push(comment);
-      } else {
-        plan.metadata.cellData.push({
-          phaseId,
-          date,
-          comments: [comment],
-        });
-      }
-
-      // Also create a PlanReference for this comment
-      const phase = phaseId ? plan.metadata.phases?.find((p) => p.id === phaseId) : undefined;
-      const referenceTitle = phaseId
-        ? `Comentario: ${phase?.name || "Fase"} - ${date}`
-        : `Comentario: ${date}`;
-      
-      const reference: PlanReference = {
-        id: `ref-comment-${comment.id}`,
-        type: "comment",
-        title: referenceTitle,
-        description: comment.text,
-        date,
-        phaseId,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt || comment.createdAt,
-      };
-      plan.metadata.references.push(reference);
-    },
+    // addCellComment(...) - REMOVED
     /**
-     * Adds a file to a cell
+     * Note: addCellFile has been removed - files are now handled via plan_references table
+     * This action is kept for backward compatibility but is deprecated
      */
-    addCellFile(
-      state,
-      action: PayloadAction<{
-        planId: string;
-        phaseId?: string; // Optional - if undefined, file is at day level
-        date: string;
-        file: GanttCellFile;
-      }>
-    ) {
-      const plan = state.plans.find((p) => p.id === action.payload.planId);
-      if (!plan) return;
-      if (!plan.metadata.cellData) plan.metadata.cellData = [];
-      if (!plan.metadata.references) plan.metadata.references = [];
-
-      const { phaseId, date, file } = action.payload;
-      const existingIndex = plan.metadata.cellData.findIndex(
-        (cd) => cd.phaseId === phaseId && cd.date === date
-      );
-
-      if (existingIndex >= 0) {
-        const cellData = plan.metadata.cellData[existingIndex];
-        if (!cellData.files) cellData.files = [];
-        cellData.files.push(file);
-      } else {
-        plan.metadata.cellData.push({
-          phaseId,
-          date,
-          files: [file],
-        });
-      }
-
-      // Also create a PlanReference for this file
-      const phase = phaseId ? plan.metadata.phases?.find((p) => p.id === phaseId) : undefined;
-      const referenceTitle = phaseId
-        ? `Archivo: ${file.name} - ${phase?.name || "Fase"} - ${date}`
-        : `Archivo: ${file.name} - ${date}`;
-      
-      const reference: PlanReference = {
-        id: `ref-file-${file.id}`,
-        type: "file",
-        title: referenceTitle,
-        url: file.url,
-        description: file.mimeType ? `Tipo: ${file.mimeType}` : undefined,
-        date,
-        phaseId,
-        createdAt: file.uploadedAt,
-        updatedAt: file.uploadedAt,
-      };
-      plan.metadata.references.push(reference);
-    },
+    // addCellFile(...) - REMOVED
     /**
-     * Adds a link to a cell
+     * Note: addCellLink has been removed - links are now handled via plan_references table
+     * This action is kept for backward compatibility but is deprecated
      */
-    addCellLink(
-      state,
-      action: PayloadAction<{
-        planId: string;
-        phaseId?: string; // Optional - if undefined, link is at day level
-        date: string;
-        link: GanttCellLink;
-      }>
-    ) {
-      const plan = state.plans.find((p) => p.id === action.payload.planId);
-      if (!plan) return;
-      if (!plan.metadata.cellData) plan.metadata.cellData = [];
-      if (!plan.metadata.references) plan.metadata.references = [];
-
-      const { phaseId, date, link } = action.payload;
-      const existingIndex = plan.metadata.cellData.findIndex(
-        (cd) => cd.phaseId === phaseId && cd.date === date
-      );
-
-      if (existingIndex >= 0) {
-        const cellData = plan.metadata.cellData[existingIndex];
-        if (!cellData.links) cellData.links = [];
-        cellData.links.push(link);
-      } else {
-        plan.metadata.cellData.push({
-          phaseId,
-          date,
-          links: [link],
-        });
-      }
-
-      // Also create a PlanReference for this link
-      const phase = phaseId ? plan.metadata.phases?.find((p) => p.id === phaseId) : undefined;
-      const referenceTitle = phaseId
-        ? `${link.title} - ${phase?.name || "Fase"} - ${date}`
-        : `${link.title} - ${date}`;
-      
-      const reference: PlanReference = {
-        id: `ref-link-${link.id}`,
-        type: "link",
-        title: referenceTitle,
-        url: link.url,
-        description: link.description,
-        date,
-        phaseId,
-        createdAt: link.createdAt,
-        updatedAt: link.createdAt,
-      };
-      plan.metadata.references.push(reference);
-    },
+    // addCellLink(...) - REMOVED
   },
 });
 
@@ -461,10 +263,11 @@ export const {
   updatePhase,
   replacePlanPhasesWithBase,
   replaceAllPlansPhasesWithBase,
-  updateCellData,
-  toggleCellMilestone,
-  addCellComment,
-  addCellFile,
-  addCellLink,
+  // Deprecated actions - kept for backward compatibility but functionality moved to plan_references
+  // updateCellData,
+  // toggleCellMilestone,
+  // addCellComment,
+  // addCellFile,
+  // addCellLink,
 } = releasePlansSlice.actions;
 export const releasePlansReducer = releasePlansSlice.reducer;

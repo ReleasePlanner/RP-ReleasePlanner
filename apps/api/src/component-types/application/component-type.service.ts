@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { ComponentType } from '../domain/component-type.entity';
+import { ProductComponent } from '../domain/component-type.entity';
 import { CreateComponentTypeDto } from './dto/create-component-type.dto';
 import { UpdateComponentTypeDto } from './dto/update-component-type.dto';
 import { ComponentTypeResponseDto } from './dto/component-type-response.dto';

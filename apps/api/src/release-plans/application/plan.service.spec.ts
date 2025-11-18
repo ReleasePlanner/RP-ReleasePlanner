@@ -21,6 +21,26 @@ describe('PlanService', () => {
     findByName: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    exists: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    findAllWithOwnerName: jest.fn(),
+    repository: {
+      manager: {
+        remove: jest.fn(),
+        findOne: jest.fn(),
+      },
+    },
+  };
+
+  const mockFeatureRepository = {
+    findById: jest.fn(),
+    findAll: jest.fn(),
+    findByName: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
     delete: jest.fn(),
     exists: jest.fn(),
     findMany: jest.fn(),
@@ -34,6 +54,10 @@ describe('PlanService', () => {
         {
           provide: 'IPlanRepository',
           useValue: mockRepository,
+        },
+        {
+          provide: 'IFeatureRepository',
+          useValue: mockFeatureRepository,
         },
       ],
     }).compile();
@@ -49,24 +73,25 @@ describe('PlanService', () => {
   describe('findAll', () => {
     it('should return an array of PlanResponseDto', async () => {
       const mockPlans = [
-        new Plan('Plan 1', 'Owner 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
       ];
       mockPlans[0].id = 'id1';
+      (mockPlans[0] as any).ownerName = 'Owner 1';
 
-      repository.findAll.mockResolvedValue(mockPlans);
+      mockRepository.findAllWithOwnerName.mockResolvedValue(mockPlans);
 
       const result = await service.findAll();
 
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty('id', 'id1');
       expect(result[0]).toHaveProperty('name', 'Plan 1');
-      expect(repository.findAll).toHaveBeenCalledTimes(1);
+      expect(mockRepository.findAllWithOwnerName).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('findById', () => {
     it('should return a PlanResponseDto when plan exists', async () => {
-      const mockPlan = new Plan('Plan 1', 'Owner 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const mockPlan = new Plan('Plan 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       mockPlan.id = 'id1';
 
       repository.findById.mockResolvedValue(mockPlan);
@@ -87,16 +112,16 @@ describe('PlanService', () => {
   });
 
   describe('create', () => {
-    const createDto: CreatePlanDto = {
+      const createDto: CreatePlanDto = {
       name: 'New Plan',
-      owner: 'Owner',
       startDate: '2024-01-01',
       endDate: '2024-12-31',
       status: PlanStatus.PLANNED,
+      productId: 'product-id',
     };
 
     it('should create and return a PlanResponseDto', async () => {
-      const mockPlan = new Plan('New Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const mockPlan = new Plan('New Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       mockPlan.id = 'new-id';
 
       repository.findByName.mockResolvedValue(null);
@@ -111,7 +136,7 @@ describe('PlanService', () => {
     });
 
     it('should throw ConflictException when name already exists', async () => {
-      const existingPlan = new Plan('New Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('New Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'existing-id';
 
       repository.findByName.mockResolvedValue(existingPlan);
@@ -123,17 +148,17 @@ describe('PlanService', () => {
     it('should create plan with optional fields', async () => {
       const createDtoWithOptions: CreatePlanDto = {
         name: 'Plan',
-        owner: 'Owner',
         startDate: '2024-01-01',
         endDate: '2024-12-31',
-        description: 'Description',
+        status: PlanStatus.PLANNED,
         productId: 'prod-1',
+        description: 'Description',
         itOwner: 'it-owner-1',
         featureIds: ['feat-1'],
         calendarIds: ['cal-1'],
         phases: [{ name: 'Phase 1', startDate: '2024-01-01', endDate: '2024-01-31' }],
       };
-      const mockPlan = new Plan('Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const mockPlan = new Plan('Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       mockPlan.id = 'new-id';
       mockPlan.description = 'Description';
       mockPlan.productId = 'prod-1';
@@ -153,11 +178,12 @@ describe('PlanService', () => {
     it('should use default status when not provided', async () => {
       const createDtoNoStatus: CreatePlanDto = {
         name: 'Plan',
-        owner: 'Owner',
         startDate: '2024-01-01',
         endDate: '2024-12-31',
+        status: PlanStatus.PLANNED, // Status is now required
+        productId: 'product-id',
       };
-      const mockPlan = new Plan('Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const mockPlan = new Plan('Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       mockPlan.id = 'new-id';
 
       repository.findByName.mockResolvedValue(null);
@@ -171,16 +197,17 @@ describe('PlanService', () => {
     it('should create plan with phases when provided', async () => {
       const createDtoWithPhases: CreatePlanDto = {
         name: 'Plan',
-        owner: 'Owner',
         startDate: '2024-01-01',
         endDate: '2024-12-31',
+        status: PlanStatus.PLANNED,
+        productId: 'product-id',
         phases: [
           { name: 'Phase 1', startDate: '2024-01-01', endDate: '2024-01-31', color: '#FF0000' },
           { name: 'Phase 2', startDate: '2024-02-01', endDate: '2024-02-28', color: '#00FF00' },
         ],
       };
 
-      const mockPlan = new Plan('Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const mockPlan = new Plan('Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       mockPlan.id = 'new-id';
       const phase1 = new PlanPhase('Phase 1', '2024-01-01', '2024-01-31', '#FF0000');
       const phase2 = new PlanPhase('Phase 2', '2024-02-01', '2024-02-28', '#00FF00');
@@ -202,20 +229,20 @@ describe('PlanService', () => {
     };
 
     it('should update and return a PlanResponseDto', async () => {
-      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'id1';
-      const updatedPlan = new Plan('Updated Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const updatedPlan = new Plan('Updated Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       updatedPlan.id = 'id1';
 
       repository.findById.mockResolvedValue(existingPlan);
       repository.findByName.mockResolvedValue(null);
-      repository.update.mockResolvedValue(updatedPlan);
+      repository.save.mockResolvedValue(updatedPlan);
 
       const result = await service.update('id1', updateDto);
 
       expect(result).toHaveProperty('name', 'Updated Plan');
       expect(repository.findById).toHaveBeenCalledWith('id1');
-      expect(repository.update).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when plan does not exist', async () => {
@@ -225,9 +252,9 @@ describe('PlanService', () => {
     });
 
     it('should throw ConflictException when new name already exists', async () => {
-      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'id1';
-      const conflictingPlan = new Plan('Updated Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const conflictingPlan = new Plan('Updated Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       conflictingPlan.id = 'other-id';
 
       repository.findById.mockResolvedValue(existingPlan);
@@ -237,9 +264,9 @@ describe('PlanService', () => {
     });
 
     it('should allow update when name is unchanged', async () => {
-      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'id1';
-      const updatedPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const updatedPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       updatedPlan.id = 'id1';
 
       const updateDtoSameName: UpdatePlanDto = {
@@ -247,19 +274,19 @@ describe('PlanService', () => {
       };
 
       repository.findById.mockResolvedValue(existingPlan);
-      repository.update.mockResolvedValue(updatedPlan);
+      repository.save.mockResolvedValue(updatedPlan);
 
       const result = await service.update('id1', updateDtoSameName);
 
       expect(result).toHaveProperty('name', 'Old Plan');
       expect(repository.findByName).not.toHaveBeenCalled();
-      expect(repository.update).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
     });
 
     it('should allow update without name', async () => {
-      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'id1';
-      const updatedPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const updatedPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       updatedPlan.id = 'id1';
 
       const updateDtoNoName: UpdatePlanDto = {
@@ -267,19 +294,19 @@ describe('PlanService', () => {
       };
 
       repository.findById.mockResolvedValue(existingPlan);
-      repository.update.mockResolvedValue(updatedPlan);
+      repository.save.mockResolvedValue(updatedPlan);
 
       const result = await service.update('id1', updateDtoNoName);
 
       expect(result).toHaveProperty('name', 'Old Plan');
       expect(repository.findByName).not.toHaveBeenCalled();
-      expect(repository.update).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
     });
 
     it('should allow update when name exists but is the same plan', async () => {
-      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'id1';
-      const updatedPlan = new Plan('Updated Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const updatedPlan = new Plan('Updated Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       updatedPlan.id = 'id1';
 
       const updateDtoNewName: UpdatePlanDto = {
@@ -288,13 +315,13 @@ describe('PlanService', () => {
 
       repository.findById.mockResolvedValue(existingPlan);
       repository.findByName.mockResolvedValue(existingPlan); // Same plan found
-      repository.update.mockResolvedValue(updatedPlan);
+      repository.save.mockResolvedValue(updatedPlan);
 
       const result = await service.update('id1', updateDtoNewName);
 
       expect(result).toHaveProperty('name', 'Updated Plan');
       expect(repository.findByName).toHaveBeenCalledWith('Updated Plan');
-      expect(repository.update).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
     });
   });
 

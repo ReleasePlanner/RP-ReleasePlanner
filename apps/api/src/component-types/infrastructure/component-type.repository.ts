@@ -7,33 +7,33 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseRepository } from '../../common/database/base.repository';
-import { ComponentType } from '../domain/component-type.entity';
+import { ProductComponent } from '../domain/component-type.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
 
-export interface IComponentTypeRepository extends IRepository<ComponentType> {
-  findByName(name: string): Promise<ComponentType | null>;
-  findByCode(code: string): Promise<ComponentType | null>;
+export interface IComponentTypeRepository extends IRepository<ProductComponent> {
+  findByName(name: string): Promise<ProductComponent | null>;
+  findByCode(code: string): Promise<ProductComponent | null>;
 }
 
 @Injectable()
 export class ComponentTypeRepository
-  extends BaseRepository<ComponentType>
+  extends BaseRepository<ProductComponent>
   implements IComponentTypeRepository
 {
   constructor(
-    @InjectRepository(ComponentType)
-    repository: Repository<ComponentType>,
+    @InjectRepository(ProductComponent)
+    repository: Repository<ProductComponent>,
   ) {
     super(repository);
   }
 
-  async findByName(name: string): Promise<ComponentType | null> {
+  async findByName(name: string): Promise<ProductComponent | null> {
     return this.repository.findOne({
       where: { name } as any,
     });
   }
 
-  async findByCode(code: string): Promise<ComponentType | null> {
+  async findByCode(code: string): Promise<ProductComponent | null> {
     return this.repository.findOne({
       where: { code } as any,
     });

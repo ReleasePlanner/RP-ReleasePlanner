@@ -5,10 +5,6 @@ import type {
   Plan,
   PlanStatus,
   PlanPhase,
-  GanttCellData,
-  GanttCellComment,
-  GanttCellFile,
-  GanttCellLink,
   PlanComponent,
   PlanMilestone,
   PlanReference,
@@ -27,11 +23,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFullUpdateDto, createPartialUpdateDto } from "../../lib/planConverters";
 import { categorizeError, getUserErrorMessage, ErrorCategory } from "../../../../api/resilience/ErrorHandler";
 import { MilestoneEditDialog } from "../Plan/MilestoneEditDialog";
-import {
-  CellCommentsDialog,
-  CellFilesDialog,
-  CellLinksDialog,
-} from "../Gantt/GanttCell/CellDataDialogs";
+import { ReferenceEditDialog } from "../Plan/PlanReferencesTab/ReferenceEditDialog";
+// Note: CellDataDialogs have been removed - cell-level comments/files/links are now handled via PlanReferencesTab
+// Users can add references directly from the References tab, which supports day-level references with phaseId
 
 export type PlanCardProps = {
   plan: Plan;
@@ -117,16 +111,15 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
   const [editingMilestone, setEditingMilestone] =
     useState<PlanMilestone | null>(null);
 
-  // Cell data dialogs state
-  const [cellDialogState, setCellDialogState] = useState<{
-    type: "comment" | "file" | "link" | null;
-    phaseId: string | null;
-    date: string | null;
-  }>({
-    type: null,
-    phaseId: null,
-    date: null,
-  });
+  // Reference dialog state for opening from Gantt cell context menu
+  const [referenceDialogOpen, setReferenceDialogOpen] = useState(false);
+  const [editingReference, setEditingReference] = useState<PlanReference | null>(null);
+  const [isCreatingReference, setIsCreatingReference] = useState(false);
+  const [prefilledReferenceData, setPrefilledReferenceData] = useState<{
+    type?: PlanReferenceType;
+    phaseId?: string;
+    date?: string;
+  } | null>(null);
 
   // Store scrollToDate function from GanttChart
   const [scrollToDateFn, setScrollToDateFn] = useState<
@@ -208,7 +201,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     
     deduplicatedReferences.forEach((ref) => {
       if (ref.type === "milestone" && ref.date) {
-        // Milestone references with date should be saved AND update cellData
+        // Milestone references with date should be saved
         milestoneReferences.push(ref);
         planLevelReferences.push(ref); // Also save milestone references
       } else if (!ref.date && !ref.phaseId) {
@@ -217,55 +210,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       }
     });
 
-    // Update cellData for milestone references
-    const existingCellData = metadata.cellData || [];
-    const updatedCellData = [...existingCellData];
-    
-    // Process milestone references - add or update cellData
-    milestoneReferences.forEach((milestoneRef) => {
-      const existingIndex = updatedCellData.findIndex(
-        (cd) => cd.phaseId === milestoneRef.phaseId && cd.date === milestoneRef.date
-      );
-      
-      if (existingIndex >= 0) {
-        // Update existing cellData
-        updatedCellData[existingIndex] = {
-          ...updatedCellData[existingIndex],
-          isMilestone: true,
-          milestoneColor: milestoneRef.milestoneColor || "#F44336",
-        };
-      } else {
-        // Add new cellData for milestone
-        updatedCellData.push({
-          phaseId: milestoneRef.phaseId,
-          date: milestoneRef.date,
-          isMilestone: true,
-          milestoneColor: milestoneRef.milestoneColor || "#F44336",
-        });
-      }
-    });
-
-    // Remove milestones from cellData if they're no longer in references
-    const milestoneRefKeys = new Set(
-      milestoneReferences.map((ref) => `${ref.phaseId || ""}-${ref.date}`)
-    );
-
-    // Remove cellData milestones that are no longer referenced
-    const filteredCellData = updatedCellData.map((cell) => {
-      if (cell.isMilestone) {
-        const key = `${cell.phaseId || ""}-${cell.date}`;
-        if (!milestoneRefKeys.has(key)) {
-          // Remove milestone flag but keep other data (comments, files, links)
-          const { isMilestone, milestoneColor, ...rest } = cell;
-          // Keep cellData if it has other data besides phaseId and date
-          const hasOtherData = Object.keys(rest).some(
-            (k) => k !== "phaseId" && k !== "date"
-          );
-          return hasOtherData ? rest : undefined;
-        }
-      }
-      return cell;
-    }).filter((cell): cell is GanttCellData => cell !== undefined);
+    // Note: cellData logic has been removed - milestones are now handled via references
 
     // Sync milestones from milestone references
     // Convert milestone references to PlanMilestone format for plan_milestones table
@@ -280,350 +225,85 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     setLocalMetadata(prev => ({
       ...prev,
       references: planLevelReferences,
-      cellData: filteredCellData,
+      // Note: cellData has been removed - references are now used instead
+      // cellData: filteredCellData,
       milestones: syncedMilestones, // Sync milestones for plan_milestones table
     }));
-  }, [metadata.cellData, metadata.references]);
+  }, [metadata.references]);
 
-  // Cell data handlers - only update local state, save via save button
-  const handleCellDataChange = useCallback(
-    (data: GanttCellData) => {
-      // Find existing cellData and update or add the new one
-      const existingCellData = metadata.cellData || [];
-      const existingIndex = existingCellData.findIndex(
-        (cd) => cd.phaseId === data.phaseId && cd.date === data.date
-      );
-      
-      const updatedCellData =
-        existingIndex >= 0
-          ? existingCellData.map((cd, idx) => (idx === existingIndex ? data : cd))
-          : [...existingCellData, data];
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData]
-  );
-
+  // Handlers to open ReferenceEditDialog from Gantt cell context menu
   const handleAddCellComment = useCallback(
     (phaseId: string, date: string) => {
-      setCellDialogState({ type: "comment", phaseId: phaseId || null, date });
+      setPrefilledReferenceData({
+        type: "note",
+        phaseId: phaseId || undefined,
+        date,
+      });
+      setEditingReference(null);
+      setIsCreatingReference(true);
+      setReferenceDialogOpen(true);
     },
     []
   );
 
   const handleAddCellFile = useCallback((phaseId: string, date: string) => {
-    setCellDialogState({ type: "file", phaseId: phaseId || null, date });
+    setPrefilledReferenceData({
+      type: "document",
+      phaseId: phaseId || undefined,
+      date,
+    });
+    setEditingReference(null);
+    setIsCreatingReference(true);
+    setReferenceDialogOpen(true);
   }, []);
 
   const handleAddCellLink = useCallback((phaseId: string, date: string) => {
-    setCellDialogState({ type: "link", phaseId: phaseId || null, date });
+    setPrefilledReferenceData({
+      type: "link",
+      phaseId: phaseId || undefined,
+      date,
+    });
+    setEditingReference(null);
+    setIsCreatingReference(true);
+    setReferenceDialogOpen(true);
   }, []);
 
   const handleToggleCellMilestone = useCallback(
     (phaseId: string, date: string) => {
-      // Only update local state - save via save button
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) => cd.phaseId === (phaseId || undefined) && cd.date === date
-      );
-
-      let updatedCellData: GanttCellData[];
-      if (cellDataIndex >= 0) {
-        // Toggle existing milestone
-        const existing = existingCellData[cellDataIndex];
-        updatedCellData = existingCellData.map((cd, idx) =>
-          idx === cellDataIndex
-            ? {
-                ...cd,
-                isMilestone: !cd.isMilestone,
-                milestoneColor: cd.isMilestone ? undefined : theme.palette.warning.main,
-              }
-            : cd
-        );
-      } else {
-        // Create new cell data with milestone
-        updatedCellData = [
-          ...existingCellData,
-          {
-            id: `cell-${Date.now()}`,
-            phaseId: phaseId || undefined,
-            date,
-            isMilestone: true,
-            milestoneColor: theme.palette.warning.main,
-          },
-        ];
-      }
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
+      setPrefilledReferenceData({
+        type: "milestone",
+        phaseId: phaseId || undefined,
+        date,
+      });
+      setEditingReference(null);
+      setIsCreatingReference(true);
+      setReferenceDialogOpen(true);
     },
-    [metadata.cellData, theme.palette.warning.main]
+    []
   );
 
-  const handleSaveComment = useCallback(
-    (text: string) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
-      const comment: GanttCellComment = {
-        id: `comment-${Date.now()}`,
-        text,
-        author: metadata.owner,
-        createdAt: new Date().toISOString(),
-      };
+  // Handler to save reference from dialog
+  const handleSaveReference = useCallback(
+    (reference: PlanReference) => {
+      // Add the new reference to the list
+      const existingReferences = metadata.references || [];
+      const updatedReferences = [...existingReferences, reference];
       
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
-      );
-
-      let updatedCellData: GanttCellData[];
-      if (cellDataIndex >= 0) {
-        // Add comment to existing cell data
-        const existing = existingCellData[cellDataIndex];
-        updatedCellData = existingCellData.map((cd, idx) =>
-          idx === cellDataIndex
-            ? {
-                ...cd,
-                comments: [...(cd.comments || []), comment],
-              }
-            : cd
-        );
-      } else {
-        // Create new cell data with comment
-        updatedCellData = [
-          ...existingCellData,
-          {
-            id: `cell-${Date.now()}`,
-            phaseId: cellDialogState.phaseId || undefined,
-            date: cellDialogState.date,
-            comments: [comment],
-          },
-        ];
-      }
-
       setLocalMetadata(prev => ({
         ...prev,
-            cellData: updatedCellData,
+        references: updatedReferences,
       }));
+      
+      // Close dialog and reset state
+      setReferenceDialogOpen(false);
+      setEditingReference(null);
+      setIsCreatingReference(false);
+      setPrefilledReferenceData(null);
     },
-    [metadata.cellData, cellDialogState, metadata.owner]
+    [metadata.references]
   );
 
-  const handleSaveFile = useCallback(
-    (file: { name: string; url: string }) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
-      const fileData: GanttCellFile = {
-        id: `file-${Date.now()}`,
-        name: file.name,
-        url: file.url,
-        uploadedAt: new Date().toISOString(),
-      };
-      
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
-      );
-
-      let updatedCellData: GanttCellData[];
-      if (cellDataIndex >= 0) {
-        // Add file to existing cell data
-        const existing = existingCellData[cellDataIndex];
-        updatedCellData = existingCellData.map((cd, idx) =>
-          idx === cellDataIndex
-            ? {
-                ...cd,
-                files: [...(cd.files || []), fileData],
-              }
-            : cd
-        );
-      } else {
-        // Create new cell data with file
-        updatedCellData = [
-          ...existingCellData,
-          {
-            id: `cell-${Date.now()}`,
-            phaseId: cellDialogState.phaseId || undefined,
-            date: cellDialogState.date,
-            files: [fileData],
-          },
-        ];
-      }
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData, cellDialogState]
-  );
-
-  const handleSaveLink = useCallback(
-    (link: { title: string; url: string; description?: string }) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
-      const linkData: GanttCellLink = {
-        id: `link-${Date.now()}`,
-        title: link.title,
-        url: link.url,
-        description: link.description,
-        createdAt: new Date().toISOString(),
-      };
-      
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
-      );
-
-      let updatedCellData: GanttCellData[];
-      if (cellDataIndex >= 0) {
-        // Add link to existing cell data
-        const existing = existingCellData[cellDataIndex];
-        updatedCellData = existingCellData.map((cd, idx) =>
-          idx === cellDataIndex
-            ? {
-                ...cd,
-                links: [...(cd.links || []), linkData],
-              }
-            : cd
-        );
-      } else {
-        // Create new cell data with link
-        updatedCellData = [
-          ...existingCellData,
-          {
-            id: `cell-${Date.now()}`,
-            phaseId: cellDialogState.phaseId || undefined,
-            date: cellDialogState.date,
-            links: [linkData],
-          },
-        ];
-      }
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData, cellDialogState]
-  );
-
-  const handleDeleteComment = useCallback(
-    (commentId: string) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return;
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) =>
-          cd.phaseId === (cellDialogState.phaseId || undefined) &&
-          cd.date === cellDialogState.date
-      );
-      if (cellDataIndex < 0) return;
-      
-      const cellData = existingCellData[cellDataIndex];
-      const updatedComments = (cellData.comments || []).filter(
-        (c) => c.id !== commentId
-      );
-      
-      const updatedCellData = existingCellData.map((cd, idx) =>
-        idx === cellDataIndex
-          ? {
-              ...cd,
-              comments: updatedComments,
-            }
-          : cd
-      );
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData, cellDialogState]
-  );
-
-  const handleDeleteFile = useCallback(
-    (fileId: string) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return;
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) =>
-          cd.phaseId === (cellDialogState.phaseId || undefined) &&
-          cd.date === cellDialogState.date
-      );
-      if (cellDataIndex < 0) return;
-      
-      const cellData = existingCellData[cellDataIndex];
-      const updatedFiles = (cellData.files || []).filter(
-        (f) => f.id !== fileId
-      );
-      
-      const updatedCellData = existingCellData.map((cd, idx) =>
-        idx === cellDataIndex
-          ? {
-              ...cd,
-              files: updatedFiles,
-            }
-          : cd
-      );
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData, cellDialogState]
-  );
-
-  const handleDeleteLink = useCallback(
-    (linkId: string) => {
-      // Only update local state - save via save button
-      if (!cellDialogState.date) return;
-      const existingCellData = metadata.cellData || [];
-      const cellDataIndex = existingCellData.findIndex(
-        (cd) =>
-          cd.phaseId === (cellDialogState.phaseId || undefined) &&
-          cd.date === cellDialogState.date
-      );
-      if (cellDataIndex < 0) return;
-      
-      const cellData = existingCellData[cellDataIndex];
-      const updatedLinks = (cellData.links || []).filter(
-        (l) => l.id !== linkId
-      );
-      
-      const updatedCellData = existingCellData.map((cd, idx) =>
-        idx === cellDataIndex
-          ? {
-              ...cd,
-              links: updatedLinks,
-            }
-          : cd
-      );
-
-      setLocalMetadata(prev => ({
-        ...prev,
-            cellData: updatedCellData,
-      }));
-    },
-    [metadata.cellData, cellDialogState]
-  );
-
-  const currentCellData = cellDialogState.date
-    ? metadata.cellData?.find(
-        (cd) =>
-          cd.phaseId === (cellDialogState.phaseId || undefined) &&
-          cd.date === cellDialogState.date
-      )
-    : undefined;
-
-  // Consolidate all references: plan references + cell data references + milestones
+  // Consolidate all references: plan references + milestones
   // Optimized: Create phases map once for O(1) lookups instead of O(n) searches
   const phasesMap = useMemo(() => {
     const map = new Map<string, PlanPhase>();
@@ -635,8 +315,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
   // Optimize consolidatedReferences - only recalculate when relevant fields change
   // This prevents recalculation when description or other unrelated fields change
-  // IMPORTANT: Only show plan-level references (metadata.references), not auto-generated ones from cellData
-  // The references from cellData (comments, files, links) are shown in the Gantt chart cells, not in the references list
+  // IMPORTANT: Only show plan-level references (metadata.references)
+  // Day-level references (with phaseId and date) are shown in the Gantt chart cells, not in the references list
   const consolidatedReferences = useMemo(() => {
     const allReferences: PlanReference[] = [];
 
@@ -656,10 +336,9 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     
     allReferences.push(...planReferences);
     
-    // Note: References from cellData (comments, files, links) are NOT added here
+    // Note: Day-level references (with phaseId and date) are NOT added here
     // They are shown in the Gantt chart cells, not in the references list
     // This ensures the references list only shows actual plan-level references that can be edited/deleted
-    // Milestones from cellData are also NOT added here - they should be converted to milestone-type references first
     
     // 2. Generate references from plan-level milestones that don't already have milestone-type references
     // Only create note-type references for milestones that aren't already represented as milestone-type references
@@ -986,7 +665,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
           updateData.calendarIds = metadata.calendarIds;
           break;
         case 4: // Referencias
-          // Only save actual references (not auto-generated ones from cellData)
+          // Only save actual references
           updateData.references = metadata.references;
           
           // IMPORTANT: Always sync milestones from milestone-type references to plan_milestones table
@@ -1376,7 +1055,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             plan,
             {
               phases: metadata.phases,
-              cellData: metadata.cellData,
+              // Note: cellData has been removed
+          // cellData: metadata.cellData,
               milestones: metadata.milestones,
             },
             plan.updatedAt // Pass original updatedAt for optimistic locking
@@ -1394,7 +1074,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         setLocalMetadata(prev => ({
           ...prev,
           phases: metadata.phases,
-          cellData: metadata.cellData,
+          // Note: cellData has been removed
+          // cellData: metadata.cellData,
           milestones: metadata.milestones,
         }));
         
@@ -1472,7 +1153,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       originalMetadata.calendarIds !== localMetadata.calendarIds ||
       originalMetadata.references !== localMetadata.references ||
       originalMetadata.phases !== localMetadata.phases ||
-      originalMetadata.cellData !== localMetadata.cellData ||
+      // Note: cellData has been removed - references are now used instead
+      // originalMetadata.cellData !== localMetadata.cellData ||
       originalMetadata.milestones !== localMetadata.milestones
     ) {
       // Only use JSON.stringify if references differ
@@ -1488,7 +1170,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Quick reference equality check first (fastest)
     if (
       originalMetadata.phases === localMetadata.phases &&
-      originalMetadata.cellData === localMetadata.cellData &&
+      // Note: cellData has been removed
+      // originalMetadata.cellData === localMetadata.cellData &&
       originalMetadata.milestones === localMetadata.milestones
     ) {
       return false;
@@ -1498,22 +1181,26 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Use JSON.stringify as fallback but cache the stringified versions
     const originalStr = JSON.stringify({
       phases: originalMetadata.phases,
-      cellData: originalMetadata.cellData,
+      // Note: cellData has been removed
+      // cellData: originalMetadata.cellData,
       milestones: originalMetadata.milestones,
     });
     const localStr = JSON.stringify({
       phases: localMetadata.phases,
-      cellData: localMetadata.cellData,
+      // Note: cellData has been removed
+      // cellData: localMetadata.cellData,
       milestones: localMetadata.milestones,
     });
     
     return originalStr !== localStr;
   }, [
     originalMetadata.phases,
-    originalMetadata.cellData,
+    // Note: cellData has been removed
+    // originalMetadata.cellData,
     originalMetadata.milestones,
     localMetadata.phases,
-    localMetadata.cellData,
+    // Note: cellData has been removed
+    // localMetadata.cellData,
     localMetadata.milestones,
   ]);
 
@@ -1816,11 +1503,10 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             onAddPhase={() => setPhaseOpen(true)}
             onEditPhase={openEditOptimized}
             onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-            cellData={metadata.cellData}
+            references={metadata.references}
             milestoneReferences={(metadata.references || []).filter(
               (ref) => ref.type === "milestone" && ref.date
             )}
-            onCellDataChange={handleCellDataChange}
             onAddCellComment={handleAddCellComment}
             onAddCellFile={handleAddCellFile}
             onAddCellLink={handleAddCellLink}
@@ -1874,33 +1560,39 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         onDelete={handleMilestoneDelete}
       />
 
-      {/* Cell Data Dialogs */}
-      <CellCommentsDialog
-        open={cellDialogState.type === "comment"}
-        onClose={() =>
-          setCellDialogState({ type: null, phaseId: null, date: null })
-        }
-        comments={currentCellData?.comments || []}
-        onAddComment={handleSaveComment}
-        onDeleteComment={handleDeleteComment}
-      />
-      <CellFilesDialog
-        open={cellDialogState.type === "file"}
-        onClose={() =>
-          setCellDialogState({ type: null, phaseId: null, date: null })
-        }
-        files={currentCellData?.files || []}
-        onAddFile={handleSaveFile}
-        onDeleteFile={handleDeleteFile}
-      />
-      <CellLinksDialog
-        open={cellDialogState.type === "link"}
-        onClose={() =>
-          setCellDialogState({ type: null, phaseId: null, date: null })
-        }
-        links={currentCellData?.links || []}
-        onAddLink={handleSaveLink}
-        onDeleteLink={handleDeleteLink}
+      {/* Reference Edit Dialog - opened from Gantt cell context menu */}
+      <ReferenceEditDialog
+        open={referenceDialogOpen}
+        reference={useMemo(() => {
+          // Create a temporary reference with prefilled data if creating new reference
+          if (isCreatingReference && prefilledReferenceData) {
+            return {
+              id: `temp-${Date.now()}`,
+              type: prefilledReferenceData.type || "link",
+              title: "",
+              createdAt: new Date().toISOString(),
+              date: prefilledReferenceData.date,
+              phaseId: prefilledReferenceData.phaseId,
+              // Set default milestone color for milestone type
+              ...(prefilledReferenceData.type === "milestone" && {
+                milestoneColor: "#F44336",
+              }),
+            } as PlanReference;
+          }
+          return editingReference;
+        }, [isCreatingReference, prefilledReferenceData, editingReference])}
+        isCreating={isCreatingReference}
+        onClose={() => {
+          setReferenceDialogOpen(false);
+          setEditingReference(null);
+          setIsCreatingReference(false);
+          setPrefilledReferenceData(null);
+        }}
+        onSave={handleSaveReference}
+        phases={metadata.phases || []}
+        startDate={metadata.startDate}
+        endDate={metadata.endDate}
+        calendarIds={metadata.calendarIds || []}
       />
 
       {/* Error Snackbar */}

@@ -7,7 +7,6 @@
 import type {
   Plan as LocalPlan,
   PlanReferenceType,
-  GanttCellData,
 } from "../types";
 import type {
   Plan as APIPlan,
@@ -40,7 +39,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
       featureIds: apiPlan.featureIds || [],
       components: (apiPlan.components || []).map((c) => ({
         componentId: c.componentId,
-        currentVersion: "", // API doesn't provide currentVersion, set empty string
+        currentVersion: c.currentVersion || "", // API provides currentVersion
         finalVersion: c.finalVersion,
       })),
       calendarIds: apiPlan.calendarIds || [],
@@ -128,9 +127,17 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
             // Convert Date objects to ISO strings if needed, with validation
             createdAt: toISOString(r.createdAt),
             updatedAt: toISOString(r.updatedAt),
-            date: r.date,
+            // New reference level fields
+            planReferenceTypeId: r.planReferenceTypeId,
+            planReferenceType: r.planReferenceType,
+            periodDay: r.periodDay,
+            calendarDayId: r.calendarDayId,
+            calendarDay: r.calendarDay,
             phaseId: r.phaseId,
+            // Legacy fields
+            date: r.date, // Legacy field - deprecated
             milestoneColor: r.milestoneColor, // Include milestoneColor from API
+            files: r.files, // Include files for document type
           };
         });
 
@@ -147,77 +154,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
 
         return mappedReferences;
       })(),
-      cellData: (() => {
-        // Start with existing cellData from API
-        const existingCellData =
-          apiPlan.cellData?.map((c) => ({
-            phaseId: c.phaseId,
-            date: c.date,
-            isMilestone: c.isMilestone,
-            milestoneColor: c.milestoneColor,
-            comments: c.comments?.map((cm) => ({
-              id: cm.id,
-              text: cm.text,
-              author: cm.author,
-              createdAt: cm.createdAt,
-              updatedAt: cm.updatedAt,
-            })),
-            files: c.files?.map((f) => ({
-              id: f.id,
-              name: f.name,
-              url: f.url,
-              size: f.size,
-              mimeType: f.mimeType,
-              uploadedAt: f.createdAt,
-            })),
-            links: c.links?.map((l) => ({
-              id: l.id,
-              title: l.title,
-              url: l.url,
-              description: l.description,
-              createdAt: l.createdAt,
-            })),
-          })) || [];
-
-        // Sync milestone references with cellData
-        // Ensure that milestone references have corresponding cellData entries
-        const milestoneReferences =
-          apiPlan.references?.filter((r) => r.type === "milestone" && r.date) ||
-          [];
-
-        const cellDataMap = new Map<string, GanttCellData>();
-        for (const cell of existingCellData) {
-          const key = `${cell.phaseId || ""}-${cell.date}`;
-          cellDataMap.set(key, cell);
-        }
-
-        for (const milestoneRef of milestoneReferences) {
-          if (!milestoneRef.date) continue;
-          const key = `${milestoneRef.phaseId || ""}-${milestoneRef.date}`;
-          const existingCell = cellDataMap.get(key);
-          if (existingCell) {
-            // Update existing cellData to mark as milestone
-            cellDataMap.set(key, {
-              ...existingCell,
-              isMilestone: true,
-              milestoneColor:
-                milestoneRef.milestoneColor ||
-                existingCell.milestoneColor ||
-                "#F44336",
-            });
-          } else {
-            // Create new cellData entry for milestone reference
-            cellDataMap.set(key, {
-              phaseId: milestoneRef.phaseId,
-              date: milestoneRef.date,
-              isMilestone: true,
-              milestoneColor: milestoneRef.milestoneColor || "#F44336",
-            });
-          }
-        }
-
-        return Array.from(cellDataMap.values());
-      })(),
+      // Note: cellData has been removed - references are now handled via plan_references table
     },
     tasks:
       apiPlan.tasks?.map((t) => ({
@@ -238,7 +175,7 @@ export function convertLocalPlanToUpdateDto(
 ): UpdatePlanDto {
   return {
     name: localPlan.metadata.name,
-    owner: localPlan.metadata.owner,
+    // Removed: owner field - use itOwner field instead and join with owners table
     startDate: localPlan.metadata.startDate,
     endDate: localPlan.metadata.endDate,
     status: localPlan.metadata.status,
@@ -253,7 +190,7 @@ export function convertLocalPlanToUpdateDto(
     itOwner: localPlan.metadata.itOwner,
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
-    // Note: milestones, references, cellData, and tasks are managed separately
+    // Note: milestones, references, and tasks are managed separately
     // They should be included in the update if needed
   };
 }
@@ -277,29 +214,7 @@ function mapMilestonesToDto(milestones: LocalPlan["metadata"]["milestones"]) {
   }));
 }
 
-function mapCellDataToDto(cellData: LocalPlan["metadata"]["cellData"]) {
-  return cellData?.map((c) => ({
-    phaseId: c.phaseId,
-    date: c.date,
-    isMilestone: c.isMilestone,
-    milestoneColor: c.milestoneColor,
-    comments: c.comments?.map((cm) => ({
-      text: cm.text,
-      author: cm.author,
-    })),
-    files: c.files?.map((f) => ({
-      name: f.name,
-      url: f.url,
-      size: f.size,
-      mimeType: f.mimeType,
-    })),
-    links: c.links?.map((l) => ({
-      title: l.title,
-      url: l.url,
-      description: l.description,
-    })),
-  }));
-}
+// Note: mapCellDataToDto has been removed - cellData is no longer used
 
 function mapReferencesToDto(references: LocalPlan["metadata"]["references"]) {
   return references?.map((r) => ({
@@ -307,11 +222,25 @@ function mapReferencesToDto(references: LocalPlan["metadata"]["references"]) {
     title: r.title,
     url: r.url,
     description: r.description,
-    date: r.date,
+    // New reference level fields
+    planReferenceTypeId: r.planReferenceTypeId,
+    periodDay: r.periodDay,
+    calendarDayId: r.calendarDayId,
     phaseId: r.phaseId,
+    // Legacy fields
+    date: r.date, // Legacy field - deprecated
     // Include milestoneColor for milestone type references
     ...(r.type === "milestone" &&
       r.milestoneColor && { milestoneColor: r.milestoneColor }),
+    // Include files for document type references
+    ...(r.type === "document" &&
+      r.files && { files: r.files.map((f) => ({
+        id: f.id,
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        url: f.url,
+      })) }),
   }));
 }
 
@@ -336,7 +265,7 @@ export function createPartialUpdateDto(
   // Simple field mappings - using a more functional approach
   const simpleFields: Array<keyof LocalPlan["metadata"]> = [
     "name",
-    "owner",
+    // Removed: "owner" - use itOwner field instead and join with owners table
     "startDate",
     "endDate",
     "status",
@@ -361,9 +290,7 @@ export function createPartialUpdateDto(
   if (changes.milestones !== undefined) {
     dto.milestones = mapMilestonesToDto(changes.milestones);
   }
-  if (changes.cellData !== undefined) {
-    dto.cellData = mapCellDataToDto(changes.cellData);
-  }
+  // Note: cellData has been removed - references are now handled via plan_references table
   if (changes.references !== undefined) {
     dto.references = mapReferencesToDto(changes.references);
   }
@@ -387,7 +314,7 @@ export function createFullUpdateDto(
 ): UpdatePlanDto {
   return {
     name: localPlan.metadata.name,
-    owner: localPlan.metadata.owner,
+    // Removed: owner field - use itOwner field instead and join with owners table
     startDate: localPlan.metadata.startDate,
     endDate: localPlan.metadata.endDate,
     status: localPlan.metadata.status,
@@ -396,7 +323,11 @@ export function createFullUpdateDto(
     itOwner: localPlan.metadata.itOwner,
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
-    components: localPlan.metadata.components,
+    components: localPlan.metadata.components?.map((c) => ({
+      componentId: c.componentId,
+      currentVersion: c.currentVersion,
+      finalVersion: c.finalVersion,
+    })),
     // Include updatedAt for optimistic locking
     ...(originalUpdatedAt && {
       updatedAt:
@@ -416,36 +347,30 @@ export function createFullUpdateDto(
       description: m.description,
       phaseId: m.phaseId,
     })),
-    cellData: localPlan.metadata.cellData?.map((c) => ({
-      phaseId: c.phaseId,
-      date: c.date,
-      isMilestone: c.isMilestone,
-      milestoneColor: c.milestoneColor,
-      comments: c.comments?.map((cm) => ({
-        text: cm.text,
-        author: cm.author,
-      })),
-      files: c.files?.map((f) => ({
-        name: f.name,
-        url: f.url,
-        size: f.size,
-        mimeType: f.mimeType,
-      })),
-      links: c.links?.map((l) => ({
-        title: l.title,
-        url: l.url,
-        description: l.description,
-      })),
-    })),
+    // Note: cellData has been removed - references are now handled via plan_references table
     references: localPlan.metadata.references?.map((r) => ({
       type: r.type,
       title: r.title,
       url: r.url,
       description: r.description,
-      date: r.date,
+      // New reference level fields
+      planReferenceTypeId: r.planReferenceTypeId,
+      periodDay: r.periodDay,
+      calendarDayId: r.calendarDayId,
       phaseId: r.phaseId,
+      // Legacy fields
+      date: r.date, // Legacy field - deprecated
       ...(r.type === "milestone" &&
         r.milestoneColor && { milestoneColor: r.milestoneColor }),
+      // Include files for document type references
+      ...(r.type === "document" &&
+        r.files && { files: r.files.map((f) => ({
+          id: f.id,
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          url: f.url,
+        })) }),
     })),
   };
 }

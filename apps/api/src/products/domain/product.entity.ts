@@ -3,13 +3,14 @@
  */
 import { Entity, Column, OneToMany, Index } from "typeorm";
 import { BaseEntity } from "../../common/database/base.entity";
-import type { ComponentType } from "./component-version.entity";
+import type { ComponentTypeEnum } from "./component-version.entity";
 
-// Type for ComponentVersion to avoid circular dependency
-// This type matches the actual ComponentVersion entity structure
-type ComponentVersion = {
+// Type for ProductComponentVersion to avoid circular dependency
+// This type matches the actual ProductComponentVersion entity structure
+type ProductComponentVersion = {
   id: string;
-  type: ComponentType;
+  type?: ComponentTypeEnum;
+  componentTypeId?: string;
   currentVersion: string;
   previousVersion: string;
   productId: string;
@@ -19,8 +20,9 @@ type ComponentVersion = {
   updatedAt: Date;
 };
 
-type ComponentVersionUpdates = Partial<{
-  type: ComponentType;
+type ProductComponentVersionUpdates = Partial<{
+  type?: ComponentTypeEnum;
+  componentTypeId?: string;
   currentVersion: string;
   previousVersion: string;
 }>;
@@ -32,17 +34,17 @@ export class Product extends BaseEntity {
   name: string;
 
   @OneToMany(
-    () => require("./component-version.entity").ComponentVersion,
-    (component: ComponentVersion) => component.product,
+    () => require("./component-version.entity").ProductComponentVersion,
+    (component: ProductComponentVersion) => component.product,
     {
       cascade: true,
       eager: false,
       orphanRemoval: true,
     }
   )
-  components?: ComponentVersion[];
+  components?: ProductComponentVersion[];
 
-  constructor(name?: string, components?: ComponentVersion[]) {
+  constructor(name?: string, components?: ProductComponentVersion[]) {
     super();
     if (name !== undefined) {
       this.name = name;

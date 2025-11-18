@@ -21,7 +21,8 @@ describe('Calendar', () => {
       const calendar = new Calendar('Test Calendar');
 
       expect(calendar.name).toBe('Test Calendar');
-      expect(calendar.days).toEqual([]);
+      // days is undefined if not provided, TypeORM will handle it
+      expect(calendar.days).toBeUndefined();
     });
 
     it('should create a Calendar with description', () => {

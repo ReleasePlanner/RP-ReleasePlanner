@@ -20,6 +20,7 @@ import {
   Chip,
   Popover,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   Link as LinkIcon,
@@ -29,11 +30,16 @@ import {
   Palette as PaletteIcon,
   CheckCircle as CheckCircleIcon,
   MoreHoriz as MoreHorizIcon,
+  AttachFile as AttachFileIcon,
+  Delete as DeleteIcon,
+  CloudUpload as CloudUploadIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useQueries } from "@tanstack/react-query";
 import { calendarsService } from "@/api/services/calendars.service";
+import { filesService } from "@/api/services/files.service";
 import type { APICalendar, APICalendarDay } from "@/api/services/calendars.service";
-import type { PlanReference, PlanReferenceType, PlanPhase } from "../../../types";
+import type { PlanReference, PlanReferenceType, PlanPhase, PlanReferenceFile } from "../../../types";
 
 interface ReferenceEditDialogProps {
   open: boolean;
@@ -88,6 +94,7 @@ export function ReferenceEditDialog({
   const [useCustomColor, setUseCustomColor] = useState(false);
   const [customColor, setCustomColor] = useState("#F44336");
   const [colorPickerAnchor, setColorPickerAnchor] = useState<HTMLButtonElement | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<PlanReferenceFile[]>([]);
 
   // Load ALL calendars associated with the plan to check for holidays and special days
   // This ensures we validate against ALL calendars, not just some
@@ -206,6 +213,7 @@ export function ReferenceEditDialog({
         setMilestoneDate(reference.date || "");
         setMilestonePhaseId(reference.phaseId || "");
         setMilestoneDescription(reference.description || "");
+        setSelectedFiles(reference.files || []);
         setUrlError("");
         setDateError("");
       } else {
@@ -219,6 +227,7 @@ export function ReferenceEditDialog({
         setMilestoneDate("");
         setMilestonePhaseId("");
         setMilestoneDescription("");
+        setSelectedFiles([]);
         setUrlError("");
         setDateError("");
       }
@@ -252,7 +261,7 @@ export function ReferenceEditDialog({
     }
   }, [url, type]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) return;
 
     // Validate URL for link type
@@ -280,12 +289,47 @@ export function ReferenceEditDialog({
     const now = new Date().toISOString();
     const finalColor = useCustomColor ? customColor : milestoneColor;
     // Generate a more unique ID using timestamp and random number to prevent duplicates
+    // Always generate new ID for new references (ignore temporary IDs like temp-*)
     const generateUniqueId = () => {
-      if (reference?.id) return reference.id;
+      // If editing existing reference (not creating), keep the original ID
+      if (!isCreating && reference?.id && !reference.id.startsWith('temp-')) {
+        return reference.id;
+      }
+      // For new references or temporary IDs, generate a new unique ID
       const timestamp = Date.now();
       const random = Math.random().toString(36).substring(2, 9);
       return `ref-${timestamp}-${random}`;
     };
+
+    // Upload files if document type and has new files
+    let uploadedFiles: PlanReferenceFile[] = [];
+    if (type === "document" && selectedFiles.length > 0) {
+      try {
+        // Separate files that need to be uploaded (have File object) from already uploaded ones (have URL)
+        const filesToUpload = selectedFiles.filter(f => f.file);
+        const alreadyUploadedFiles = selectedFiles.filter(f => f.url && !f.file);
+
+        if (filesToUpload.length > 0) {
+          const uploadResults = await filesService.uploadFiles(filesToUpload.map(f => f.file!));
+          
+          uploadedFiles = uploadResults.map((result, index) => ({
+            id: filesToUpload[index].id,
+            name: filesToUpload[index].name,
+            size: result.size,
+            type: result.mimeType,
+            url: result.url,
+          }));
+        }
+
+        // Add already uploaded files
+        uploadedFiles = [...uploadedFiles, ...alreadyUploadedFiles];
+      } catch (error) {
+        console.error('Error uploading files:', error);
+        // You might want to show an error message to the user here
+        return;
+      }
+    }
+
     const referenceToSave: PlanReference = {
       id: generateUniqueId(),
       type,
@@ -307,6 +351,10 @@ export function ReferenceEditDialog({
                  : undefined,
         milestoneColor: finalColor,
       }),
+      // For document type, include files
+      ...(type === "document" && uploadedFiles.length > 0 && {
+        files: uploadedFiles,
+      }),
     };
 
     onSave(referenceToSave);
@@ -324,10 +372,39 @@ export function ReferenceEditDialog({
     setMilestoneDate("");
     setMilestonePhaseId("");
     setMilestoneDescription("");
+    setSelectedFiles([]);
     setUrlError("");
     setDateError("");
     setColorPickerAnchor(null);
     onClose();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFiles: PlanReferenceFile[] = Array.from(files).map((file) => ({
+        id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file,
+      }));
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
+    // Reset input to allow selecting the same file again
+    event.target.value = "";
+  };
+
+  const handleFileRemove = (fileId: string) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
   const getTypeIcon = (refType: PlanReferenceType) => {
@@ -532,6 +609,154 @@ export function ReferenceEditDialog({
                 },
               }}
             />
+          )}
+
+          {/* File Upload - Only for document type */}
+          {type === "document" && (
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mb: 1,
+                  fontWeight: 500,
+                  fontSize: "0.75rem",
+                  color: theme.palette.text.secondary,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Archivos
+              </Typography>
+              <Box
+                sx={{
+                  border: `2px dashed ${alpha(theme.palette.primary.main, 0.3)}`,
+                  borderRadius: 2,
+                  p: 2,
+                  bgcolor: alpha(theme.palette.primary.main, 0.02),
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: alpha(theme.palette.primary.main, 0.5),
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                <input
+                  accept="*/*"
+                  style={{ display: "none" }}
+                  id="file-upload-input"
+                  multiple
+                  type="file"
+                  onChange={handleFileSelect}
+                />
+                <label htmlFor="file-upload-input">
+                  <Button
+                    component="span"
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    fullWidth
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 2,
+                      py: 1.25,
+                      borderColor: alpha(theme.palette.primary.main, 0.5),
+                      color: theme.palette.primary.main,
+                      "&:hover": {
+                        borderColor: theme.palette.primary.main,
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      },
+                    }}
+                  >
+                    Seleccionar archivos
+                  </Button>
+                </label>
+                {selectedFiles.length > 0 && (
+                  <Stack spacing={1} sx={{ mt: 2 }}>
+                    {selectedFiles.map((file) => (
+                      <Box
+                        key={file.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: theme.palette.background.paper,
+                          border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                        }}
+                      >
+                        <Stack direction="row" spacing={1.5} alignItems="center" flex={1} sx={{ minWidth: 0 }}>
+                          <AttachFileIcon
+                            sx={{
+                              fontSize: 20,
+                              color: theme.palette.primary.main,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontSize: "0.8125rem",
+                                fontWeight: 500,
+                                color: theme.palette.text.primary,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {file.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontSize: "0.6875rem",
+                                color: theme.palette.text.secondary,
+                              }}
+                            >
+                              {formatFileSize(file.size)} • {file.type || "Tipo desconocido"}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" spacing={0.5}>
+                          {file.url && (
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                const fileUrl = file.url!.startsWith('http') 
+                                  ? file.url! 
+                                  : `${window.location.origin}${file.url}`;
+                                window.open(fileUrl, '_blank');
+                              }}
+                              sx={{
+                                color: theme.palette.primary.main,
+                                "&:hover": {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                },
+                              }}
+                            >
+                              <DownloadIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          )}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleFileRemove(file.id)}
+                            sx={{
+                              color: theme.palette.error.main,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.error.main, 0.08),
+                              },
+                            }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+            </Box>
           )}
 
           {/* Milestone-specific fields */}
@@ -985,6 +1210,7 @@ export function ReferenceEditDialog({
             (type === "link" && !url.trim()) ||
             (type === "milestone" && (!milestoneDate || !milestonePhaseId || !milestoneDescription.trim() || !!dateError)) ||
             !!urlError
+            // Note: For document type, files are optional, so no validation needed
           }
           sx={{
             textTransform: "none",

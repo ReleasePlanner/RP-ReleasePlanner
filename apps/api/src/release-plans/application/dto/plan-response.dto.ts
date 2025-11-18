@@ -3,7 +3,6 @@ import { PlanPhase } from '../../domain/plan-phase.entity';
 import { PlanTask } from '../../domain/plan-task.entity';
 import { PlanMilestone } from '../../domain/plan-milestone.entity';
 import { PlanReference } from '../../domain/plan-reference.entity';
-import { GanttCellData } from '../../domain/gantt-cell-data.entity';
 
 export class PlanPhaseResponseDto {
   id: string;
@@ -67,12 +66,17 @@ export class PlanMilestoneResponseDto {
 
 export class PlanReferenceResponseDto {
   id: string;
-  type: string;
+  type: string; // Content type: link, document, note, comment, file, milestone
   title: string;
   url?: string;
   description?: string;
-  date?: string;
-  phaseId?: string;
+  planReferenceTypeId: string; // Reference level: plan, period, day
+  planReferenceType?: { id: string; name: string }; // Reference type details
+  periodDay?: string; // For 'period' type: specific day within the period
+  calendarDayId?: string; // For 'day' type: specific calendar day
+  calendarDay?: { id: string; name: string; date: string; type: string }; // Calendar day details
+  phaseId?: string; // For 'day' type: phase associated with the day
+  date?: string; // Legacy field - deprecated, use periodDay or calendarDayId
   milestoneColor?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -83,42 +87,22 @@ export class PlanReferenceResponseDto {
     this.title = entity.title;
     this.url = entity.url;
     this.description = entity.description;
-    this.date = entity.date;
+    this.planReferenceTypeId = entity.planReferenceTypeId;
+    this.planReferenceType = entity.planReferenceType ? {
+      id: entity.planReferenceType.id,
+      name: entity.planReferenceType.name,
+    } : undefined;
+    this.periodDay = entity.periodDay;
+    this.calendarDayId = entity.calendarDayId;
+    this.calendarDay = entity.calendarDay ? {
+      id: entity.calendarDay.id,
+      name: entity.calendarDay.name,
+      date: entity.calendarDay.date,
+      type: entity.calendarDay.type,
+    } : undefined;
     this.phaseId = entity.phaseId;
+    this.date = entity.date; // Legacy field
     this.milestoneColor = entity.milestoneColor;
-    this.createdAt = entity.createdAt;
-    this.updatedAt = entity.updatedAt;
-  }
-}
-
-export class GanttCellDataResponseDto {
-  id: string;
-  phaseId?: string;
-  date: string;
-  isMilestone?: boolean;
-  milestoneColor?: string;
-  comments: Array<{ id: string; text: string; author: string; createdAt: Date; updatedAt?: Date }>;
-  files: Array<{ id: string; name: string; url: string; size?: number; mimeType?: string; uploadedAt: Date }>;
-  links: Array<{ id: string; title: string; url: string; description?: string; createdAt: Date }>;
-  createdAt: Date;
-  updatedAt: Date;
-
-  constructor(entity: GanttCellData) {
-    this.id = entity.id;
-    this.phaseId = entity.phaseId;
-    this.date = entity.date;
-    this.isMilestone = entity.isMilestone;
-    this.milestoneColor = entity.milestoneColor;
-    this.comments = entity.comments;
-    this.files = entity.files?.map((file: any) => ({
-      id: file.id,
-      name: file.name,
-      url: file.url,
-      size: file.size,
-      mimeType: file.mimeType,
-      uploadedAt: file.createdAt || file.uploadedAt || new Date(),
-    })) || [];
-    this.links = entity.links;
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }
@@ -140,7 +124,6 @@ export class PlanResponseDto {
   calendarIds: string[];
   milestones: PlanMilestoneResponseDto[];
   references: PlanReferenceResponseDto[];
-  cellData: GanttCellDataResponseDto[];
   tasks: PlanTaskResponseDto[];
   createdAt: Date;
   updatedAt: Date;
@@ -168,9 +151,6 @@ export class PlanResponseDto {
       : [];
     this.references = (entity.references && Array.isArray(entity.references))
       ? entity.references.map((r) => new PlanReferenceResponseDto(r))
-      : [];
-    this.cellData = (entity.cellData && Array.isArray(entity.cellData))
-      ? entity.cellData.map((c) => new GanttCellDataResponseDto(c))
       : [];
     this.tasks = (entity.tasks && Array.isArray(entity.tasks))
       ? entity.tasks.map((t) => new PlanTaskResponseDto(t))

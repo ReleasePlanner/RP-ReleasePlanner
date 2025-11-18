@@ -54,7 +54,6 @@ describe('PlanController', () => {
           phases: [],
           milestones: [],
           references: [],
-          cellData: [],
           tasks: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -82,7 +81,6 @@ describe('PlanController', () => {
         phases: [],
         milestones: [],
         references: [],
-        cellData: [],
         tasks: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -106,9 +104,10 @@ describe('PlanController', () => {
   describe('create', () => {
     const createDto: CreatePlanDto = {
       name: 'New Plan',
-      owner: 'Owner',
       startDate: '2024-01-01',
       endDate: '2024-12-31',
+      status: 'planned' as any,
+      productId: 'product-id',
     };
 
     it('should create and return a PlanResponseDto', async () => {
@@ -122,7 +121,6 @@ describe('PlanController', () => {
         phases: [],
         milestones: [],
         references: [],
-        cellData: [],
         tasks: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -161,7 +159,6 @@ describe('PlanController', () => {
         phases: [],
         milestones: [],
         references: [],
-        cellData: [],
         tasks: [],
         createdAt: new Date(),
         updatedAt: new Date(),

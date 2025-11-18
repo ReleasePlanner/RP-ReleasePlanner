@@ -11,7 +11,7 @@ import { PlanPhase } from './domain/plan-phase.entity';
 import { PlanTask } from './domain/plan-task.entity';
 import { PlanMilestone } from './domain/plan-milestone.entity';
 import { PlanReference } from './domain/plan-reference.entity';
-import { GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink } from './domain/gantt-cell-data.entity';
+import { PlanReferenceType } from './domain/plan-reference-type.entity';
 import { PlanComponentVersion } from './domain/plan-component-version.entity';
 import { FeatureModule } from '../features/feature.module';
 import { Feature } from '../features/domain/feature.entity';
@@ -24,10 +24,7 @@ import { Feature } from '../features/domain/feature.entity';
       PlanTask,
       PlanMilestone,
       PlanReference,
-      GanttCellData,
-      GanttCellComment,
-      GanttCellFile,
-      GanttCellLink,
+      PlanReferenceType,
       PlanComponentVersion, // Import PlanComponentVersion for version history
       Feature, // Import Feature entity for transactional updates
     ]),

@@ -34,58 +34,36 @@ export interface PlanMilestone {
   updatedAt: string;
 }
 
+export interface PlanReferenceFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  file?: File;
+}
+
 export interface PlanReference {
   id: string;
-  type: 'link' | 'document' | 'note' | 'comment' | 'file' | 'milestone';
+  type: 'link' | 'document' | 'note' | 'milestone'; // Content type
   title: string;
   url?: string;
   description?: string;
-  date?: string;
-  phaseId?: string;
+  planReferenceTypeId?: string; // Reference level: plan, period, day
+  planReferenceType?: { id: string; name: 'plan' | 'period' | 'day' };
+  periodDay?: string; // For 'period' type: specific day within the period
+  calendarDayId?: string; // For 'day' type: specific calendar day
+  calendarDay?: { id: string; name: string; date: string; type: string };
+  phaseId?: string; // For 'day' type: phase associated with the day
+  date?: string; // Legacy field - deprecated, use periodDay or calendarDayId
   milestoneColor?: string;
+  files?: PlanReferenceFile[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface GanttCellComment {
-  id: string;
-  text: string;
-  author: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GanttCellFile {
-  id: string;
-  name: string;
-  url: string;
-  size?: number;
-  mimeType?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GanttCellLink {
-  id: string;
-  title: string;
-  url: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GanttCellData {
-  id: string;
-  phaseId?: string;
-  date: string;
-  isMilestone?: boolean;
-  milestoneColor?: string;
-  comments?: GanttCellComment[];
-  files?: GanttCellFile[];
-  links?: GanttCellLink[];
-  createdAt: string;
-  updatedAt: string;
-}
+// Note: GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink have been removed
+// References (comments, files, links) are now handled via plan_references table
 
 export interface Plan {
   id: string;
@@ -99,11 +77,10 @@ export interface Plan {
   productId?: string;
   itOwner?: string;
   featureIds: string[];
-  components: Array<{ componentId: string; finalVersion: string }>;
+  components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
   milestones?: PlanMilestone[];
   references?: PlanReference[];
-  cellData?: GanttCellData[];
   tasks?: PlanTask[];
   createdAt: string;
   updatedAt: string;
@@ -118,13 +95,13 @@ export interface CreatePlanPhaseDto {
 
 export interface CreatePlanDto {
   name: string;
-  owner: string;
+  // Removed: owner field - use itOwner field instead and join with owners table
   startDate: string;
   endDate: string;
   status?: 'planned' | 'in_progress' | 'done' | 'paused';
   description?: string;
   phases?: CreatePlanPhaseDto[];
-  productId?: string;
+  productId: string; // Required
   itOwner?: string;
   featureIds?: string[];
   calendarIds?: string[];
@@ -150,47 +127,26 @@ export interface UpdatePlanMilestoneDto {
   description?: string;
 }
 
-export interface UpdateGanttCellCommentDto {
-  text?: string;
-  author?: string;
-}
-
-export interface UpdateGanttCellFileDto {
-  name?: string;
-  url?: string;
-  size?: number;
-  mimeType?: string;
-}
-
-export interface UpdateGanttCellLinkDto {
-  title?: string;
-  url?: string;
-  description?: string;
-}
-
-export interface UpdateGanttCellDataDto {
-  phaseId?: string;
-  date?: string;
-  isMilestone?: boolean;
-  milestoneColor?: string;
-  comments?: UpdateGanttCellCommentDto[];
-  files?: UpdateGanttCellFileDto[];
-  links?: UpdateGanttCellLinkDto[];
-}
+// Note: UpdateGanttCellCommentDto, UpdateGanttCellFileDto, UpdateGanttCellLinkDto, UpdateGanttCellDataDto have been removed
+// References (comments, files, links) are now handled via plan_references table
 
 export interface UpdatePlanReferenceDto {
-  type?: 'link' | 'document' | 'note' | 'comment' | 'file' | 'milestone';
+  type?: 'link' | 'document' | 'note' | 'milestone'; // Content type
   title?: string;
   url?: string;
   description?: string;
-  date?: string;
-  phaseId?: string;
+  planReferenceTypeId?: string; // Reference level: plan, period, day
+  periodDay?: string; // For 'period' type: specific day within the period
+  calendarDayId?: string; // For 'day' type: specific calendar day
+  phaseId?: string; // For 'day' type: phase associated with the day
+  date?: string; // Legacy field - deprecated, use periodDay or calendarDayId
   milestoneColor?: string;
+  files?: PlanReferenceFile[]; // For document type
 }
 
 export interface UpdatePlanDto {
   name?: string;
-  owner?: string;
+  // Removed: owner field - use itOwner field instead and join with owners table
   startDate?: string;
   endDate?: string;
   status?: 'planned' | 'in_progress' | 'done' | 'paused';
@@ -199,12 +155,13 @@ export interface UpdatePlanDto {
   tasks?: UpdatePlanTaskDto[];
   milestones?: UpdatePlanMilestoneDto[];
   references?: UpdatePlanReferenceDto[];
-  cellData?: UpdateGanttCellDataDto[];
+  // Note: cellData has been removed - references are now handled via plan_references table
   productId?: string;
   itOwner?: string;
   featureIds?: string[];
   calendarIds?: string[];
-  components?: Array<{ componentId: string; finalVersion: string }>;
+  components?: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
+  updatedAt?: string; // For optimistic locking
 }
 
 export const plansService = {

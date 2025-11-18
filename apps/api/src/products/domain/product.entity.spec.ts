@@ -3,7 +3,11 @@
  * Coverage: 100%
  */
 import { Product } from './product.entity';
-import { ComponentVersion, ComponentType } from './component-version.entity';
+import { ProductComponentVersion, ComponentTypeEnum } from './component-version.entity';
+
+// Alias for backward compatibility in tests
+const ComponentVersion = ProductComponentVersion;
+const ComponentType = ComponentTypeEnum;
 
 describe('Product', () => {
   describe('constructor', () => {

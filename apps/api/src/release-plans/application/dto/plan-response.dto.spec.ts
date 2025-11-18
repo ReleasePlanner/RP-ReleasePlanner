@@ -6,15 +6,13 @@ import { Plan, PlanStatus } from '../../domain/plan.entity';
 import { PlanPhase } from '../../domain/plan-phase.entity';
 import { PlanTask } from '../../domain/plan-task.entity';
 import { PlanMilestone } from '../../domain/plan-milestone.entity';
-import { PlanReference, PlanReferenceType } from '../../domain/plan-reference.entity';
-import { GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink } from '../../domain/gantt-cell-data.entity';
+import { PlanReference, PlanReferenceContentType } from '../../domain/plan-reference.entity';
 import {
   PlanResponseDto,
   PlanPhaseResponseDto,
   PlanTaskResponseDto,
   PlanMilestoneResponseDto,
   PlanReferenceResponseDto,
-  GanttCellDataResponseDto,
 } from './plan-response.dto';
 
 describe('PlanResponseDto', () => {
@@ -76,18 +74,34 @@ describe('PlanResponseDto', () => {
 
   describe('PlanReferenceResponseDto', () => {
     it('should create DTO from entity', () => {
-      const reference = new PlanReference(PlanReferenceType.DOCUMENT, 'Title', 'https://example.com', 'Description', '2024-01-01', 'phase-id');
+      // Create a mock PlanReferenceType for testing
+      const planReferenceType = { id: 'plan-type-id', name: 'plan' };
+      
+      const reference = new PlanReference(
+        PlanReferenceContentType.DOCUMENT,
+        'Title',
+        'https://example.com',
+        'Description',
+        'plan-type-id', // planReferenceTypeId
+        undefined, // periodDay
+        undefined, // calendarDayId
+        'phase-id', // phaseId
+        '2024-01-01', // Legacy date
+        undefined // milestoneColor
+      );
       reference.id = 'ref-id';
+      reference.planReferenceType = planReferenceType as any;
       reference.createdAt = new Date();
       reference.updatedAt = new Date();
 
       const dto = new PlanReferenceResponseDto(reference);
 
       expect(dto.id).toBe('ref-id');
-      expect(dto.type).toBe(PlanReferenceType.DOCUMENT);
+      expect(dto.type).toBe(PlanReferenceContentType.DOCUMENT);
       expect(dto.title).toBe('Title');
       expect(dto.url).toBe('https://example.com');
       expect(dto.description).toBe('Description');
+      expect(dto.planReferenceTypeId).toBe('plan-type-id');
       expect(dto.date).toBe('2024-01-01');
       expect(dto.phaseId).toBe('phase-id');
       expect(dto.createdAt).toBe(reference.createdAt);
@@ -95,53 +109,16 @@ describe('PlanResponseDto', () => {
     });
   });
 
-  describe('GanttCellDataResponseDto', () => {
-    it('should create DTO from entity with nested data', () => {
-      const cellData = new GanttCellData('2024-01-15', 'phase-id', true, '#FF0000');
-      cellData.id = 'cell-id';
-      cellData.createdAt = new Date();
-      cellData.updatedAt = new Date();
-
-      const comment = new GanttCellComment('Comment text', 'Author');
-      comment.id = 'comment-id';
-      comment.createdAt = new Date();
-      cellData.comments = [comment];
-
-      const file = new GanttCellFile('file.pdf', 'https://example.com/file.pdf', 1024, 'application/pdf');
-      file.id = 'file-id';
-      file.createdAt = new Date();
-      cellData.files = [file];
-
-      const link = new GanttCellLink('Link Title', 'https://example.com', 'Link description');
-      link.id = 'link-id';
-      link.createdAt = new Date();
-      cellData.links = [link];
-
-      const dto = new GanttCellDataResponseDto(cellData);
-
-      expect(dto.id).toBe('cell-id');
-      expect(dto.date).toBe('2024-01-15');
-      expect(dto.phaseId).toBe('phase-id');
-      expect(dto.isMilestone).toBe(true);
-      expect(dto.milestoneColor).toBe('#FF0000');
-      expect(dto.comments).toHaveLength(1);
-      expect(dto.comments[0].text).toBe('Comment text');
-      expect(dto.files).toHaveLength(1);
-      expect(dto.files[0].name).toBe('file.pdf');
-      expect(dto.links).toHaveLength(1);
-      expect(dto.links[0].title).toBe('Link Title');
-    });
-  });
-
   describe('PlanResponseDto', () => {
     it('should create DTO from complete plan entity', () => {
-      const plan = new Plan('Test Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED, 'Description');
+      const plan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED, 'Description');
       plan.id = 'plan-id';
       plan.productId = 'product-id';
       plan.itOwner = 'it-owner-id';
       plan.featureIds = ['feature-1', 'feature-2'];
-      plan.components = [{ componentId: 'comp-1', finalVersion: '1.0.0' }];
+      plan.components = [{ componentId: 'comp-1', currentVersion: '0.9.0', finalVersion: '1.0.0' }];
       plan.calendarIds = ['calendar-1'];
+      (plan as any).ownerName = 'Owner Name'; // Mock ownerName from JOIN
       plan.createdAt = new Date();
       plan.updatedAt = new Date();
 
@@ -157,19 +134,23 @@ describe('PlanResponseDto', () => {
       milestone.id = 'milestone-id';
       plan.milestones = [milestone];
 
-      const reference = new PlanReference(PlanReferenceType.DOCUMENT, 'Title', 'https://example.com');
+      const planReferenceType = { id: 'plan-type-id', name: 'plan' };
+      const reference = new PlanReference(
+        PlanReferenceContentType.DOCUMENT,
+        'Title',
+        'https://example.com',
+        undefined,
+        'plan-type-id'
+      );
       reference.id = 'ref-id';
+      reference.planReferenceType = planReferenceType as any;
       plan.references = [reference];
-
-      const cellData = new GanttCellData('2024-01-15', 'phase-id');
-      cellData.id = 'cell-id';
-      plan.cellData = [cellData];
 
       const dto = new PlanResponseDto(plan);
 
       expect(dto.id).toBe('plan-id');
       expect(dto.name).toBe('Test Plan');
-      expect(dto.owner).toBe('Owner');
+      expect(dto.owner).toBe('Owner Name');
       expect(dto.startDate).toBe('2024-01-01');
       expect(dto.endDate).toBe('2024-12-31');
       expect(dto.status).toBe(PlanStatus.PLANNED);
@@ -177,19 +158,18 @@ describe('PlanResponseDto', () => {
       expect(dto.productId).toBe('product-id');
       expect(dto.itOwner).toBe('it-owner-id');
       expect(dto.featureIds).toEqual(['feature-1', 'feature-2']);
-      expect(dto.components).toEqual([{ componentId: 'comp-1', finalVersion: '1.0.0' }]);
+      expect(dto.components).toEqual([{ componentId: 'comp-1', currentVersion: '0.9.0', finalVersion: '1.0.0' }]);
       expect(dto.calendarIds).toEqual(['calendar-1']);
       expect(dto.phases).toHaveLength(1);
       expect(dto.tasks).toHaveLength(1);
       expect(dto.milestones).toHaveLength(1);
       expect(dto.references).toHaveLength(1);
-      expect(dto.cellData).toHaveLength(1);
       expect(dto.createdAt).toBe(plan.createdAt);
       expect(dto.updatedAt).toBe(plan.updatedAt);
     });
 
     it('should handle empty arrays', () => {
-      const plan = new Plan('Test Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const plan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       plan.id = 'plan-id';
       plan.createdAt = new Date();
       plan.updatedAt = new Date();
@@ -200,7 +180,6 @@ describe('PlanResponseDto', () => {
       expect(dto.tasks).toEqual([]);
       expect(dto.milestones).toEqual([]);
       expect(dto.references).toEqual([]);
-      expect(dto.cellData).toEqual([]);
     });
   });
 });

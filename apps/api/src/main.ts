@@ -8,12 +8,19 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
+  });
+
+  // Serve static files from 'files' directory
+  app.useStaticAssets(join(process.cwd(), 'files'), {
+    prefix: '/files/',
   });
 
   // Global prefix for all routes
@@ -119,6 +126,7 @@ async function bootstrap() {
     .addTag('calendars', 'Gestión de calendarios y días festivos')
     .addTag('it-owners', 'Gestión de propietarios IT')
     .addTag('plans', 'Gestión de planes de release')
+    .addTag('files', 'Gestión de archivos')
     .addTag('health', 'Health check endpoints')
     .addTag('metrics', 'Prometheus metrics endpoint')
     .addServer(`http://localhost:${process.env.PORT || 3000}`, 'Development server')

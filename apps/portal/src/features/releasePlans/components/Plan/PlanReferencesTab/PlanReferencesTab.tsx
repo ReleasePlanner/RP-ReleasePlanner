@@ -21,6 +21,7 @@ import {
   OpenInNew as OpenInNewIcon,
   CalendarToday as CalendarIcon,
   Timeline as TimelineIcon,
+  AttachFile as AttachFileIcon,
 } from "@mui/icons-material";
 import type { PlanReference, PlanReferenceType, PlanPhase } from "../../../types";
 import { ReferenceEditDialog } from "./ReferenceEditDialog";
@@ -192,6 +193,16 @@ export function PlanReferencesTab({
         </Tooltip>
       </Stack>
 
+      {(() => {
+        // Debug: Log render condition
+        console.log('[PlanReferencesTab] Render condition check:', {
+          referencesLength: references.length,
+          references: references,
+          willShowEmpty: references.length === 0,
+          willShowList: references.length > 0,
+        });
+        return null;
+      })()}
       {references.length === 0 ? (
         <Box
           sx={{
@@ -244,9 +255,23 @@ export function PlanReferencesTab({
         </Box>
       ) : (
         <Stack spacing={1.25} sx={{ overflow: "auto", flex: 1 }}>
-          {references.map((reference) => (
+          {(() => {
+            console.log('[PlanReferencesTab] Rendering references list:', {
+              referencesCount: references.length,
+              references: references.map(r => ({ id: r.id, type: r.type, title: r.title })),
+            });
+            return null;
+          })()}
+          {references.map((reference) => {
+            console.log('[PlanReferencesTab] Rendering reference:', {
+              id: reference.id,
+              type: reference.type,
+              title: reference.title,
+              hasId: !!reference.id,
+            });
+            return (
             <Box
-              key={reference.id}
+              key={reference.id || `ref-${Math.random()}`}
               onClick={(e) => {
                 e.stopPropagation();
                 if (
@@ -477,11 +502,66 @@ export function PlanReferencesTab({
                         {reference.url}
                       </Typography>
                     )}
+                    {reference.type === "document" && reference.files && reference.files.length > 0 && (
+                      <Stack spacing={0.75} sx={{ mt: 1 }}>
+                        {reference.files.map((file) => (
+                          <Box
+                            key={file.id}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              p: 1,
+                              borderRadius: 1,
+                              bgcolor: alpha(theme.palette.primary.main, 0.04),
+                              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                            }}
+                          >
+                            <Stack direction="row" spacing={1} alignItems="center" flex={1} sx={{ minWidth: 0 }}>
+                              <AttachFileIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {file.name}
+                              </Typography>
+                            </Stack>
+                            {file.url && (
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  const fileUrl = file.url!.startsWith('http') 
+                                    ? file.url! 
+                                    : `${window.location.origin}${file.url}`;
+                                  window.open(fileUrl, '_blank');
+                                }}
+                                sx={{
+                                  p: 0.5,
+                                  color: theme.palette.primary.main,
+                                  "&:hover": {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                  },
+                                }}
+                              >
+                                <OpenInNewIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            )}
+                          </Box>
+                        ))}
+                      </Stack>
+                    )}
                   </Stack>
                 )}
               </Stack>
             </Box>
-          ))}
+            );
+          })}
         </Stack>
       )}
 

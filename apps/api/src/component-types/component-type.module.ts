@@ -1,15 +1,16 @@
 /**
- * Component Type Module
+ * Product Component Module
+ * Previously named ComponentTypeModule, renamed to ProductComponentModule
  */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ComponentTypeController } from './presentation/component-type.controller';
 import { ComponentTypeService } from './application/component-type.service';
 import { ComponentTypeRepository } from './infrastructure/component-type.repository';
-import { ComponentType } from './domain/component-type.entity';
+import { ProductComponent } from './domain/component-type.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ComponentType])],
+  imports: [TypeOrmModule.forFeature([ProductComponent])],
   controllers: [ComponentTypeController],
   providers: [
     ComponentTypeService,

@@ -3,7 +3,7 @@
  */
 import { Injectable, Inject } from '@nestjs/common';
 import { Product } from '../domain/product.entity';
-import { ComponentVersion } from '../domain/component-version.entity';
+import { ProductComponentVersion } from '../domain/component-version.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
@@ -62,7 +62,7 @@ export class ProductService {
           if (!c || !c.type || !c.currentVersion || !c.previousVersion) {
             throw new Error('Invalid component data');
           }
-          return new ComponentVersion(c.type, c.currentVersion, c.previousVersion);
+          return new ProductComponentVersion(c.type, c.currentVersion, c.previousVersion);
         })
       : [];
 

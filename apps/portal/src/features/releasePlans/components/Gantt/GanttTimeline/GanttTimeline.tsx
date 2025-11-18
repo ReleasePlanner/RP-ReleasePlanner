@@ -25,8 +25,8 @@ export type GanttTimelineProps = {
   milestones?: PlanMilestone[];
   onJumpToToday?: () => void;
   onDayClick?: (date: string) => void;
-  // Cell data props for day-level data
-  cellData?: import("../../../types").GanttCellData[];
+  // References props (replaces cellData)
+  references?: import("../../../types").PlanReference[]; // All references for the plan
   onAddCellComment?: (date: string) => void;
   onAddCellFile?: (date: string) => void;
   onAddCellLink?: (date: string) => void;
@@ -41,7 +41,7 @@ export default function GanttTimeline({
   milestones = [],
   onJumpToToday,
   onDayClick,
-  cellData = [],
+  references = [],
   onAddCellComment,
   onAddCellFile,
   onAddCellLink,
@@ -116,7 +116,7 @@ export default function GanttTimeline({
         pxPerDay={safePxPerDay}
         milestones={milestonesMap}
         onDayClick={onDayClick}
-        cellData={cellData}
+        references={references}
         onAddCellComment={onAddCellComment}
         onAddCellFile={onAddCellFile}
         onAddCellLink={onAddCellLink}

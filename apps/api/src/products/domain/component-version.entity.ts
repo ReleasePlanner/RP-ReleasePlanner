@@ -1,9 +1,10 @@
 /**
- * Component Version Entity (TypeORM)
+ * Product Component Version Entity (TypeORM)
+ * Previously named ComponentVersion, renamed to ProductComponentVersion
  */
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { ComponentType } from '../../component-types/domain/component-type.entity';
+import { ProductComponent } from '../../component-types/domain/component-type.entity';
 
 // Keep enum for backward compatibility during migration
 export enum ComponentTypeEnum {
@@ -12,8 +13,8 @@ export enum ComponentTypeEnum {
   MOBILE = 'mobile',
 }
 
-@Entity('component_versions')
-export class ComponentVersion extends BaseEntity {
+@Entity('product_component_versions')
+export class ProductComponentVersion extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   name?: string;
 
@@ -24,9 +25,9 @@ export class ComponentVersion extends BaseEntity {
   @Column({ type: 'uuid', nullable: true })
   componentTypeId?: string;
 
-  @ManyToOne(() => ComponentType, { eager: true, nullable: true })
+  @ManyToOne(() => ProductComponent, { eager: true, nullable: true })
   @JoinColumn({ name: 'componentTypeId' })
-  componentType?: ComponentType;
+  componentType?: ProductComponent;
 
   @Column({ type: 'varchar', length: 50 })
   currentVersion: string;
@@ -42,7 +43,7 @@ export class ComponentVersion extends BaseEntity {
   product: any;
 
   constructor(
-    typeOrComponentType?: ComponentTypeEnum | ComponentType | string,
+    typeOrComponentType?: ComponentTypeEnum | ProductComponent | string,
     currentVersion?: string,
     previousVersion?: string,
     name?: string
@@ -52,7 +53,7 @@ export class ComponentVersion extends BaseEntity {
       this.name = name;
     }
     
-    // Handle both enum and ComponentType entity
+    // Handle both enum and ProductComponent entity
     if (typeOrComponentType !== undefined) {
       if (typeof typeOrComponentType === 'string') {
         // String value - normalize to lowercase and treat as enum
@@ -62,8 +63,8 @@ export class ComponentVersion extends BaseEntity {
           normalizedType = 'services';
         }
         this.type = normalizedType as ComponentTypeEnum;
-      } else if (typeOrComponentType instanceof ComponentType) {
-        // ComponentType entity
+      } else if (typeOrComponentType instanceof ProductComponent) {
+        // ProductComponent entity
         this.componentType = typeOrComponentType;
         this.componentTypeId = typeOrComponentType.id;
         // Also set enum for backward compatibility - normalize code to lowercase

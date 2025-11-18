@@ -1,15 +1,16 @@
 /**
- * Base Phase Module
+ * Phase Module
+ * Previously named BasePhaseModule, renamed to PhaseModule
  */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BasePhaseController } from './presentation/base-phase.controller';
 import { BasePhaseService } from './application/base-phase.service';
 import { BasePhaseRepository } from './infrastructure/base-phase.repository';
-import { BasePhase } from './domain/base-phase.entity';
+import { Phase } from './domain/base-phase.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BasePhase])],
+  imports: [TypeOrmModule.forFeature([Phase])],
   controllers: [BasePhaseController],
   providers: [
     BasePhaseService,

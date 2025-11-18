@@ -55,11 +55,14 @@ export class AuthService {
       // Try email as fallback
       const userByEmail = await this.userRepository.findByEmail(username);
       if (!userByEmail) {
+        this.logger.warn(`[AuthService.validateUser] User not found: ${username}`);
         return null;
       }
+      this.logger.log(`[AuthService.validateUser] User found by email: ${username}`);
       return this.validatePassword(userByEmail, password);
     }
 
+    this.logger.log(`[AuthService.validateUser] User found by username: ${username}`);
     return this.validatePassword(user, password);
   }
 
@@ -75,19 +78,23 @@ export class AuthService {
     validatePasswordInput(password);
 
     if (!user.isActive) {
+      this.logger.warn(`[AuthService.validatePassword] User ${user.id} is not active`);
       return null;
     }
 
     // Defensive: Validate user has password hash
     if (!user.password || typeof user.password !== "string") {
+      this.logger.warn(`[AuthService.validatePassword] User ${user.id} has no password hash`);
       return null;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      this.logger.warn(`[AuthService.validatePassword] Invalid password for user ${user.id}`);
       return null;
     }
 
+    this.logger.log(`[AuthService.validatePassword] Password validated successfully for user ${user.id}`);
     return user;
   }
 
@@ -100,11 +107,15 @@ export class AuthService {
     validateString(loginDto.username, "Username");
     validatePasswordInput(loginDto.password);
 
+    this.logger.log(`[AuthService.login] Attempting login for username: ${loginDto.username}`);
     const user = await this.validateUser(loginDto.username, loginDto.password);
 
     if (!user) {
+      this.logger.warn(`[AuthService.login] Invalid credentials for username: ${loginDto.username}`);
       throw new UnauthorizedException("Invalid credentials");
     }
+
+    this.logger.log(`[AuthService.login] User validated successfully: ${user.id}`);
 
     // Defensive: Validate user has required fields
     validateId(user.id, "User");

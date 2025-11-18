@@ -7,28 +7,28 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseRepository } from '../../common/database/base.repository';
-import { BasePhase } from '../domain/base-phase.entity';
+import { Phase } from '../domain/base-phase.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
 import { validateString } from '@rp-release-planner/rp-shared';
 
-export interface IBasePhaseRepository extends IRepository<BasePhase> {
-  findByName(name: string): Promise<BasePhase | null>;
-  findByColor(color: string): Promise<BasePhase | null>;
+export interface IBasePhaseRepository extends IRepository<Phase> {
+  findByName(name: string): Promise<Phase | null>;
+  findByColor(color: string): Promise<Phase | null>;
 }
 
 @Injectable()
 export class BasePhaseRepository
-  extends BaseRepository<BasePhase>
+  extends BaseRepository<Phase>
   implements IBasePhaseRepository
 {
   constructor(
-    @InjectRepository(BasePhase)
-    repository: Repository<BasePhase>,
+    @InjectRepository(Phase)
+    repository: Repository<Phase>,
   ) {
     super(repository);
   }
 
-  async findByName(name: string): Promise<BasePhase | null> {
+  async findByName(name: string): Promise<Phase | null> {
     // Defensive: Validate name before query
     validateString(name, 'Phase name');
     
@@ -40,7 +40,7 @@ export class BasePhaseRepository
     );
   }
 
-  async findByColor(color: string): Promise<BasePhase | null> {
+  async findByColor(color: string): Promise<Phase | null> {
     // Defensive: Validate color before query
     validateString(color, 'Phase color');
     

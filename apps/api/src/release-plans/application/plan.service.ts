@@ -3,18 +3,15 @@ import { Plan, PlanStatus } from '../domain/plan.entity';
 import { PlanPhase } from '../domain/plan-phase.entity';
 import { PlanTask } from '../domain/plan-task.entity';
 import { PlanMilestone } from '../domain/plan-milestone.entity';
-import { PlanReference, PlanReferenceType } from '../domain/plan-reference.entity';
-import { GanttCellData } from '../domain/gantt-cell-data.entity';
-import { GanttCellComment } from '../domain/gantt-cell-data.entity';
-import { GanttCellFile } from '../domain/gantt-cell-data.entity';
-import { GanttCellLink } from '../domain/gantt-cell-data.entity';
+import { PlanReference, PlanReferenceContentType } from '../domain/plan-reference.entity';
+import { PlanReferenceType } from '../domain/plan-reference-type.entity';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanResponseDto } from './dto/plan-response.dto';
 import type { IPlanRepository } from '../infrastructure/plan.repository';
 import type { IFeatureRepository } from '../../features/infrastructure/feature.repository';
 import { Feature, FeatureStatus } from '../../features/domain/feature.entity';
-import { ComponentVersion } from '../../products/domain/component-version.entity';
+import { ProductComponentVersion } from '../../products/domain/component-version.entity';
 import { Product } from '../../products/domain/product.entity';
 import { PlanComponentVersion } from '../domain/plan-component-version.entity';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
@@ -58,7 +55,7 @@ export class PlanService {
     // Defensive: Validate DTO
     validateObject(dto, 'CreatePlanDto');
     validateString(dto.name, 'Plan name');
-    validateString(dto.owner, 'Plan owner');
+    // Removed: owner field validation - use itOwner field instead
     validateDateString(dto.startDate, 'Start date');
     validateDateString(dto.endDate, 'End date');
     
@@ -247,10 +244,7 @@ export class PlanService {
       validateString(dto.name, 'Plan name');
       plan.name = dto.name;
     }
-    if (dto.owner !== undefined) {
-      validateString(dto.owner, 'Plan owner');
-      plan.owner = dto.owner;
-    }
+    // Removed: owner field - use itOwner field instead and join with owners table
     if (dto.startDate !== undefined) {
       plan.startDate = dto.startDate;
     }
@@ -624,7 +618,8 @@ export class PlanService {
       const milestoneReferences: Array<{ date: string; name: string; description?: string; phaseId?: string }> = [];
       const milestoneKeys = new Set<string>();
       
-      dto.references.forEach((r) => {
+      // Process references sequentially to allow async operations
+      for (const r of dto.references) {
         // Defensive: Validate reference data
         if (!r || !r.type || !r.title) {
           throw new Error('Reference type and title are required');
@@ -664,13 +659,58 @@ export class PlanService {
           }
         }
         
+        // Determine planReferenceTypeId based on provided fields
+        // Default to 'plan' if not specified
+        let planReferenceTypeId = r.planReferenceTypeId;
+        if (!planReferenceTypeId) {
+          // Get repository manager to query plan_reference_type
+          const planRepo = this.repository as any;
+          const manager = planRepo.repository?.manager || planRepo.manager;
+          
+          if (!manager) {
+            throw new Error('Repository manager not available');
+          }
+          
+          const PlanReferenceTypeEntity = require('../domain/plan-reference-type.entity').PlanReferenceType;
+          
+          // Try to infer from provided fields
+          if (r.calendarDayId && validPhaseId) {
+            // Day level: has calendarDayId and phaseId
+            // Need to fetch 'day' type ID
+            const dayType = await manager.findOne(PlanReferenceTypeEntity, { where: { name: 'day' } as any });
+            if (dayType) {
+              planReferenceTypeId = dayType.id;
+            }
+          } else if (r.periodDay) {
+            // Period level: has periodDay
+            const periodType = await manager.findOne(PlanReferenceTypeEntity, { where: { name: 'period' } as any });
+            if (periodType) {
+              planReferenceTypeId = periodType.id;
+            }
+          } else {
+            // Plan level: default
+            const planType = await manager.findOne(PlanReferenceTypeEntity, { where: { name: 'plan' } as any });
+            if (planType) {
+              planReferenceTypeId = planType.id;
+            }
+          }
+        }
+        
+        // If still no planReferenceTypeId, throw error
+        if (!planReferenceTypeId) {
+          throw new Error('Plan reference type is required');
+        }
+        
         const reference = new PlanReference(
-          r.type as PlanReferenceType,
+          r.type as PlanReferenceContentType,
           r.title,
           r.url,
           r.description,
-          r.date,
+          planReferenceTypeId,
+          r.periodDay,
+          r.calendarDayId,
           validPhaseId, // Use validated phaseId (can be undefined for NULL in DB)
+          r.date, // Legacy date field
           (r as any).milestoneColor, // Include milestoneColor for milestone type references
         );
         reference.planId = plan.id;
@@ -696,7 +736,7 @@ export class PlanService {
         }
         if (!plan.references) plan.references = [];
         plan.references.push(reference);
-      });
+      }
       
       // Sync milestones from milestone-type references
       // IMPORTANT: When saving references tab, milestones from milestone-type references
@@ -791,87 +831,8 @@ export class PlanService {
       });
     }
 
-    // Update cellData if provided (replace all cellData)
-    if (dto.cellData !== undefined) {
-      validateArray(dto.cellData, 'Cell data');
-      plan.cellData = [];
-      dto.cellData.forEach((c) => {
-        // Defensive: Validate cell data
-        if (!c || !c.date) {
-          throw new Error('Cell data date is required');
-        }
-        validateDateString(c.date, 'Cell date');
-        if (c.phaseId) validateId(c.phaseId, 'Phase');
-        
-        const cellData = new GanttCellData(
-          c.date,
-          c.phaseId,
-          c.isMilestone,
-          c.milestoneColor,
-        );
-        cellData.planId = plan.id;
-
-        // Add comments if provided
-        if (c.comments) {
-          validateArray(c.comments, 'Comments');
-          cellData.comments = [];
-          c.comments.forEach((cm) => {
-            // Defensive: Validate comment data
-            if (!cm || !cm.text || !cm.author) {
-              throw new Error('Comment text and author are required');
-            }
-            validateString(cm.text, 'Comment text');
-            validateString(cm.author, 'Comment author');
-            const comment = new GanttCellComment(cm.text, cm.author);
-            comment.cellDataId = cellData.id;
-            if (!cellData.comments) cellData.comments = [];
-            cellData.comments.push(comment);
-          });
-        }
-
-        // Add files if provided
-        if (c.files) {
-          validateArray(c.files, 'Files');
-          cellData.files = [];
-          c.files.forEach((f) => {
-            // Defensive: Validate file data
-            if (!f || !f.name || !f.url) {
-              throw new Error('File name and URL are required');
-            }
-            validateString(f.name, 'File name');
-            validateString(f.url, 'File URL');
-            if (f.size !== undefined && (typeof f.size !== 'number' || f.size < 0)) {
-              throw new Error('File size must be a non-negative number');
-            }
-            const file = new GanttCellFile(f.name, f.url, f.size, f.mimeType);
-            file.cellDataId = cellData.id;
-            if (!cellData.files) cellData.files = [];
-            cellData.files.push(file);
-          });
-        }
-
-        // Add links if provided
-        if (c.links) {
-          validateArray(c.links, 'Links');
-          cellData.links = [];
-          c.links.forEach((l) => {
-            // Defensive: Validate link data
-            if (!l || !l.title || !l.url) {
-              throw new Error('Link title and URL are required');
-            }
-            validateString(l.title, 'Link title');
-            validateString(l.url, 'Link URL');
-            const link = new GanttCellLink(l.title, l.url, l.description);
-            link.cellDataId = cellData.id;
-            if (!cellData.links) cellData.links = [];
-            cellData.links.push(link);
-          });
-        }
-
-        if (!plan.cellData) plan.cellData = [];
-        plan.cellData.push(cellData);
-      });
-    }
+    // Note: cellData has been removed - references (comments, files, links) are now handled via plan_references table
+    // with plan_reference_type to specify if they are at plan, period, or day level
 
     // Validate plan before saving
     try {
@@ -1206,7 +1167,7 @@ export class PlanService {
           component.previousVersion = component.currentVersion; // currentVersion becomes previousVersion
           component.currentVersion = componentUpdate.finalVersion; // finalVersion becomes new currentVersion
           
-          await transactionalEntityManager.save(ComponentVersion, component);
+          await transactionalEntityManager.save(ProductComponentVersion, component);
         }
       }
       

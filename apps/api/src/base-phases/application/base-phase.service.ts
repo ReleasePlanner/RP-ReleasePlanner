@@ -4,7 +4,7 @@
  * Application layer - Business logic
  */
 import { Injectable, Inject } from '@nestjs/common';
-import { BasePhase } from '../domain/base-phase.entity';
+import { Phase } from '../domain/base-phase.entity';
 import { CreateBasePhaseDto } from './dto/create-base-phase.dto';
 import { UpdateBasePhaseDto } from './dto/update-base-phase.dto';
 import { BasePhaseResponseDto } from './dto/base-phase-response.dto';
@@ -78,7 +78,7 @@ export class BasePhaseService {
     }
 
     // Create entity
-    const phase = new BasePhase(dto.name, dto.color);
+    const phase = new Phase(dto.name, dto.color);
     phase.validate(); // Validate before creating
 
     const created = await this.repository.create(phase);

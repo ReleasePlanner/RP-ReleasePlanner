@@ -1,12 +1,13 @@
 /**
- * Component Type Entity (TypeORM)
+ * Product Component Entity (TypeORM)
+ * Previously named ComponentType, renamed to ProductComponent
  */
 import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
 
-@Entity('component_types')
+@Entity('product_components')
 @Index(['name'], { unique: true })
-export class ComponentType extends BaseEntity {
+export class ProductComponent extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
@@ -34,7 +35,7 @@ export class ComponentType extends BaseEntity {
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
-      throw new Error('Component type name is required');
+      throw new Error('Product component name is required');
     }
   }
 }

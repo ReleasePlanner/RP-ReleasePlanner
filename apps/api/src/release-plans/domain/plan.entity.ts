@@ -4,7 +4,6 @@ import { PlanPhase } from './plan-phase.entity';
 import { PlanTask } from './plan-task.entity';
 import { PlanMilestone } from './plan-milestone.entity';
 import { PlanReference } from './plan-reference.entity';
-import { GanttCellData } from './gantt-cell-data.entity';
 import { PlanComponentVersion } from './plan-component-version.entity';
 
 export enum PlanStatus {
@@ -78,12 +77,6 @@ export class Plan extends BaseEntity {
     eager: false,
   })
   references?: PlanReference[];
-
-  @OneToMany(() => GanttCellData, (cellData) => cellData.plan, {
-    cascade: true,
-    eager: false,
-  })
-  cellData?: GanttCellData[];
 
   @OneToMany(() => PlanComponentVersion, (componentVersion) => componentVersion.plan, {
     cascade: true,

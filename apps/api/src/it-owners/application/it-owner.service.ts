@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { ITOwner } from '../domain/it-owner.entity';
+import { Owner } from '../domain/it-owner.entity';
 import { CreateITOwnerDto } from './dto/create-it-owner.dto';
 import { UpdateITOwnerDto } from './dto/update-it-owner.dto';
 import { ITOwnerResponseDto } from './dto/it-owner-response.dto';
@@ -49,7 +49,7 @@ export class ITOwnerService {
       );
     }
 
-    const owner = new ITOwner(dto.name);
+    const owner = new Owner(dto.name);
     const created = await this.repository.create(owner);
     
     // Defensive: Validate creation result

@@ -7,13 +7,13 @@ import { ProductController } from './presentation/product.controller';
 import { ProductService } from './application/product.service';
 import { ProductRepository } from './infrastructure/product.repository';
 import { Product } from './domain/product.entity';
-import { ComponentVersion } from './domain/component-version.entity';
-import { ComponentType } from '../component-types/domain/component-type.entity';
+import { ProductComponentVersion } from './domain/component-version.entity';
+import { ProductComponent } from '../component-types/domain/component-type.entity';
 import { ComponentTypeModule } from '../component-types/component-type.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, ComponentVersion, ComponentType]),
+    TypeOrmModule.forFeature([Product, ProductComponentVersion, ProductComponent]),
     ComponentTypeModule,
   ],
   controllers: [ProductController],

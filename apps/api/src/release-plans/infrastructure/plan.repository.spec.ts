@@ -44,8 +44,8 @@ describe('PlanRepository', () => {
   describe('findByProductId', () => {
     it('should find plans by product id', async () => {
       const plans = [
-        new Plan('Plan 1', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
-        new Plan('Plan 2', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 2', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
       ];
       mockTypeOrmRepository.find.mockResolvedValue(plans);
 
@@ -61,8 +61,8 @@ describe('PlanRepository', () => {
   describe('findByStatus', () => {
     it('should find plans by status', async () => {
       const plans = [
-        new Plan('Plan 1', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
-        new Plan('Plan 2', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 2', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
       ];
       mockTypeOrmRepository.find.mockResolvedValue(plans);
 
@@ -75,26 +75,12 @@ describe('PlanRepository', () => {
     });
   });
 
-  describe('findByOwner', () => {
-    it('should find plans by owner', async () => {
-      const plans = [
-        new Plan('Plan 1', 'Owner 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
-        new Plan('Plan 2', 'Owner 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
-      ];
-      mockTypeOrmRepository.find.mockResolvedValue(plans);
-
-      const found = await repository.findByOwner('Owner 1');
-
-      expect(mockTypeOrmRepository.find).toHaveBeenCalledWith({
-        where: { owner: 'Owner 1' },
-      });
-      expect(found).toEqual(plans);
-    });
-  });
+  // Note: findByOwner has been removed - owner field is being removed from plans table
+  // Use itOwner field instead and join with owners table via findAllWithOwnerName
 
   describe('findWithRelations', () => {
     it('should find plan with all relations', async () => {
-      const plan = new Plan('Test Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const plan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       plan.id = 'test-id';
       mockTypeOrmRepository.findOne.mockResolvedValue(plan);
 
@@ -107,10 +93,8 @@ describe('PlanRepository', () => {
           'tasks',
           'milestones',
           'references',
-          'cellData',
-          'cellData.comments',
-          'cellData.files',
-          'cellData.links',
+          'references.planReferenceType',
+          'references.calendarDay',
         ],
       });
       expect(found).toEqual(plan);
@@ -127,7 +111,7 @@ describe('PlanRepository', () => {
 
   describe('findById', () => {
     it('should use findWithRelations', async () => {
-      const plan = new Plan('Test Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const plan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       plan.id = 'test-id';
       mockTypeOrmRepository.findOne.mockResolvedValue(plan);
 
@@ -140,10 +124,8 @@ describe('PlanRepository', () => {
           'tasks',
           'milestones',
           'references',
-          'cellData',
-          'cellData.comments',
-          'cellData.files',
-          'cellData.links',
+          'references.planReferenceType',
+          'references.calendarDay',
         ],
       });
       expect(found).toEqual(plan);
@@ -154,12 +136,11 @@ describe('PlanRepository', () => {
     it('should create a new plan', async () => {
       const planData = {
         name: 'Test Plan',
-        owner: 'Owner',
         startDate: '2024-01-01',
         endDate: '2024-12-31',
         status: PlanStatus.PLANNED,
       } as Plan;
-      const savedPlan = new Plan('Test Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const savedPlan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       savedPlan.id = 'test-id';
       
       mockTypeOrmRepository.create.mockReturnValue(planData as Plan);
@@ -174,8 +155,8 @@ describe('PlanRepository', () => {
 
     it('should find all plans', async () => {
       const plans = [
-        new Plan('Plan 1', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
-        new Plan('Plan 2', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 1', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
+        new Plan('Plan 2', '2024-01-01', '2024-12-31', PlanStatus.PLANNED),
       ];
       mockTypeOrmRepository.find.mockResolvedValue(plans);
 
@@ -186,9 +167,9 @@ describe('PlanRepository', () => {
     });
 
     it('should update plan', async () => {
-      const existingPlan = new Plan('Old Name', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const existingPlan = new Plan('Old Name', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       existingPlan.id = 'test-id';
-      const updatedPlan = new Plan('New Name', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      const updatedPlan = new Plan('New Name', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
       updatedPlan.id = 'test-id';
 
       mockTypeOrmRepository.findOne.mockResolvedValue(existingPlan);
@@ -212,15 +193,36 @@ describe('PlanRepository', () => {
     });
 
     it('should delete plan', async () => {
-      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      const plan = new Plan('Test Plan', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      plan.id = 'test-id';
+      
+      // Mock manager.transaction
+      const mockTransactionManager = {
+        findOne: jest.fn().mockResolvedValue(plan),
+        remove: jest.fn().mockResolvedValue(plan),
+      };
+      const mockManager = {
+        transaction: jest.fn((callback) => callback(mockTransactionManager)),
+      };
+      (mockTypeOrmRepository as any).manager = mockManager;
 
       await repository.delete('test-id');
 
-      expect(mockTypeOrmRepository.delete).toHaveBeenCalledWith('test-id');
+      expect(mockManager.transaction).toHaveBeenCalled();
+      expect(mockTransactionManager.findOne).toHaveBeenCalled();
+      expect(mockTransactionManager.remove).toHaveBeenCalled();
     });
 
     it('should throw error when deleting non-existent plan', async () => {
-      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      // Mock manager.transaction
+      const mockTransactionManager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        remove: jest.fn(),
+      };
+      const mockManager = {
+        transaction: jest.fn((callback) => callback(mockTransactionManager)),
+      };
+      (mockTypeOrmRepository as any).manager = mockManager;
 
       await expect(repository.delete('non-existent')).rejects.toThrow(NotFoundException);
     });

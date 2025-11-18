@@ -17,7 +17,7 @@ import {
   AttachFile as FileIcon,
   Link as LinkIcon,
 } from "@mui/icons-material";
-import type { PlanMilestone, GanttCellData } from "../../../types";
+import type { PlanMilestone, PlanReference } from "../../../types";
 
 export type TimelineRowProps = {
   height: number;
@@ -120,8 +120,8 @@ export type DaysRowProps = {
   pxPerDay: number;
   milestones?: Map<string, PlanMilestone>;
   onDayClick?: (date: string) => void;
-  // Cell data props for day-level data
-  cellData?: GanttCellData[];
+  // References props (replaces cellData)
+  references?: PlanReference[]; // All references for the plan
   onAddCellComment?: (date: string) => void;
   onAddCellFile?: (date: string) => void;
   onAddCellLink?: (date: string) => void;
@@ -134,7 +134,7 @@ export function DaysRow({
   pxPerDay,
   milestones = new Map(),
   onDayClick,
-  cellData = [],
+  references = [],
   onAddCellComment,
   onAddCellFile,
   onAddCellLink,
@@ -216,16 +216,17 @@ export function DaysRow({
           const milestone = milestones.get(dateKey);
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           
-          // Find day-level cell data (without phaseId)
-          const dayCellData = cellData.find(
-            (cd) => cd.date === dateKey && !cd.phaseId
+          // Find day-level references (period-level or day-level without phaseId)
+          const dayRefs = references.filter(ref => 
+            (ref.date === dateKey || ref.periodDay === dateKey) && 
+            !ref.phaseId // Day-level references without phase
           );
           
-          const commentsCount = dayCellData?.comments?.length ?? 0;
-          const filesCount = dayCellData?.files?.length ?? 0;
-          const linksCount = dayCellData?.links?.length ?? 0;
+          const commentsCount = dayRefs.filter(r => r.type === 'note' && !r.url).length;
+          const filesCount = dayRefs.filter(r => r.type === 'document' && r.files && r.files.length > 0).length;
+          const linksCount = dayRefs.filter(r => r.type === 'link' || (r.type === 'document' && r.url)).length;
           const hasData = commentsCount > 0 || filesCount > 0 || linksCount > 0;
-          const isDayMilestone = dayCellData?.isMilestone ?? false;
+          const isDayMilestone = dayRefs.some(r => r.type === 'milestone');
           
           const totalDataItems = commentsCount + filesCount + linksCount;
           const hasMultipleItems = totalDataItems > 1;
@@ -322,7 +323,7 @@ export function DaysRow({
                     borderLeft: `4px solid transparent`,
                     borderRight: `4px solid transparent`,
                     borderTop: `4px solid ${
-                      dayCellData?.milestoneColor ?? theme.palette.warning.main
+                      dayRefs.find(r => r.type === 'milestone')?.milestoneColor ?? theme.palette.warning.main
                     }`,
                     zIndex: 3,
                     pointerEvents: "none",
@@ -480,10 +481,11 @@ export function DaysRow({
           />
           <span>Comentarios</span>
           {contextMenu && (() => {
-            const dayData = cellData.find(
-              (cd) => cd.date === contextMenu.date && !cd.phaseId
+            const dayRefs = references.filter(ref => 
+              (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+              !ref.phaseId
             );
-            const count = dayData?.comments?.length ?? 0;
+            const count = dayRefs.filter(r => r.type === 'note' && !r.url).length;
             return count > 0 ? (
               <Chip
                 label={count}
@@ -519,10 +521,11 @@ export function DaysRow({
           />
           <span>Archivos</span>
           {contextMenu && (() => {
-            const dayData = cellData.find(
-              (cd) => cd.date === contextMenu.date && !cd.phaseId
+            const dayRefs = references.filter(ref => 
+              (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+              !ref.phaseId
             );
-            const count = dayData?.files?.length ?? 0;
+            const count = dayRefs.filter(r => r.type === 'document' && r.files && r.files.length > 0).length;
             return count > 0 ? (
               <Chip
                 label={count}
@@ -558,10 +561,11 @@ export function DaysRow({
           />
           <span>Enlaces</span>
           {contextMenu && (() => {
-            const dayData = cellData.find(
-              (cd) => cd.date === contextMenu.date && !cd.phaseId
+            const dayRefs = references.filter(ref => 
+              (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+              !ref.phaseId
             );
-            const count = dayData?.links?.length ?? 0;
+            const count = dayRefs.filter(r => r.type === 'link' || (r.type === 'document' && r.url)).length;
             return count > 0 ? (
               <Chip
                 label={count}
@@ -586,9 +590,11 @@ export function DaysRow({
             fontSize: "0.875rem",
             backgroundColor:
               contextMenu &&
-              cellData.find(
-                (cd) => cd.date === contextMenu.date && !cd.phaseId
-              )?.isMilestone
+              references.some(ref => 
+                (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+                !ref.phaseId && 
+                ref.type === 'milestone'
+              )
                 ? alpha(theme.palette.warning.main, 0.1)
                 : "transparent",
             "&:hover": {
@@ -602,18 +608,22 @@ export function DaysRow({
               mr: 1.5,
               color:
                 contextMenu &&
-                cellData.find(
-                  (cd) => cd.date === contextMenu.date && !cd.phaseId
-                )?.isMilestone
+                references.some(ref => 
+                  (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+                  !ref.phaseId && 
+                  ref.type === 'milestone'
+                )
                   ? theme.palette.warning.main
                   : theme.palette.text.secondary,
             }}
           />
           <span>
             {contextMenu &&
-            cellData.find(
-              (cd) => cd.date === contextMenu.date && !cd.phaseId
-            )?.isMilestone
+            references.some(ref => 
+              (ref.date === contextMenu.date || ref.periodDay === contextMenu.date) && 
+              !ref.phaseId && 
+              ref.type === 'milestone'
+            )
               ? "Quitar Milestone"
               : "Marcar como Milestone"}
           </span>
