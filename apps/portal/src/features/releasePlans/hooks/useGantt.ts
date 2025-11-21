@@ -98,12 +98,12 @@ export function useLanePositions(phases: Array<{ id: string }>) {
   return useMemo(() => {
     const positions = new Map<string, number>();
 
-    phases.forEach((phase, index) => {
+    for (const [index, phase] of phases.entries()) {
       const top =
         index * (GANTT_DIMENSIONS.TRACK_HEIGHT + GANTT_DIMENSIONS.LANE_GAP) +
         GANTT_DIMENSIONS.LANE_GAP;
       positions.set(phase.id, top);
-    });
+    }
 
     return positions;
   }, [phases]);

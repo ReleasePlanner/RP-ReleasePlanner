@@ -28,8 +28,8 @@ export function useGanttChart({
   ) => void;
 }) {
   const theme = useTheme();
-  const containerRef = useRef<HTMLDivElement>(null!);
-  const contentRef = useRef<HTMLDivElement>(null!);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Force calendar to full year (Jan 1 to Dec 31) based on plan's start year
   const yearStart = useMemo(() => {
@@ -79,10 +79,12 @@ export function useGanttChart({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let index = 0;
-    if (today <= start) index = 0;
-    else if (today >= end) index = Math.max(0, days.length - 1);
-    else
+    let index: number;
+    if (today <= start) {
+      index = 0;
+    } else if (today >= end) {
+      index = Math.max(0, days.length - 1);
+    } else {
       index = Math.max(
         0,
         Math.min(
@@ -90,6 +92,7 @@ export function useGanttChart({
           Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
         )
       );
+    }
 
     const visibleWidth = Math.max(0, el.clientWidth);
     const target = index * PX_PER_DAY - visibleWidth / 2;
@@ -100,6 +103,8 @@ export function useGanttChart({
   // Drag and drop functionality
   const dragAndDrop = useGanttDragAndDrop({
     days,
+    pxPerDay: PX_PER_DAY,
+    trackHeight: TRACK_HEIGHT,
     onPhaseRangeChange,
     containerRef,
     contentRef,
@@ -118,9 +123,9 @@ export function useGanttChart({
   }, [todayIndex, PX_PER_DAY]);
 
   const showSelectedDayAlert = useCallback((isoDate: string) => {
-    if (typeof window !== "undefined" && typeof window.alert === "function") {
+    if (globalThis.window?.alert) {
       try {
-        window.alert(`Selected day: ${isoDate}`);
+        globalThis.window.alert(`Selected day: ${isoDate}`);
       } catch {
         /* ignore alert errors in test environment (jsdom) */
       }

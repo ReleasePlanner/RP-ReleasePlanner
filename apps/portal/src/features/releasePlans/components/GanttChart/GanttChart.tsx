@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback, memo } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { useTheme } from "@mui/material/styles";
 import { Tooltip } from "@mui/material";
 import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
@@ -11,58 +11,62 @@ import {
 } from "../Gantt/constants";
 import { laneTop } from "../Gantt/utils";
 import { safeScrollToX } from "../../../../utils/dom";
-import GanttLane from "../Gantt/GanttLane/GanttLane";
 import PhaseBar from "../Gantt/PhaseBar/PhaseBar";
 import TaskBar from "../Gantt/TaskBar/TaskBar";
-import type { PlanTask, PlanPhase, PlanReference } from "../../types";
+import GanttLane from "../Gantt/GanttLane/GanttLane";
+import type {
+  PlanTask,
+  PlanPhase,
+  PlanReference,
+  PlanMilestone,
+} from "../../types";
 import PhasesList from "../Plan/PhasesList/PhasesList";
 import { useGanttDragAndDrop } from "./useGanttDragAndDrop";
-import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
-import type { CalendarDay } from "@/features/calendar/types";
-import type { PlanMilestone } from "../../types";
+import { TodayMarker } from "./GanttChart.styles";
+import type { CalendarDay } from "../../../../features/calendar/types";
 import { useQueries } from "@tanstack/react-query";
-import { calendarsService } from "@/api/services/calendars.service";
-import type { Calendar as APICalendar, CalendarDay as APICalendarDay } from "@/api/services/calendars.service";
+import { calendarsService } from "../../../../api/services/calendars.service";
+import type { CalendarDay as APICalendarDay } from "../../../../api/services/calendars.service";
 import {
   getTimelineColors,
   TIMELINE_DIMENSIONS,
 } from "../Gantt/GanttTimeline/constants";
-import { TimelineToolbar, TOOLBAR_HEIGHT } from "../Gantt/GanttTimeline/TimelineToolbar";
+import {
+  TimelineToolbar,
+  TOOLBAR_HEIGHT,
+} from "../Gantt/GanttTimeline/TimelineToolbar";
 import { GanttCell } from "../Gantt/GanttCell";
 
 // header timeline moved to GanttTimeline component
 
 export type GanttChartProps = {
-  startDate: string;
-  endDate: string;
-  tasks: PlanTask[];
-  phases?: PlanPhase[];
-  calendarIds?: string[]; // Add this
-  milestones?: PlanMilestone[]; // Add this
-  onMilestoneAdd?: (milestone: PlanMilestone) => void; // Add this
-  onMilestoneUpdate?: (milestone: PlanMilestone) => void; // Add this
-  onPhaseRangeChange?: (
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly tasks: PlanTask[];
+  readonly phases?: PlanPhase[];
+  readonly calendarIds?: string[];
+  readonly milestones?: PlanMilestone[];
+  readonly onMilestoneAdd?: (milestone: PlanMilestone) => void;
+  readonly onMilestoneUpdate?: (milestone: PlanMilestone) => void;
+  readonly onPhaseRangeChange?: (
     phaseId: string,
     startDate: string,
     endDate: string
   ) => void;
-  onAddPhase?: () => void;
-  onEditPhase?: (id: string) => void;
-  onAutoGenerate?: () => void;
-  hideMainCalendar?: boolean;
-  // References props (replaces cellData)
-  references?: PlanReference[]; // All references for the plan
-  milestoneReferences?: PlanReference[]; // Milestone references for tooltips (subset of references)
-  onAddCellComment?: (phaseId: string, date: string) => void;
-  onAddCellFile?: (phaseId: string, date: string) => void;
-  onAddCellLink?: (phaseId: string, date: string) => void;
-  onToggleCellMilestone?: (phaseId: string, date: string) => void;
-  // Scroll to date callback - exposes scroll function to parent
-  onScrollToDateReady?: (scrollToDate: (date: string) => void) => void;
-  // Timeline toolbar props
-  onSaveTimeline?: () => void;
-  hasTimelineChanges?: boolean;
-  isSavingTimeline?: boolean;
+  readonly onAddPhase?: () => void;
+  readonly onEditPhase?: (id: string) => void;
+  readonly onAutoGenerate?: () => void;
+  readonly hideMainCalendar?: boolean;
+  readonly references?: PlanReference[];
+  readonly milestoneReferences?: PlanReference[];
+  readonly onAddCellComment?: (phaseId: string, date: string) => void;
+  readonly onAddCellFile?: (phaseId: string, date: string) => void;
+  readonly onAddCellLink?: (phaseId: string, date: string) => void;
+  readonly onToggleCellMilestone?: (phaseId: string, date: string) => void;
+  readonly onScrollToDateReady?: (scrollToDate: (date: string) => void) => void;
+  readonly onSaveTimeline?: () => void;
+  readonly hasTimelineChanges?: boolean;
+  readonly isSavingTimeline?: boolean;
 };
 
 export default function GanttChart({
@@ -91,38 +95,35 @@ export default function GanttChart({
   isSavingTimeline = false,
 }: GanttChartProps) {
   const labelWidth = LABEL_WIDTH; // sticky label column width for phase names
-  
+
   // Calculate timeline range: from start of year of startDate to end of year of endDate
   // This allows continuous scrolling across multiple years
   const timelineStart = useMemo(() => {
     const y = new Date(startDate).getFullYear();
     return new Date(y, 0, 1); // January 1st of start year
   }, [startDate]);
-  
+
   const timelineEnd = useMemo(() => {
     if (!_endDate) {
       // Fallback: if no endDate provided, use end of current year + 2 years
       const currentYear = new Date().getFullYear();
       return new Date(currentYear + 2, 11, 31);
     }
-    
+
     const endYear = new Date(_endDate).getFullYear();
     // Add buffer: show at least 2 years after the plan end date for better scrolling
     const bufferYear = endYear + 2; // Show two additional years for better visibility and scrolling
     const endDate = new Date(bufferYear, 11, 31); // December 31st of buffer year
-    
+
     return endDate;
-  }, [_endDate, timelineStart, startDate]);
+  }, [_endDate]);
 
   const start = timelineStart;
   const end = timelineEnd;
-  const totalDays = useMemo(
-    () => {
-      const days = Math.max(1, daysBetween(start, end));
-      return days;
-    },
-    [start, end]
-  );
+  const totalDays = useMemo(() => {
+    const days = Math.max(1, daysBetween(start, end));
+    return days;
+  }, [start, end]);
 
   const pxPerDay = PX_PER_DAY;
   const trackHeight = TRACK_HEIGHT;
@@ -134,9 +135,12 @@ export default function GanttChart({
   );
 
   const showSelectedDayAlert = useCallback((isoDate: string) => {
-    if (typeof window !== "undefined" && typeof window.alert === "function") {
+    if (
+      typeof globalThis.window !== "undefined" &&
+      typeof globalThis.window.alert === "function"
+    ) {
       try {
-        window.alert(`Selected day: ${isoDate}`);
+        globalThis.window.alert(`Selected day: ${isoDate}`);
       } catch {
         /* ignore alert errors in test environment (jsdom) */
       }
@@ -144,8 +148,7 @@ export default function GanttChart({
   }, []);
 
   // Auto-scroll to today by default - deferred for performance
-  // Non-null assertions keep refs compatible with hook types expecting HTMLDivElement
-  const containerRef = useRef<HTMLDivElement>(null!);
+  const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   useEffect(() => {
     // Defer scroll to avoid blocking initial render
@@ -154,17 +157,23 @@ export default function GanttChart({
       if (!el) return;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      let index = 0;
-      if (today <= start) index = 0;
-      else if (today >= end) index = Math.max(0, days.length - 1);
-      else
-        index = Math.max(
-          0,
-          Math.min(
-            days.length - 1,
-            Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-          )
-        );
+      const index =
+        today <= start
+          ? 0
+          : today >= end
+            ? Math.max(0, days.length - 1)
+            : Math.max(
+                0,
+                Math.min(
+                  days.length - 1,
+                  Math.ceil(
+                    (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+                  )
+                )
+              );
+      } else {
+        index = 0;
+      }
       const visibleWidth = Math.max(0, el.clientWidth);
       const target = index * pxPerDay - visibleWidth / 2;
       const left = Math.max(0, target);
@@ -174,7 +183,7 @@ export default function GanttChart({
     return () => clearTimeout(timeoutId);
   }, [start, end, days.length, labelWidth, pxPerDay]);
 
-  const contentRef = useRef<HTMLDivElement>(null!);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } =
     useGanttDragAndDrop({
@@ -202,7 +211,7 @@ export default function GanttChart({
   // Load calendars from API using the calendar IDs
   const calendarQueries = useQueries({
     queries: calendarIds.map((id) => ({
-      queryKey: ['calendars', 'detail', id],
+      queryKey: ["calendars", "detail", id],
       queryFn: () => calendarsService.getById(id),
       enabled: !!id,
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -214,31 +223,36 @@ export default function GanttChart({
     return calendarQueries
       .filter((query) => query.isSuccess && query.data)
       .map((query) => {
-        const apiCalendar = query.data!;
+        const apiCalendar = query.data;
+        if (!apiCalendar) {
+          return null;
+        }
         return {
           id: apiCalendar.id,
           name: apiCalendar.name,
           description: apiCalendar.description,
-          days: apiCalendar.days?.map((day: APICalendarDay) => ({
-            id: day.id,
-            name: day.name,
-            date: day.date,
-            type: day.type,
-            description: day.description,
-            recurring: day.recurring,
-            createdAt: day.createdAt,
-            updatedAt: day.updatedAt,
-          })) || [],
+          days:
+            apiCalendar.days?.map((day: APICalendarDay) => ({
+              id: day.id,
+              name: day.name,
+              date: day.date,
+              type: day.type,
+              description: day.description,
+              recurring: day.recurring,
+              createdAt: day.createdAt,
+              updatedAt: day.updatedAt,
+            })) || [],
         };
-      });
+      })
+      .filter((cal): cal is NonNullable<typeof cal> => cal !== null);
   }, [calendarQueries]);
 
   // Create a map of dates (YYYY-MM-DD) to calendar day information
   const calendarDaysMap = useMemo(() => {
     const map = new Map<string, { day: CalendarDay; calendarName: string }[]>();
 
-    planCalendars.forEach((calendar) => {
-      calendar.days.forEach((day) => {
+    for (const calendar of planCalendars) {
+      for (const day of calendar.days) {
         const dateKey = day.date; // Already in YYYY-MM-DD format
 
         // Handle recurring days - check if date falls within the timeline range
@@ -250,36 +264,50 @@ export default function GanttChart({
           // Check all years in the timeline range for recurring days
           const startYear = start.getFullYear();
           const endYear = end.getFullYear();
-          
+
           for (let year = startYear; year <= endYear; year++) {
             const recurringDate = new Date(year, dayMonth, dayDay);
-            
+
             if (recurringDate >= start && recurringDate <= end) {
               const recurringDateKey = recurringDate.toISOString().slice(0, 10);
-              if (!map.has(recurringDateKey)) {
-                map.set(recurringDateKey, []);
+              const existing = map.get(recurringDateKey);
+              if (existing) {
+                existing.push({
+                  day,
+                  calendarName: calendar.name,
+                });
+              } else {
+                map.set(recurringDateKey, [
+                  {
+                    day,
+                    calendarName: calendar.name,
+                  },
+                ]);
               }
-              map.get(recurringDateKey)!.push({
-                day,
-                calendarName: calendar.name,
-              });
             }
           }
         } else {
           // Non-recurring day - use exact date
           const dayDate = new Date(day.date);
           if (dayDate >= start && dayDate <= end) {
-            if (!map.has(dateKey)) {
-              map.set(dateKey, []);
+            const existing = map.get(dateKey);
+            if (existing) {
+              existing.push({
+                day,
+                calendarName: calendar.name,
+              });
+            } else {
+              map.set(dateKey, [
+                {
+                  day,
+                  calendarName: calendar.name,
+                },
+              ]);
             }
-            map.get(dateKey)!.push({
-              day,
-              calendarName: calendar.name,
-            });
           }
         }
-      });
-    });
+      }
+    }
 
     return map;
   }, [planCalendars, start, end]);
@@ -290,12 +318,12 @@ export default function GanttChart({
 
   const milestoneReferencesMap = useMemo(() => {
     const map = new Map<string, PlanReference>();
-    milestoneReferences.forEach((ref) => {
+    for (const ref of milestoneReferences) {
       if (ref.type === "milestone" && ref.date) {
         const key = `${ref.phaseId || ""}-${ref.date}`;
         map.set(key, ref);
       }
-    });
+    }
     return map;
   }, [milestoneReferences]);
 
@@ -346,7 +374,7 @@ export default function GanttChart({
       const [year, month, day] = dateParts.map(Number);
 
       // Validate parsed numbers
-      if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
         return; // Invalid date components, exit early
       }
 
@@ -354,12 +382,21 @@ export default function GanttChart({
       targetDate.setHours(0, 0, 0, 0);
 
       // Calculate day index
-      let dayIndex = 0;
-      if (targetDate < start) {
-        dayIndex = 0;
-      } else if (targetDate > end) {
-        dayIndex = Math.max(0, days.length - 1);
-      } else {
+      const dayIndex =
+        targetDate < start
+          ? 0
+          : targetDate > end
+            ? Math.max(0, days.length - 1)
+            : Math.max(
+                0,
+                Math.min(
+                  days.length - 1,
+                  Math.floor(
+                    (targetDate.getTime() - start.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                )
+              );
         dayIndex = Math.max(
           0,
           Math.min(
@@ -427,10 +464,22 @@ export default function GanttChart({
           >
             <PhasesList
               phases={phases}
-              onAdd={onAddPhase ?? (() => {})}
-              onEdit={onEditPhase ?? (() => {})}
+              onAdd={
+                onAddPhase ||
+                (() => {
+                  // No-op handler
+                })
+              }
+              onEdit={
+                onEditPhase ||
+                (() => {
+                  // No-op handler
+                })
+              }
               onAutoGenerate={onAutoGenerate}
-              headerOffsetTopPx={TIMELINE_DIMENSIONS.TOTAL_HEIGHT + LANE_GAP + TOOLBAR_HEIGHT}
+              headerOffsetTopPx={
+                TIMELINE_DIMENSIONS.TOTAL_HEIGHT + LANE_GAP + TOOLBAR_HEIGHT
+              }
               calendarStart={start.toISOString().slice(0, 10)}
               calendarEnd={end.toISOString().slice(0, 10)}
             />
@@ -463,7 +512,7 @@ export default function GanttChart({
               hasChanges={hasTimelineChanges}
               isSaving={isSavingTimeline}
             />
-            
+
             <div
               ref={contentRef}
               className="min-w-full"
@@ -476,44 +525,35 @@ export default function GanttChart({
                 flexDirection: "column",
               }}
             >
-            <GanttTimeline
-              start={start}
-              totalDays={totalDays}
-              pxPerDay={pxPerDay}
-              todayIndex={todayIndex}
-              milestones={milestones}
-              onJumpToToday={() => {
-                const el = containerRef.current;
-                if (!el) return;
-                const index = typeof todayIndex === "number" ? todayIndex : 0;
-                const visibleWidth = Math.max(0, el.clientWidth);
-                const target = index * pxPerDay - visibleWidth / 2;
-                const left = Math.max(0, target);
-                safeScrollToX(el, left, "smooth");
-              }}
-              onDayClick={handleDayClick}
-              references={references}
-              onAddCellComment={(date) => {
-                if (onAddCellComment) {
-                  onAddCellComment("", date);
-                }
-              }}
-              onAddCellFile={(date) => {
-                if (onAddCellFile) {
-                  onAddCellFile("", date);
-                }
-              }}
-              onAddCellLink={(date) => {
-                if (onAddCellLink) {
-                  onAddCellLink("", date);
-                }
-              }}
-              onToggleCellMilestone={(date) => {
-                if (onToggleCellMilestone) {
-                  onToggleCellMilestone("", date);
-                }
-              }}
-            />
+              <GanttTimeline
+                start={start}
+                totalDays={totalDays}
+                pxPerDay={pxPerDay}
+                todayIndex={todayIndex}
+                milestones={milestones}
+                onDayClick={handleDayClick}
+                references={references}
+                onAddCellComment={(date) => {
+                  if (onAddCellComment) {
+                    onAddCellComment("", date);
+                  }
+                }}
+                onAddCellFile={(date) => {
+                  if (onAddCellFile) {
+                    onAddCellFile("", date);
+                  }
+                }}
+                onAddCellLink={(date) => {
+                  if (onAddCellLink) {
+                    onAddCellLink("", date);
+                  }
+                }}
+                onToggleCellMilestone={(date) => {
+                  if (onToggleCellMilestone) {
+                    onToggleCellMilestone("", date);
+                  }
+                }}
+              />
               {/* Tracks: phases only */}
               <div
                 className="relative"
@@ -550,22 +590,48 @@ export default function GanttChart({
                       key={`cal-${i}`}
                       title={
                         <div style={{ fontSize: "0.8125rem", maxWidth: 300 }}>
-                          <div style={{ fontWeight: 600, marginBottom: "6px", fontSize: "0.875rem" }}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              marginBottom: "6px",
+                              fontSize: "0.875rem",
+                            }}
+                          >
                             {calendarDays.length === 1
                               ? calendarDays[0].day.name
-                              : `${calendarDays.length} día${calendarDays.length > 1 ? 's' : ''} especial${calendarDays.length > 1 ? 'es' : ''}`}
+                              : `${calendarDays.length} día${
+                                  calendarDays.length > 1 ? "s" : ""
+                                } especial${
+                                  calendarDays.length > 1 ? "es" : ""
+                                }`}
                           </div>
                           {calendarDays.map(({ day, calendarName }, idx) => (
-                            <div 
-                              key={idx} 
-                              style={{ 
+                            <div
+                              key={idx}
+                              style={{
                                 marginBottom: "6px",
-                                paddingBottom: idx < calendarDays.length - 1 ? "6px" : 0,
-                                borderBottom: idx < calendarDays.length - 1 ? "1px solid rgba(255, 255, 255, 0.1)" : "none",
+                                paddingBottom:
+                                  idx < calendarDays.length - 1 ? "6px" : 0,
+                                borderBottom:
+                                  idx < calendarDays.length - 1
+                                    ? "1px solid rgba(255, 255, 255, 0.1)"
+                                    : "none",
                               }}
                             >
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                                <span style={{ fontWeight: 500, fontSize: "0.8125rem" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    fontSize: "0.8125rem",
+                                  }}
+                                >
                                   {day.name}
                                 </span>
                                 <span
@@ -573,20 +639,33 @@ export default function GanttChart({
                                     fontSize: "0.6875rem",
                                     padding: "2px 6px",
                                     borderRadius: "4px",
-                                    backgroundColor: day.type === "holiday" 
-                                      ? "rgba(76, 175, 80, 0.2)" 
-                                      : "rgba(33, 150, 243, 0.2)",
-                                    color: day.type === "holiday" 
-                                      ? "#4caf50" 
-                                      : "#2196f3",
+                                    backgroundColor:
+                                      day.type === "holiday"
+                                        ? "rgba(76, 175, 80, 0.2)"
+                                        : "rgba(33, 150, 243, 0.2)",
+                                    color:
+                                      day.type === "holiday"
+                                        ? "#4caf50"
+                                        : "#2196f3",
                                     fontWeight: 500,
                                   }}
                                 >
-                                  {day.type === "holiday" ? "Festivo" : "Especial"}
+                                  {day.type === "holiday"
+                                    ? "Festivo"
+                                    : "Especial"}
                                 </span>
                               </div>
-                              <div style={{ fontSize: "0.75rem", opacity: 0.85, marginBottom: "2px" }}>
-                                📅 {calendarName}
+                              <div
+                                style={{
+                                  fontSize: "0.75rem",
+                                  opacity: 0.85,
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                <span role="img" aria-label="Calendar">
+                                  📅
+                                </span>{" "}
+                                {calendarName}
                               </div>
                               {day.description && (
                                 <div
@@ -619,12 +698,12 @@ export default function GanttChart({
                       }
                       arrow
                       placement="top"
-                      componentsProps={{
+                      slotProps={{
                         tooltip: {
                           sx: {
-                            bgcolor: 'rgba(0, 0, 0, 0.9)',
-                            '& .MuiTooltip-arrow': {
-                              color: 'rgba(0, 0, 0, 0.9)',
+                            bgcolor: "rgba(0, 0, 0, 0.9)",
+                            "& .MuiTooltip-arrow": {
+                              color: "rgba(0, 0, 0, 0.9)",
                             },
                           },
                         },
@@ -643,10 +722,12 @@ export default function GanttChart({
                           transition: "background-color 0.2s ease",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "rgba(129, 199, 132, 0.35)";
+                          e.currentTarget.style.backgroundColor =
+                            "rgba(129, 199, 132, 0.35)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "rgba(129, 199, 132, 0.25)";
+                          e.currentTarget.style.backgroundColor =
+                            "rgba(129, 199, 132, 0.25)";
                         }}
                       />
                     </Tooltip>
@@ -706,7 +787,8 @@ export default function GanttChart({
                         ref.type !== "milestone" // Milestones are handled separately
                     );
                     const milestoneKey = `${ph.id}-${dateKey}`;
-                    const milestoneRef = milestoneReferencesMap.get(milestoneKey);
+                    const milestoneRef =
+                      milestoneReferencesMap.get(milestoneKey);
                     const top = laneTop(phaseIdx);
                     const left = dayIdx * pxPerDay;
 
@@ -741,28 +823,76 @@ export default function GanttChart({
                   // Calculate duration in weeks and days
                   const weeks = Math.floor(len / 7);
                   const remainingDays = len % 7;
-                  const durationText = weeks > 0 
-                    ? `${weeks} week${weeks !== 1 ? 's' : ''}${remainingDays > 0 ? `, ${remainingDays} day${remainingDays !== 1 ? 's' : ''}` : ''}`
-                    : `${len} day${len !== 1 ? 's' : ''}`;
-                  
+                  const durationText =
+                    weeks > 0
+                      ? `${weeks} week${weeks !== 1 ? "s" : ""}${
+                          remainingDays > 0
+                            ? `, ${remainingDays} day${
+                                remainingDays !== 1 ? "s" : ""
+                              }`
+                            : ""
+                        }`
+                      : `${len} day${len !== 1 ? "s" : ""}`;
+
                   const tooltip = (
-                    <div style={{ fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 280 }}>
-                      <div style={{ fontWeight: 600, marginBottom: "8px", fontSize: "0.8125rem", color: theme.palette.mode === "dark" ? "#fff" : "#000" }}>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        lineHeight: 1.6,
+                        maxWidth: 280,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: "8px",
+                          fontSize: "0.8125rem",
+                          color:
+                            theme.palette.mode === "dark" ? "#fff" : "#000",
+                        }}
+                      >
                         {ph.name}
                       </div>
                       <div style={{ marginBottom: "6px", opacity: 0.9 }}>
-                        <div style={{ fontSize: "0.6875rem", marginBottom: "2px" }}>
-                          <strong>Start:</strong> {ts.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        <div
+                          style={{ fontSize: "0.6875rem", marginBottom: "2px" }}
+                        >
+                          <strong>Start:</strong>{" "}
+                          {ts.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </div>
                         <div style={{ fontSize: "0.6875rem" }}>
-                          <strong>End:</strong> {te.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          <strong>End:</strong>{" "}
+                          {te.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </div>
                       </div>
-                      <div style={{ marginBottom: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
-                        <strong>Duration:</strong> {durationText} ({len} day{len !== 1 ? 's' : ''})
+                      <div
+                        style={{
+                          marginBottom: "6px",
+                          fontSize: "0.6875rem",
+                          opacity: 0.9,
+                        }}
+                      >
+                        <strong>Duration:</strong> {durationText} ({len} day
+                        {len !== 1 ? "s" : ""})
                       </div>
                       {ph.color && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontSize: "0.6875rem",
+                            opacity: 0.9,
+                          }}
+                        >
                           <strong>Color:</strong>
                           <div
                             style={{
@@ -770,7 +900,11 @@ export default function GanttChart({
                               height: 16,
                               borderRadius: 2,
                               backgroundColor: ph.color,
-                              border: `1px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                              border: `1px solid ${
+                                theme.palette.mode === "dark"
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(0,0,0,0.2)"
+                              }`,
                             }}
                           />
                           <span>{ph.color}</span>
@@ -905,8 +1039,18 @@ export default function GanttChart({
         >
           <PhasesList
             phases={phases}
-            onAdd={onAddPhase ?? (() => {})}
-            onEdit={onEditPhase ?? (() => {})}
+            onAdd={
+              onAddPhase ||
+              (() => {
+                // No-op handler
+              })
+            }
+            onEdit={
+              onEditPhase ||
+              (() => {
+                // No-op handler
+              })
+            }
             onAutoGenerate={onAutoGenerate}
             calendarStart={startDate}
             calendarEnd={_endDate}
@@ -941,15 +1085,6 @@ export default function GanttChart({
               pxPerDay={pxPerDay}
               todayIndex={todayIndex}
               milestones={milestones}
-              onJumpToToday={() => {
-                const el = containerRef.current;
-                if (!el) return;
-                const index = typeof todayIndex === "number" ? todayIndex : 0;
-                const visibleWidth = Math.max(0, el.clientWidth);
-                const target = index * pxPerDay - visibleWidth / 2;
-                const left = Math.max(0, target);
-                safeScrollToX(el, left, "smooth");
-              }}
               onDayClick={handleDayClick}
               references={references}
               onAddCellComment={(date) => {
@@ -972,9 +1107,6 @@ export default function GanttChart({
                   onToggleCellMilestone("", date);
                 }
               }}
-              onSave={onSaveTimeline}
-              hasTimelineChanges={hasTimelineChanges}
-              isSaving={isSavingTimeline}
             />
             {/* Tracks */}
             <div
@@ -1045,28 +1177,75 @@ export default function GanttChart({
                 // Calculate duration in weeks and days
                 const weeks = Math.floor(len / 7);
                 const remainingDays = len % 7;
-                const durationText = weeks > 0 
-                  ? `${weeks} week${weeks !== 1 ? 's' : ''}${remainingDays > 0 ? `, ${remainingDays} day${remainingDays !== 1 ? 's' : ''}` : ''}`
-                  : `${len} day${len !== 1 ? 's' : ''}`;
-                
+                const durationText =
+                  weeks > 0
+                    ? `${weeks} week${weeks !== 1 ? "s" : ""}${
+                        remainingDays > 0
+                          ? `, ${remainingDays} day${
+                              remainingDays !== 1 ? "s" : ""
+                            }`
+                          : ""
+                      }`
+                    : `${len} day${len !== 1 ? "s" : ""}`;
+
                 const tooltip = (
-                  <div style={{ fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 280 }}>
-                    <div style={{ fontWeight: 600, marginBottom: "8px", fontSize: "0.8125rem", color: theme.palette.mode === "dark" ? "#fff" : "#000" }}>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      lineHeight: 1.6,
+                      maxWidth: 280,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: "8px",
+                        fontSize: "0.8125rem",
+                        color: theme.palette.mode === "dark" ? "#fff" : "#000",
+                      }}
+                    >
                       {ph.name}
                     </div>
                     <div style={{ marginBottom: "6px", opacity: 0.9 }}>
-                      <div style={{ fontSize: "0.6875rem", marginBottom: "2px" }}>
-                        <strong>Start:</strong> {ts.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      <div
+                        style={{ fontSize: "0.6875rem", marginBottom: "2px" }}
+                      >
+                        <strong>Start:</strong>{" "}
+                        {ts.toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </div>
                       <div style={{ fontSize: "0.6875rem" }}>
-                        <strong>End:</strong> {te.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        <strong>End:</strong>{" "}
+                        {te.toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </div>
                     </div>
-                    <div style={{ marginBottom: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
-                      <strong>Duration:</strong> {durationText} ({len} day{len !== 1 ? 's' : ''})
+                    <div
+                      style={{
+                        marginBottom: "6px",
+                        fontSize: "0.6875rem",
+                        opacity: 0.9,
+                      }}
+                    >
+                      <strong>Duration:</strong> {durationText} ({len} day
+                      {len !== 1 ? "s" : ""})
                     </div>
                     {ph.color && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontSize: "0.6875rem",
+                          opacity: 0.9,
+                        }}
+                      >
                         <strong>Color:</strong>
                         <div
                           style={{
@@ -1074,7 +1253,11 @@ export default function GanttChart({
                             height: 16,
                             borderRadius: 2,
                             backgroundColor: ph.color,
-                            border: `1px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                            border: `1px solid ${
+                              theme.palette.mode === "dark"
+                                ? "rgba(255,255,255,0.2)"
+                                : "rgba(0,0,0,0.2)"
+                            }`,
                           }}
                         />
                         <span>{ph.color}</span>
@@ -1139,47 +1322,58 @@ export default function GanttChart({
               {/* Preview is now handled directly in DOM via useGanttDragAndDrop hook */}
               {/* No React re-renders during drag for maximum performance */}
               {/* Individual cells for each phase-day intersection - optimized to skip during drag */}
-              {!(drag || editDrag) && phases.map((ph, phaseIdx) => {
-                return days.map((day, dayIdx) => {
-                  const dateKey = day.toISOString().slice(0, 10);
-                  // Filter references for this specific cell (day-level with phaseId)
-                  const cellRefs = references.filter(
-                    (ref) =>
-                      ref.phaseId === ph.id &&
-                      (ref.date === dateKey || ref.calendarDayId) &&
-                      ref.type !== "milestone" // Milestones are handled separately
-                  );
-                  const milestoneKey = `${ph.id}-${dateKey}`;
-                  const milestoneRef = milestoneReferencesMap.get(milestoneKey);
-                  const top = laneTop(phaseIdx);
-                  const left = dayIdx * pxPerDay;
+              {!(drag || editDrag) &&
+                phases.map((ph, phaseIdx) => {
+                  return days.map((day, dayIdx) => {
+                    const dateKey = day.toISOString().slice(0, 10);
+                    // Filter references for this specific cell (day-level with phaseId)
+                    const cellRefs = references.filter(
+                      (ref) =>
+                        ref.phaseId === ph.id &&
+                        (ref.date === dateKey || ref.calendarDayId) &&
+                        ref.type !== "milestone" // Milestones are handled separately
+                    );
+                    const milestoneKey = `${ph.id}-${dateKey}`;
+                    const milestoneRef =
+                      milestoneReferencesMap.get(milestoneKey);
+                    const top = laneTop(phaseIdx);
+                    const left = dayIdx * pxPerDay;
 
-                  return (
-                    <GanttCell
-                      key={`cell-${ph.id}-${dateKey}`}
-                      phaseId={ph.id}
-                      date={dateKey}
-                      left={left}
-                      top={top}
-                      width={pxPerDay}
-                      height={trackHeight}
-                      cellReferences={cellRefs}
-                      milestoneReference={milestoneRef}
-                      onAddComment={onAddCellComment}
-                      onAddFile={onAddCellFile}
-                      onAddLink={onAddCellLink}
-                      onToggleMilestone={onToggleCellMilestone}
-                    />
-                  );
-                });
-              })}
+                    return (
+                      <GanttCell
+                        key={`cell-${ph.id}-${dateKey}`}
+                        phaseId={ph.id}
+                        date={dateKey}
+                        left={left}
+                        top={top}
+                        width={pxPerDay}
+                        height={trackHeight}
+                        cellReferences={cellRefs}
+                        milestoneReference={milestoneRef}
+                        onAddComment={onAddCellComment}
+                        onAddFile={onAddCellFile}
+                        onAddLink={onAddCellLink}
+                        onToggleMilestone={onToggleCellMilestone}
+                      />
+                    );
+                  });
+                })}
               {/* interactive overlays for phases (span entire lane) - for drag selection */}
               {phases.map((ph, idx) => {
                 const top = laneTop(idx);
+                const handleKeyDown = (e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (onEditPhase) onEditPhase(ph.id);
+                  }
+                };
                 return (
                   <div
                     key={`ol-${ph.id}`}
                     className="absolute z-10"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Drag to set ${ph.name} period`}
                     style={{
                       left: 0,
                       top,
@@ -1206,13 +1400,16 @@ export default function GanttChart({
                       // Only handle left click
                       if (e.button === 0) {
                         const dayIdx = clientXToDayIndex(e.clientX);
-                        const s = days[dayIdx].toISOString().slice(0, 10);
-                        showSelectedDayAlert(s);
+                        const s = days[dayIdx]?.toISOString().slice(0, 10);
+                        if (s) {
+                          showSelectedDayAlert(s);
+                        }
                       }
                     }}
                     onDoubleClick={() => {
                       if (onEditPhase) onEditPhase(ph.id);
                     }}
+                    onKeyDown={handleKeyDown}
                     title={`Drag to set ${ph.name} period`}
                   />
                 );

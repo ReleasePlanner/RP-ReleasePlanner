@@ -1,36 +1,26 @@
-import { useMemo } from "react";
-import { useTheme } from "@mui/material/styles";
+import { MonthsRow, WeeksRow, DaysRow } from "./index";
+import type { PlanMilestone, PlanReference } from "../../../types";
 import {
-  buildDaysArray,
-  buildMonthSegments,
-  buildWeekSegments,
-} from "../../../lib/date";
-import {
-  TodayMarker,
-  TodayButton,
-  TimelineLegend,
-  MonthsRow,
-  WeeksRow,
-  DaysRow,
-  TIMELINE_DIMENSIONS,
-  getTimelineColors,
-} from "./index";
-import type { PlanMilestone } from "../../../types";
+  useTimelineData,
+  useMilestonesMap,
+  useTimelineStyles,
+  useSafeTimelineValues,
+} from "./hooks";
+import { TimelineContainer, TodayMarkerWrapper } from "./components";
 
 export type GanttTimelineProps = {
-  start: Date;
-  totalDays: number;
-  pxPerDay: number;
-  todayIndex?: number;
-  milestones?: PlanMilestone[];
-  onJumpToToday?: () => void;
-  onDayClick?: (date: string) => void;
+  readonly start: Date;
+  readonly totalDays: number;
+  readonly pxPerDay: number;
+  readonly todayIndex?: number;
+  readonly milestones?: PlanMilestone[];
+  readonly onDayClick?: (date: string) => void;
   // References props (replaces cellData)
-  references?: import("../../../types").PlanReference[]; // All references for the plan
-  onAddCellComment?: (date: string) => void;
-  onAddCellFile?: (date: string) => void;
-  onAddCellLink?: (date: string) => void;
-  onToggleCellMilestone?: (date: string) => void;
+  readonly references?: PlanReference[]; // All references for the plan
+  readonly onAddCellComment?: (date: string) => void;
+  readonly onAddCellFile?: (date: string) => void;
+  readonly onAddCellLink?: (date: string) => void;
+  readonly onToggleCellMilestone?: (date: string) => void;
 };
 
 export default function GanttTimeline({
@@ -39,7 +29,6 @@ export default function GanttTimeline({
   pxPerDay,
   todayIndex,
   milestones = [],
-  onJumpToToday,
   onDayClick,
   references = [],
   onAddCellComment,
@@ -47,73 +36,37 @@ export default function GanttTimeline({
   onAddCellLink,
   onToggleCellMilestone,
 }: GanttTimelineProps) {
-  const theme = useTheme();
-  const colors = getTimelineColors(theme);
-
-  // Use start time (number) in deps so changes to the Date value are detected
-  const startTime = start instanceof Date ? start.getTime() : 0;
-
-  // Ensure we have safe numeric values to avoid NaN in styles when callers omit props
-  const safeTotalDays =
-    Number.isFinite(totalDays) && totalDays > 0 ? totalDays : 0;
-  const safePxPerDay = Number.isFinite(pxPerDay) && pxPerDay > 0 ? pxPerDay : 1;
-
-  const days = useMemo(
-    () => buildDaysArray(new Date(startTime), safeTotalDays),
-    [startTime, safeTotalDays]
-  );
-  const monthSegments = useMemo(() => buildMonthSegments(days), [days]);
-  const weekSegments = useMemo(() => buildWeekSegments(days), [days]);
-
-  // Create a map of dates to milestones for quick lookup
-  const milestonesMap = useMemo(() => {
-    const map = new Map<string, PlanMilestone>();
-    milestones.forEach((milestone) => {
-      map.set(milestone.date, milestone);
-    });
-    return map;
-  }, [milestones]);
+  const safeValues = useSafeTimelineValues(totalDays, pxPerDay);
+  const timelineData = useTimelineData(start, safeValues.totalDays);
+  const milestonesMap = useMilestonesMap(milestones);
+  const styles = useTimelineStyles(safeValues.totalDays, safeValues.pxPerDay);
 
   const shouldShowTodayMarker =
     typeof todayIndex === "number" &&
     todayIndex >= 0 &&
-    todayIndex < safeTotalDays;
-
-  // Calculate total width needed for all days
-  const totalWidth = safeTotalDays * safePxPerDay;
+    todayIndex < safeValues.totalDays;
 
   return (
-    <div
-      className="sticky z-10"
-      style={{
-        top: 0,
-        width: totalWidth,
-        minWidth: totalWidth,
-        height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
-        backgroundColor: colors.HEADER_BACKGROUND || colors.BACKGROUND,
-        borderBottom: `2px solid ${colors.BORDER}`,
-        boxShadow: theme.palette.mode === "dark"
-          ? "0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3)"
-          : "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06)",
-        backdropFilter: "blur(8px)",
-        position: "relative",
-      }}
-    >
-        {/* Today marker */}
-        {shouldShowTodayMarker && (
-          <TodayMarker
-            todayIndex={todayIndex!}
-            pxPerDay={safePxPerDay}
-            totalHeight={TIMELINE_DIMENSIONS.TOTAL_HEIGHT}
-          />
-        )}
+    <TimelineContainer styles={styles}>
+      {shouldShowTodayMarker && (
+        <TodayMarkerWrapper
+          todayIndex={todayIndex}
+          pxPerDay={safeValues.pxPerDay}
+        />
+      )}
 
       {/* Timeline rows */}
-      <MonthsRow monthSegments={monthSegments} pxPerDay={safePxPerDay} />
-      <WeeksRow weekSegments={weekSegments} pxPerDay={safePxPerDay} />
+      <MonthsRow
+        monthSegments={timelineData.monthSegments}
+        pxPerDay={safeValues.pxPerDay}
+      />
+      <WeeksRow
+        weekSegments={timelineData.weekSegments}
+        pxPerDay={safeValues.pxPerDay}
+      />
       <DaysRow
-        days={days}
-        pxPerDay={safePxPerDay}
+        days={timelineData.days}
+        pxPerDay={safeValues.pxPerDay}
         milestones={milestonesMap}
         onDayClick={onDayClick}
         references={references}
@@ -122,6 +75,6 @@ export default function GanttTimeline({
         onAddCellLink={onAddCellLink}
         onToggleCellMilestone={onToggleCellMilestone}
       />
-    </div>
+    </TimelineContainer>
   );
 }

@@ -28,8 +28,8 @@ type UseGanttDragAndDropProps = {
     startDate: string,
     endDate: string
   ) => void;
-  containerRef: RefObject<HTMLDivElement>;
-  contentRef: RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
+  contentRef: RefObject<HTMLDivElement | null>;
 };
 
 export function useGanttDragAndDrop({

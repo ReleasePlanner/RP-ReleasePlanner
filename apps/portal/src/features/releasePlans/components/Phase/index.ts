@@ -7,4 +7,4 @@
 export { PhaseCard } from "./PhaseCard";
 export { PhaseEditDialog } from "./PhaseEditDialog";
 export type { PhaseCardProps } from "./PhaseCard";
-export type { PhaseEditDialogProps } from "./PhaseEditDialog";
+export type { PhaseEditDialogProps } from "./PhaseEditDialog/PhaseEditDialog";

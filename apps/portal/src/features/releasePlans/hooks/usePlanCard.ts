@@ -4,15 +4,19 @@ import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
 import type { Plan, PlanPhase } from "../types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { UpdatePlanDto } from "../../../api/services/plans.service";
-import { createPartialUpdateDto } from "../lib/planConverters";
 
 /**
  * Custom hook for PlanCard business logic
  * Follows DRY principle - centralizes all plan card state management
  */
-export function usePlanCard(
+export function usePlanCard<TData = Plan, TContext = unknown>(
   plan: Plan,
-  updatePlanMutation: UseMutationResult<any, Error, { id: string; data: UpdatePlanDto }, unknown>
+  updatePlanMutation: UseMutationResult<
+    TData,
+    Error,
+    { id: string; data: UpdatePlanDto },
+    TContext
+  >
 ) {
   const dispatch = useAppDispatch();
 
@@ -58,9 +62,12 @@ export function usePlanCard(
   );
 
   const handleAddPhase = useCallback(
-    (phasesToAdd: PlanPhase[], onPhasesChange?: (phases: PlanPhase[]) => void) => {
+    (
+      phasesToAdd: PlanPhase[],
+      onPhasesChange?: (phases: PlanPhase[]) => void
+    ) => {
       if (phasesToAdd.length === 0) return;
-      
+
       const updatedPhases = [...(plan.metadata.phases || []), ...phasesToAdd];
       // Only update local state - save via save button
       if (onPhasesChange) {
@@ -72,7 +79,12 @@ export function usePlanCard(
   );
 
   const handlePhaseRangeChange = useCallback(
-    (phaseId: string, startDate: string, endDate: string, onPhasesChange?: (phases: PlanPhase[]) => void) => {
+    (
+      phaseId: string,
+      startDate: string,
+      endDate: string,
+      onPhasesChange?: (phases: PlanPhase[]) => void
+    ) => {
       const updatedPhases = (plan.metadata.phases || []).map((p) =>
         p.id === phaseId ? { ...p, startDate, endDate } : p
       );

@@ -1,11 +1,11 @@
 import { getTimelineColors, TIMELINE_POSITIONS } from "./constants";
-import { useTheme, alpha, Chip, IconButton, Tooltip } from "@mui/material";
+import { useTheme, alpha, Chip } from "@mui/material";
 import { Today as TodayIcon } from "@mui/icons-material";
 
 export type TodayMarkerProps = {
-  todayIndex: number;
-  pxPerDay: number;
-  totalHeight: number;
+  readonly todayIndex: number;
+  readonly pxPerDay: number;
+  readonly totalHeight: number;
 };
 
 export function TodayMarker({
@@ -15,7 +15,7 @@ export function TodayMarker({
 }: TodayMarkerProps) {
   const theme = useTheme();
   const colors = getTimelineColors(theme);
-  
+
   return (
     <div
       className="absolute top-0"
@@ -29,7 +29,7 @@ export function TodayMarker({
     >
       <div
         className="h-full"
-        style={{ 
+        style={{
           borderLeft: `2px solid ${colors.TODAY_MARKER}`,
           boxShadow: `0 0 4px ${alpha(colors.TODAY_MARKER, 0.3)}`,
         }}
@@ -54,9 +54,10 @@ export function TodayMarker({
               color: colors.BUTTON_TEXT,
               marginLeft: "4px",
             },
-            boxShadow: theme.palette.mode === "dark"
-              ? `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`
-              : `0 1px 3px ${alpha(theme.palette.common.black, 0.15)}`,
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`
+                : `0 1px 3px ${alpha(theme.palette.common.black, 0.15)}`,
           }}
         />
       </div>
@@ -64,55 +65,13 @@ export function TodayMarker({
   );
 }
 
-export type TodayButtonProps = {
-  onJumpToToday: () => void;
-};
-
-export function TodayButton({ onJumpToToday }: TodayButtonProps) {
-  const theme = useTheme();
-  const colors = getTimelineColors(theme);
-  
-  return (
-    <div
-      className="absolute"
-      style={{
-        top: TIMELINE_POSITIONS.TODAY_BUTTON.top,
-        right: TIMELINE_POSITIONS.TODAY_BUTTON.right,
-        zIndex: 10,
-      }}
-    >
-      <Tooltip title="Ir a hoy" arrow placement="left">
-        <IconButton
-          aria-label="Jump to today"
-          onClick={onJumpToToday}
-          size="small"
-          sx={{
-            backgroundColor: colors.BUTTON_BG,
-            color: colors.BUTTON_TEXT,
-            border: `1px solid ${colors.BORDER}`,
-            width: 32,
-            height: 28,
-            "&:hover": {
-              backgroundColor: colors.BUTTON_BG_HOVER,
-              transform: "scale(1.05)",
-            },
-            transition: "all 0.2s ease",
-            boxShadow: theme.palette.mode === "dark"
-              ? `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`
-              : `0 1px 3px ${alpha(theme.palette.common.black, 0.15)}`,
-          }}
-        >
-          <TodayIcon sx={{ fontSize: 16 }} />
-        </IconButton>
-      </Tooltip>
-    </div>
-  );
-}
+export { TodayButton } from "./components/TodayButton";
+export type { TodayButtonProps } from "./components/TodayButton";
 
 export function TimelineLegend() {
   const theme = useTheme();
   const colors = getTimelineColors(theme);
-  
+
   return (
     <div
       className="absolute"
@@ -122,16 +81,17 @@ export function TimelineLegend() {
         zIndex: 10,
       }}
     >
-      <div 
+      <div
         className="flex items-center gap-2.5 text-[10px] rounded-md border px-2.5 py-1.5"
         style={{
           backgroundColor: colors.BACKGROUND_OVERLAY,
           borderColor: colors.BORDER,
           color: colors.TEXT_SECONDARY,
           backdropFilter: "blur(8px)",
-          boxShadow: theme.palette.mode === "dark"
-            ? `0 2px 8px ${alpha(theme.palette.common.black, 0.3)}`
-            : `0 1px 4px ${alpha(theme.palette.common.black, 0.1)}`,
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? `0 2px 8px ${alpha(theme.palette.common.black, 0.3)}`
+              : `0 1px 4px ${alpha(theme.palette.common.black, 0.1)}`,
         }}
       >
         <div className="flex items-center gap-1.5">

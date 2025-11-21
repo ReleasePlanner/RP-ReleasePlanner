@@ -1,0 +1,2 @@
+export { useComponentCardStyles } from "./useComponentCardStyles";
+
