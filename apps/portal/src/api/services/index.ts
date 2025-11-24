@@ -7,4 +7,5 @@ export * from './features.service';
 export * from './calendars.service';
 export * from './itOwners.service';
 export * from './plans.service';
+export * from './indicators.service';
 

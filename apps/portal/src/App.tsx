@@ -15,6 +15,7 @@ const ComponentTypeMaintenancePage = lazy(() => import("./pages/componentTypeMai
 const FeatureCategoryMaintenancePage = lazy(() => import("./pages/featureCategoryMaintenancePage"));
 const CountryMaintenancePage = lazy(() => import("./pages/countryMaintenancePage"));
 const PhasesMaintenancePage = lazy(() => import("./pages/phasesMaintenancePage"));
+const IndicatorMaintenancePage = lazy(() => import("./pages/indicatorMaintenancePage"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="component-types" element={<ComponentTypeMaintenancePage />} />
           <Route path="feature-categories" element={<FeatureCategoryMaintenancePage />} />
           <Route path="countries" element={<CountryMaintenancePage />} />
+          <Route path="indicators-maintenance" element={<IndicatorMaintenancePage />} />
         </Route>
       </Routes>
     </Suspense>

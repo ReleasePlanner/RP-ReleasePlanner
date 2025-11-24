@@ -36,6 +36,7 @@ import {
   Category as ComponentTypeIcon,
   Label as FeatureCategoryIcon,
   Public as CountryIcon,
+  Assessment as IndicatorsIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -57,6 +58,7 @@ export const NAVIGATION_LABELS = {
   COMPONENT_TYPES: "Component Types",
   FEATURE_CATEGORIES: "Feature Categories",
   COUNTRIES: "Countries",
+  INDICATORS: "Indicators",
 } as const;
 
 export const NAVIGATION_DESCRIPTIONS = {
@@ -69,6 +71,7 @@ export const NAVIGATION_DESCRIPTIONS = {
   COMPONENT_TYPES: "Manage component types",
   FEATURE_CATEGORIES: "Manage feature categories",
   COUNTRIES: "Manage countries and regions",
+  INDICATORS: "Manage KPIs and indicators",
 } as const;
 
 /**
@@ -149,6 +152,12 @@ const NAV_ITEMS: NavItem[] = [
     path: "/countries",
     icon: <CountryIcon />,
     description: NAVIGATION_DESCRIPTIONS.COUNTRIES,
+  },
+  {
+    label: NAVIGATION_LABELS.INDICATORS,
+    path: "/indicators-maintenance",
+    icon: <IndicatorsIcon />,
+    description: NAVIGATION_DESCRIPTIONS.INDICATORS,
   },
 ];
 

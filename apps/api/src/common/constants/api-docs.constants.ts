@@ -100,6 +100,7 @@ export const API_TAGS = {
   COMPONENT_TYPES: 'Component Types',
   COUNTRIES: 'Countries',
   PLANS: 'plans',
+  INDICATORS: 'indicators',
 } as const;
 
 /**

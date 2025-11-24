@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
   FEATURE_CATEGORIES: '/feature-categories',
   COUNTRIES: '/countries',
   PLANS: '/plans',
+  INDICATORS: '/indicators',
 } as const;
 
 // Token storage keys

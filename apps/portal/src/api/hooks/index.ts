@@ -9,5 +9,6 @@ export * from './useITOwners';
 export * from './useComponentTypes';
 export * from './useFeatureCategories';
 export * from './useCountries';
+export * from './useIndicators';
 export * from './usePlans';
 

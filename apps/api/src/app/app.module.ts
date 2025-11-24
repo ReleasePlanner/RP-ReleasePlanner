@@ -15,6 +15,7 @@ import { ComponentTypeModule } from '../component-types/component-type.module';
 import { FeatureCategoryModule } from '../feature-categories/feature-category.module';
 import { CountryModule } from '../countries/country.module';
 import { PlanModule } from '../release-plans/plan.module';
+import { IndicatorModule } from '../indicators/indicator.module';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { FileModule } from '../files/file.module';
@@ -76,6 +77,7 @@ import { HealthController } from './health.controller';
     FeatureCategoryModule,
     CountryModule,
     PlanModule,
+    IndicatorModule,
     FileModule,
   ],
   controllers: [AppController, HealthController],
