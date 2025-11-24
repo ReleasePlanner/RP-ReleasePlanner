@@ -5,7 +5,7 @@ import {
   getErrorMessage,
   isNonRetryableError,
 } from "./useErrorRetry";
-import { ErrorCategory } from "../../../../api/resilience/ErrorHandler";
+import { ErrorCategory } from "../../../../../api/resilience/ErrorHandler";
 
 export async function handleRetryLogic(
   error: unknown,

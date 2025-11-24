@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { usePlans, useFeatures, useProducts } from "@/api/hooks";
 import { convertAPIPlanToLocal } from "../../../../../lib/planConverters";
 import type { PlanStatus } from "../../../../types";
-import type { Feature } from "../../../../../../api/services/features.service";
+import type { Feature } from "../../../../../../../api/services/features.service";
 
 export function useSelectFeaturesData(
   productId?: string,

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { processFeatures } from "../../../../../../feature/utils/featureUtils";
 import type { SortBy } from "../../../../../../feature/components/FeatureToolbar";
 import type { FeatureStatus } from "../../../../../../feature/types";
-import type { Feature } from "../../../../../../api/services/features.service";
+import type { Feature } from "../../../../../../../api/services/features.service";
 import type { PlanStatus } from "../../../../types";
 
 export function useSelectFeaturesFilters(

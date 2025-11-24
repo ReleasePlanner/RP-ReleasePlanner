@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, Collapse, Divider, useTheme, alpha, Box, LinearProgress, Typography } from "@mui/material";
 import type { Plan } from "../../../types";
 import { PlanHeader } from "./PlanHeader";
+import { PlanFooter } from "./PlanFooter";
 import { PlanContent } from "./PlanContent";
 
 export type PlanCardLayoutProps = {
@@ -110,6 +111,7 @@ export function PlanCardLayout({
         },
       }}
     >
+      {/* Header */}
       <PlanHeader
         id={plan.metadata.id}
         name={plan.metadata.name}
@@ -119,6 +121,7 @@ export function PlanCardLayout({
 
       <Divider sx={{ borderColor: theme.palette.divider }} />
 
+      {/* Content */}
       <Collapse 
         in={expanded} 
         timeout={150}
@@ -192,6 +195,11 @@ export function PlanCardLayout({
             />
           )}
         </CardContent>
+
+        <Divider sx={{ borderColor: theme.palette.divider }} />
+
+        {/* Footer */}
+        <PlanFooter />
       </Collapse>
     </Card>
   );

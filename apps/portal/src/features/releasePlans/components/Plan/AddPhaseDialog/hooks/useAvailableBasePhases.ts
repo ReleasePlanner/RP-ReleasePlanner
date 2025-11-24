@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { BasePhase } from "../../../../../../api/services/basePhases.service";
+import type { BasePhase } from "../../../../../../../api/services/basePhases.service";
 import type { PlanPhase } from "../../../../types";
 
 export function useAvailableBasePhases(

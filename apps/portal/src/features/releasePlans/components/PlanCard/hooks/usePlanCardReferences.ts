@@ -3,8 +3,8 @@ import type { Plan, PlanReference, PlanMilestone } from "../../../types";
 import {
   deduplicateReferences,
   separateReferences,
-  syncMilestonesFromReferences,
 } from "./useReferencesDeduplication";
+import { syncMilestonesFromReferences } from "./useMilestoneSync";
 
 export function usePlanCardReferences(
   metadata: Plan["metadata"],

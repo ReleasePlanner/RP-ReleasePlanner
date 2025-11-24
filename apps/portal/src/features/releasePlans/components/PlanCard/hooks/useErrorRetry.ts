@@ -1,4 +1,4 @@
-import { categorizeError, ErrorCategory } from "../../../../api/resilience/ErrorHandler";
+import { categorizeError, ErrorCategory } from "../../../../../api/resilience/ErrorHandler";
 
 export interface RetryConfig {
   maxRetries: number;

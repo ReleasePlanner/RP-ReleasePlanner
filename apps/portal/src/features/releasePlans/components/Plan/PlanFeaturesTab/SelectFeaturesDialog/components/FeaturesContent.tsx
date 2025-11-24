@@ -3,7 +3,7 @@ import { FeaturesLoadingState } from "./FeaturesLoadingState";
 import { NoProductState } from "./NoProductState";
 import { FeaturesEmptyState } from "./FeaturesEmptyState";
 import { FeaturesTable } from "./FeaturesTable";
-import type { Feature } from "../../../../../../api/services/features.service";
+import type { Feature } from "../../../../../../../api/services/features.service";
 import type { PlanStatus } from "../../../../types";
 import type { FeatureStatus } from "../../../../../../feature/types";
 

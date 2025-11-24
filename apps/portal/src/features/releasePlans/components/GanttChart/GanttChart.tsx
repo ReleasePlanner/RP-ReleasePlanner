@@ -157,22 +157,21 @@ export default function GanttChart({
       if (!el) return;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const index =
-        today <= start
-          ? 0
-          : today >= end
-            ? Math.max(0, days.length - 1)
-            : Math.max(
-                0,
-                Math.min(
-                  days.length - 1,
-                  Math.ceil(
-                    (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-                  )
-                )
-              );
-      } else {
+      let index: number;
+      if (today <= start) {
         index = 0;
+      } else if (today >= end) {
+        index = Math.max(0, days.length - 1);
+      } else {
+        index = Math.max(
+          0,
+          Math.min(
+            days.length - 1,
+            Math.ceil(
+              (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          )
+        );
       }
       const visibleWidth = Math.max(0, el.clientWidth);
       const target = index * pxPerDay - visibleWidth / 2;
@@ -382,27 +381,19 @@ export default function GanttChart({
       targetDate.setHours(0, 0, 0, 0);
 
       // Calculate day index
-      const dayIndex =
-        targetDate < start
-          ? 0
-          : targetDate > end
-            ? Math.max(0, days.length - 1)
-            : Math.max(
-                0,
-                Math.min(
-                  days.length - 1,
-                  Math.floor(
-                    (targetDate.getTime() - start.getTime()) /
-                      (1000 * 60 * 60 * 24)
-                  )
-                )
-              );
+      let dayIndex: number;
+      if (targetDate < start) {
+        dayIndex = 0;
+      } else if (targetDate > end) {
+        dayIndex = Math.max(0, days.length - 1);
+      } else {
         dayIndex = Math.max(
           0,
           Math.min(
             days.length - 1,
             Math.floor(
-              (targetDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+              (targetDate.getTime() - start.getTime()) /
+                (1000 * 60 * 60 * 24)
             )
           )
         );
@@ -1023,11 +1014,22 @@ export default function GanttChart({
       className="border rounded-md"
       style={{
         borderColor: colors.BORDER,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        overflow: "hidden",
       }}
     >
       <div
         className="grid items-start"
-        style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
+        style={{ 
+          gridTemplateColumns: `${labelWidth}px 1fr`,
+          height: "100%",
+          minHeight: 0,
+          flex: 1,
+          overflow: "hidden",
+        }}
       >
         {/* Static phase list (left) */}
         <div
@@ -1035,6 +1037,9 @@ export default function GanttChart({
           style={{
             backgroundColor: colors.BACKGROUND,
             borderColor: colors.BORDER,
+            height: "100%",
+            overflowY: "auto",
+            overflowX: "hidden",
           }}
         >
           <PhasesList
@@ -1064,7 +1069,9 @@ export default function GanttChart({
           style={{
             backgroundColor: colors.TRACKS_BACKGROUND,
             overflowX: "auto",
-            overflowY: "hidden", // Prevent vertical scroll to keep phases aligned
+            overflowY: "auto", // Allow vertical scroll for timeline content
+            height: "100%",
+            minHeight: 0,
           }}
         >
           <div

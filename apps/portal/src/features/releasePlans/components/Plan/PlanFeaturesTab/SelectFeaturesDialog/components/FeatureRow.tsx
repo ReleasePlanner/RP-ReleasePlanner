@@ -1,6 +1,6 @@
 import { TableRow, TableCell, Checkbox, Tooltip, Typography, Chip, useTheme, alpha } from "@mui/material";
 import { STATUS_LABELS, STATUS_COLORS } from "../../../../../../feature/constants";
-import type { Feature } from "../../../../../../api/services/features.service";
+import type { Feature } from "../../../../../../../api/services/features.service";
 import type { PlanStatus } from "../../../../types";
 
 export type FeatureRowProps = {

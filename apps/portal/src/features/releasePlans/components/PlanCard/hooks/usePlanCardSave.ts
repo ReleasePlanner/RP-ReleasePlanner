@@ -11,7 +11,7 @@ import {
   validatePhaseData,
 } from "./index";
 import { createFullUpdateDto, createPartialUpdateDto } from "../../../lib/planConverters";
-import { categorizeError } from "../../../../api/resilience/ErrorHandler";
+import { categorizeError } from "../../../../../api/resilience/ErrorHandler";
 
 interface UsePlanCardSaveProps {
   plan: Plan;

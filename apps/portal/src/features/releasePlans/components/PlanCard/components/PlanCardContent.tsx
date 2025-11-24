@@ -1,8 +1,7 @@
-import { Box } from "@mui/material";
+import { useState } from "react";
 import type { Plan } from "../../../types";
 import PlanLeftPane from "../../Plan/PlanLeftPane/PlanLeftPane";
-import { GanttChart } from "../../GanttChart";
-import type { PlanPhase, PlanMilestone, PlanReference } from "../../../types";
+import type { PlanMilestone, PlanReference, PlanTask } from "../../../types";
 
 export type PlanCardContentProps = {
   readonly plan: Plan;
@@ -10,7 +9,7 @@ export type PlanCardContentProps = {
   readonly originalMetadata: Plan["metadata"];
   readonly expanded: boolean;
   readonly leftPercent: number;
-  readonly tasks: unknown[];
+  readonly tasks: PlanTask[];
   readonly consolidatedReferences: PlanReference[];
   readonly scrollToDateFn: ((date: string) => void) | null;
   readonly stableHasTabChanges: Record<number, boolean>;
@@ -27,7 +26,9 @@ export type PlanCardContentProps = {
   readonly handleStartDateChange: (date: string) => void;
   readonly handleEndDateChange: (date: string) => void;
   readonly handleFeatureIdsChange: (newFeatureIds: string[]) => void;
-  readonly handleComponentsChange: (newComponents: Plan["metadata"]["components"]) => void;
+  readonly handleComponentsChange: (
+    newComponents: Plan["metadata"]["components"]
+  ) => void;
   readonly handleCalendarIdsChange: (newCalendarIds: string[]) => void;
   readonly handleReferencesChange: (newReferences: PlanReference[]) => void;
   readonly handleSaveTab: (tabIndex: number) => Promise<void>;
@@ -83,76 +84,53 @@ export function PlanCardContent({
   handlePhaseRangeChangeOptimized,
   setPhaseOpen,
 }: PlanCardContentProps) {
+  const [tabValue, setTabValue] = useState(0);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
   return (
-    <>
-      <PlanLeftPane
-        name={metadata.name}
-        owner={metadata.owner}
-        startDate={metadata.startDate}
-        endDate={metadata.endDate}
-        id={metadata.id}
-        description={metadata.description}
-        status={metadata.status}
-        productId={metadata.productId}
-        originalProductId={originalMetadata.productId}
-        itOwner={metadata.itOwner}
-        featureIds={metadata.featureIds}
-        onNameChange={handleNameChange}
-        onProductChange={handleProductChange}
-        onDescriptionChange={handleDescriptionChange}
-        onStatusChange={handleStatusChange}
-        onITOwnerChange={handleITOwnerChange}
-        onStartDateChange={handleStartDateChange}
-        onEndDateChange={handleEndDateChange}
-        onFeatureIdsChange={handleFeatureIdsChange}
-        components={metadata.components}
-        onComponentsChange={handleComponentsChange}
-        calendarIds={metadata.calendarIds}
-        onCalendarIdsChange={handleCalendarIdsChange}
-        references={consolidatedReferences}
-        onReferencesChange={handleReferencesChange}
-        onScrollToDate={
-          scrollToDateFn
-            ? (date: string) => {
-                scrollToDateFn(date);
-              }
-            : undefined
-        }
-        onSaveTab={handleSaveTab}
-        isSaving={isSaving}
-        hasTabChanges={stableHasTabChanges}
-        planUpdatedAt={plan.updatedAt}
-        plan={plan}
-      />
-      <Box sx={{ position: "relative", height: "100%" }}>
-        <GanttChart
-          startDate={metadata.startDate}
-          endDate={metadata.endDate}
-          tasks={tasks}
-          phases={metadata.phases}
-          calendarIds={metadata.calendarIds}
-          milestones={metadata.milestones}
-          onMilestoneAdd={handleMilestoneAdd}
-          onMilestoneUpdate={handleMilestoneUpdate}
-          hideMainCalendar
-          onAddPhase={() => setPhaseOpen(true)}
-          onEditPhase={openEditOptimized}
-          onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-          references={metadata.references}
-          milestoneReferences={(metadata.references || []).filter(
-            (ref) => ref.type === "milestone" && ref.date
-          )}
-          onAddCellComment={handleAddCellComment}
-          onAddCellFile={handleAddCellFile}
-          onAddCellLink={handleAddCellLink}
-          onToggleCellMilestone={handleToggleCellMilestone}
-          onScrollToDateReady={setScrollToDateFn}
-          onSaveTimeline={handleSaveTimeline}
-          hasTimelineChanges={hasTimelineChanges}
-          isSavingTimeline={isSaving}
-        />
-      </Box>
-    </>
+    <PlanLeftPane
+      name={metadata.name}
+      owner={metadata.owner}
+      startDate={metadata.startDate}
+      endDate={metadata.endDate}
+      id={metadata.id}
+      description={metadata.description}
+      status={metadata.status}
+      productId={metadata.productId}
+      originalProductId={originalMetadata.productId}
+      itOwner={metadata.itOwner}
+      featureIds={metadata.featureIds}
+      components={metadata.components}
+      calendarIds={metadata.calendarIds}
+      references={consolidatedReferences}
+      onNameChange={handleNameChange}
+      onProductChange={handleProductChange}
+      onDescriptionChange={handleDescriptionChange}
+      onStatusChange={handleStatusChange}
+      onITOwnerChange={handleITOwnerChange}
+      onStartDateChange={handleStartDateChange}
+      onEndDateChange={handleEndDateChange}
+      onFeatureIdsChange={handleFeatureIdsChange}
+      onComponentsChange={handleComponentsChange}
+      onCalendarIdsChange={handleCalendarIdsChange}
+      onReferencesChange={handleReferencesChange}
+      onScrollToDate={
+        scrollToDateFn
+          ? (date: string) => {
+              scrollToDateFn(date);
+            }
+          : undefined
+      }
+      onSaveTab={handleSaveTab}
+      isSaving={isSaving}
+      hasTabChanges={stableHasTabChanges}
+      planUpdatedAt={plan.updatedAt}
+      plan={plan}
+      tabValue={tabValue}
+      onTabChange={handleTabChange}
+    />
   );
 }
-

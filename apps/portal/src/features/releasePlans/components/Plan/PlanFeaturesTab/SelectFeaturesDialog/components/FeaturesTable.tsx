@@ -9,7 +9,7 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import type { Feature } from "../../../../../../api/services/features.service";
+import type { Feature } from "../../../../../../../api/services/features.service";
 import type { PlanStatus } from "../../../../types";
 import { FeatureRow } from "./FeatureRow";
 

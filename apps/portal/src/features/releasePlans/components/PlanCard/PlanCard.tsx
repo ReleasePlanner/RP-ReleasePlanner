@@ -4,6 +4,7 @@ import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
 import { PlanCardContent } from "./components/PlanCardContent";
 import { PlanCardDialogs } from "./components/PlanCardDialogs";
+import PlanRightPanel from "../Plan/PlanRightPanel/PlanRightPanel";
 import { ErrorSnackbar } from "./components/ErrorSnackbar";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { useComponentLogger } from "../../../../utils/logging/simpleLogging";
@@ -283,7 +284,30 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             setPhaseOpen={setPhaseOpen}
           />
         }
-        right={null}
+        right={
+          <PlanRightPanel
+            startDate={metadata.startDate}
+            endDate={metadata.endDate}
+            tasks={tasks}
+            phases={metadata.phases}
+            calendarIds={metadata.calendarIds}
+            milestones={metadata.milestones}
+            references={metadata.references}
+            onMilestoneAdd={handleMilestoneAdd}
+            onMilestoneUpdate={handleMilestoneUpdate}
+            onAddPhase={() => setPhaseOpen(true)}
+            onEditPhase={openEditOptimized}
+            onPhaseRangeChange={handlePhaseRangeChangeOptimized}
+            onAddCellComment={handleAddCellComment}
+            onAddCellFile={handleAddCellFile}
+            onAddCellLink={handleAddCellLink}
+            onToggleCellMilestone={handleToggleCellMilestone}
+            onScrollToDateReady={setScrollToDateFn}
+            onSaveTimeline={handleSaveTimeline}
+            hasTimelineChanges={hasTimelineChanges}
+            isSavingTimeline={updatePlanMutation.isPending}
+          />
+        }
       />
 
       <PlanCardDialogs

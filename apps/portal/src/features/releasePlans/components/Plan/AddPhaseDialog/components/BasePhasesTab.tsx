@@ -1,5 +1,5 @@
 import { Box, Stack, Typography, Button, Checkbox, FormControlLabel, Alert, CircularProgress, useTheme, alpha } from "@mui/material";
-import type { BasePhase } from "../../../../../../api/services/basePhases.service";
+import type { BasePhase } from "../../../../../../../api/services/basePhases.service";
 
 export type BasePhasesTabProps = {
   readonly isLoading: boolean;

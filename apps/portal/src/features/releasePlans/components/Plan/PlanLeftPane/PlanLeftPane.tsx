@@ -1,6 +1,5 @@
 import { useState, memo } from "react";
 import { Box, useTheme } from "@mui/material";
-import { useLocalState, useLocalChanges, useFeaturePrefetch } from "./hooks";
 import { PlanTabs, TabPanels } from "./components";
 import type {
   PlanStatus,
@@ -41,6 +40,8 @@ export type PlanLeftPaneProps = {
   readonly hasTabChanges?: Record<number, boolean>;
   readonly planUpdatedAt?: string | Date; // Plan updatedAt for optimistic locking
   readonly plan?: Plan; // Full plan object for optimistic locking
+  readonly tabValue?: number;
+  readonly onTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
 function PlanLeftPaneComponent({
@@ -75,59 +76,21 @@ function PlanLeftPaneComponent({
   hasTabChanges = {},
   planUpdatedAt,
   plan,
+  tabValue: externalTabValue,
+  onTabChange: externalOnTabChange,
 }: PlanLeftPaneProps) {
   const theme = useTheme();
-  const [tabValue, setTabValue] = useState(0);
-
-  // Local state hook
-  const {
-    localName,
-    localDescription,
-    localStatus,
-    localStartDate,
-    localEndDate,
-    localProductId,
-    localItOwner,
-    originalNameRef,
-    originalDescriptionRef,
-    originalStatusRef,
-    originalStartDateRef,
-    originalEndDateRef,
-    originalProductIdRef,
-    originalItOwnerRef,
-  } = useLocalState(
-    name,
-    description,
-    status,
-    startDate,
-    endDate,
-    productId,
-    itOwner
-  );
-
-  // Calculate local changes
-  const hasLocalChanges = useLocalChanges(
-    localName,
-    localDescription,
-    localStatus,
-    localStartDate,
-    localEndDate,
-    localProductId,
-    localItOwner,
-    originalNameRef,
-    originalDescriptionRef,
-    originalStatusRef,
-    originalStartDateRef,
-    originalEndDateRef,
-    originalProductIdRef,
-    originalItOwnerRef
-  );
-
-  // Prefetch features when productId changes
-  useFeaturePrefetch(productId);
+  const [internalTabValue, setInternalTabValue] = useState(0);
+  
+  // Use external tabValue if provided, otherwise use internal state
+  const tabValue = externalTabValue !== undefined ? externalTabValue : internalTabValue;
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+    if (externalOnTabChange) {
+      externalOnTabChange(_event, newValue);
+    } else {
+      setInternalTabValue(newValue);
+    }
   };
 
   const requiredFieldsFilled = Boolean(
@@ -187,7 +150,7 @@ function PlanLeftPaneComponent({
           components={components}
           calendarIds={calendarIds}
           references={references}
-          hasLocalChanges={hasLocalChanges}
+          hasLocalChanges={false}
           isSaving={isSaving}
           hasTabChanges={hasTabChanges}
           planUpdatedAt={planUpdatedAt}
