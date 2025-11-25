@@ -4,6 +4,7 @@ export type PlanTabsProps = {
   readonly value: number;
   readonly onChange: (_event: React.SyntheticEvent, newValue: number) => void;
   readonly requiredFieldsFilled: boolean;
+  readonly productSelected: boolean;
 };
 
 function a11yProps(index: number) {
@@ -17,6 +18,7 @@ export function PlanTabs({
   value,
   onChange,
   requiredFieldsFilled,
+  productSelected,
 }: PlanTabsProps) {
   const theme = useTheme();
 
@@ -113,8 +115,21 @@ export function PlanTabs({
           {...a11yProps(2)}
           disabled={!requiredFieldsFilled}
         />
-        <Tab label="Calendars" {...a11yProps(3)} />
-        <Tab label="References" {...a11yProps(4)} />
+        <Tab 
+          label="Calendars" 
+          {...a11yProps(3)}
+          disabled={!productSelected}
+        />
+        <Tab 
+          label="References" 
+          {...a11yProps(4)}
+          disabled={!productSelected}
+        />
+        <Tab 
+          label="Metrics" 
+          {...a11yProps(5)}
+          disabled={!productSelected}
+        />
       </Tabs>
     </Box>
   );

@@ -122,6 +122,7 @@ export class PlanResponseDto {
   featureIds: string[];
   components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
+  indicatorIds: string[];
   milestones: PlanMilestoneResponseDto[];
   references: PlanReferenceResponseDto[];
   tasks: PlanTaskResponseDto[];
@@ -146,6 +147,7 @@ export class PlanResponseDto {
     this.featureIds = entity.featureIds || [];
     this.components = entity.components || [];
     this.calendarIds = entity.calendarIds || [];
+    this.indicatorIds = entity.indicatorIds || [];
     this.milestones = (entity.milestones && Array.isArray(entity.milestones))
       ? entity.milestones.map((m) => new PlanMilestoneResponseDto(m))
       : [];

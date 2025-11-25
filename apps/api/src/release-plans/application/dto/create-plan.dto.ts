@@ -185,5 +185,16 @@ export class CreatePlanDto {
   @IsArray()
   @IsOptional()
   calendarIds?: string[];
+
+  @ApiProperty({
+    description: 'List of indicator/KPI IDs associated with this plan',
+    type: [String],
+    example: ['indicator-1', 'indicator-2'],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  indicatorIds?: string[];
 }
 

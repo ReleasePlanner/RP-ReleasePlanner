@@ -143,6 +143,7 @@ export class PlanRepository
             plan."featureIds",
             plan.components,
             plan."calendarIds",
+            plan."indicatorIds",
             plan."createdAt",
             plan."updatedAt",
             owners.name as "ownerName"

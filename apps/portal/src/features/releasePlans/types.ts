@@ -54,25 +54,25 @@ export type PlanReference = {
   description?: string; // For notes and general description
   createdAt: string; // ISO date
   updatedAt?: string; // ISO date
-  
+
   // Reference level: where the reference is attached (plan, period, day)
   planReferenceTypeId?: string; // ID of plan_reference_type (plan, period, day)
   planReferenceType?: { id: string; name: PlanReferenceLevel }; // Reference type details
-  
+
   // For 'period' type: specific day within the period
   periodDay?: string; // ISO date (YYYY-MM-DD)
-  
+
   // For 'day' type: specific calendar day and phase
   calendarDayId?: string; // ID of calendar_day
   calendarDay?: { id: string; name: string; date: string; type: string }; // Calendar day details
   phaseId?: string; // For 'day' type: phase associated with the day
-  
+
   // Legacy fields (kept for backward compatibility)
   date?: string; // ISO date (YYYY-MM-DD) - deprecated, use periodDay or calendarDayId
-  
+
   // For milestone type:
   milestoneColor?: string; // Custom color for milestone marker (hex color, e.g., "#FF5733")
-  
+
   // For document type:
   files?: PlanReferenceFile[]; // Files attached to document reference
 };
@@ -91,6 +91,7 @@ export type PlanMetadata = {
   featureIds?: string[]; // IDs of features associated with this plan
   components?: PlanComponent[]; // Components with final versions for this plan
   calendarIds?: string[]; // IDs of calendars associated with this plan
+  indicatorIds?: string[]; // IDs of indicators/KPIs associated with this plan
   milestones?: PlanMilestone[]; // Milestones for this plan
   references?: PlanReference[]; // References (links, documents, notes, milestones) for this plan
   // Note: cellData has been removed - references are now handled via plan_references table

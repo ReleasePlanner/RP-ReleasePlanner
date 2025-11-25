@@ -4,6 +4,7 @@ import { PlanFeaturesTab } from "../../PlanFeaturesTab/PlanFeaturesTab";
 import { PlanComponentsTab } from "../../PlanComponentsTab/PlanComponentsTab";
 import { PlanCalendarsTab } from "../../PlanCalendarsTab/PlanCalendarsTab";
 import { PlanReferencesTab } from "../../PlanReferencesTab/PlanReferencesTab";
+import { PlanMetricsTab } from "../../PlanMetricsTab/PlanMetricsTab";
 import type {
   PlanStatus,
   PlanComponent,
@@ -25,6 +26,7 @@ export type TabPanelsProps = {
   readonly featureIds?: string[];
   readonly components?: PlanComponent[];
   readonly calendarIds?: string[];
+  readonly indicatorIds?: string[];
   readonly references?: PlanReference[];
   readonly hasLocalChanges: boolean;
   readonly isSaving: boolean;
@@ -41,6 +43,7 @@ export type TabPanelsProps = {
   readonly onFeatureIdsChange?: (featureIds: string[]) => void;
   readonly onComponentsChange?: (components: PlanComponent[]) => void;
   readonly onCalendarIdsChange?: (calendarIds: string[]) => void;
+  readonly onIndicatorIdsChange?: (indicatorIds: string[]) => void;
   readonly onReferencesChange?: (references: PlanReference[]) => void;
   readonly onScrollToDate?: (date: string) => void;
   readonly onSaveTab?: (tabIndex: number) => Promise<void>;
@@ -60,6 +63,7 @@ export function TabPanels({
   featureIds = [],
   components = [],
   calendarIds = [],
+  indicatorIds = [],
   references = [],
   hasLocalChanges,
   isSaving,
@@ -76,6 +80,7 @@ export function TabPanels({
   onFeatureIdsChange,
   onComponentsChange,
   onCalendarIdsChange,
+  onIndicatorIdsChange,
   onReferencesChange,
   onScrollToDate,
   onSaveTab,
@@ -172,6 +177,20 @@ export function TabPanels({
           startDate={startDate}
           endDate={endDate}
           calendarIds={calendarIds}
+        />
+      </TabPanel>
+
+      {/* Tab 6: Metrics */}
+      <TabPanel
+        value={tabValue}
+        index={5}
+        onSave={onSaveTab ? () => onSaveTab(5) : undefined}
+        isSaving={isSaving}
+        hasPendingChanges={hasTabChanges[5] || false}
+      >
+        <PlanMetricsTab
+          indicatorIds={indicatorIds}
+          onIndicatorIdsChange={onIndicatorIdsChange}
         />
       </TabPanel>
     </>

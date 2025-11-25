@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { Plan } from "../../../types";
 import PlanLeftPane from "../../Plan/PlanLeftPane/PlanLeftPane";
 import type { PlanMilestone, PlanReference, PlanTask } from "../../../types";
@@ -30,6 +30,7 @@ export type PlanCardContentProps = {
     newComponents: Plan["metadata"]["components"]
   ) => void;
   readonly handleCalendarIdsChange: (newCalendarIds: string[]) => void;
+  readonly handleIndicatorIdsChange: (newIndicatorIds: string[]) => void;
   readonly handleReferencesChange: (newReferences: PlanReference[]) => void;
   readonly handleSaveTab: (tabIndex: number) => Promise<void>;
   // Gantt handlers
@@ -70,6 +71,7 @@ export function PlanCardContent({
   handleFeatureIdsChange,
   handleComponentsChange,
   handleCalendarIdsChange,
+  handleIndicatorIdsChange,
   handleReferencesChange,
   handleSaveTab,
   handleMilestoneAdd,
@@ -86,9 +88,12 @@ export function PlanCardContent({
 }: PlanCardContentProps) {
   const [tabValue, setTabValue] = useState(0);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+  const handleTabChange = useCallback(
+    (_event: React.SyntheticEvent, newValue: number) => {
+      setTabValue(newValue);
+    },
+    []
+  );
 
   return (
     <PlanLeftPane
@@ -105,6 +110,7 @@ export function PlanCardContent({
       featureIds={metadata.featureIds}
       components={metadata.components}
       calendarIds={metadata.calendarIds}
+      indicatorIds={metadata.indicatorIds}
       references={consolidatedReferences}
       onNameChange={handleNameChange}
       onProductChange={handleProductChange}
@@ -116,6 +122,7 @@ export function PlanCardContent({
       onFeatureIdsChange={handleFeatureIdsChange}
       onComponentsChange={handleComponentsChange}
       onCalendarIdsChange={handleCalendarIdsChange}
+      onIndicatorIdsChange={handleIndicatorIdsChange}
       onReferencesChange={handleReferencesChange}
       onScrollToDate={
         scrollToDateFn

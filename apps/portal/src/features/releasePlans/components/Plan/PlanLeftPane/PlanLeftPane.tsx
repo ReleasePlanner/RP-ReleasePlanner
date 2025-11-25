@@ -22,6 +22,7 @@ export type PlanLeftPaneProps = {
   readonly featureIds?: string[];
   readonly components?: PlanComponent[];
   readonly calendarIds?: string[];
+  readonly indicatorIds?: string[];
   readonly references?: PlanReference[];
   readonly onNameChange?: (name: string) => void;
   readonly onProductChange: (productId: string) => void;
@@ -33,6 +34,7 @@ export type PlanLeftPaneProps = {
   readonly onFeatureIdsChange?: (featureIds: string[]) => void;
   readonly onComponentsChange?: (components: PlanComponent[]) => void;
   readonly onCalendarIdsChange?: (calendarIds: string[]) => void;
+  readonly onIndicatorIdsChange?: (indicatorIds: string[]) => void;
   readonly onReferencesChange?: (references: PlanReference[]) => void;
   readonly onScrollToDate?: (date: string) => void;
   readonly onSaveTab?: (tabIndex: number) => Promise<void>;
@@ -58,6 +60,7 @@ function PlanLeftPaneComponent({
   featureIds = [],
   components = [],
   calendarIds = [],
+  indicatorIds = [],
   references = [],
   onNameChange,
   onProductChange,
@@ -69,6 +72,7 @@ function PlanLeftPaneComponent({
   onFeatureIdsChange,
   onComponentsChange,
   onCalendarIdsChange,
+  onIndicatorIdsChange,
   onReferencesChange,
   onScrollToDate,
   onSaveTab,
@@ -93,6 +97,10 @@ function PlanLeftPaneComponent({
     }
   };
 
+  // Enable tabs when product is selected
+  const productSelected = Boolean(productId);
+  
+  // Required fields for Features and Components tabs (need full plan data)
   const requiredFieldsFilled = Boolean(
     owner && startDate && endDate && id && productId
   );
@@ -119,6 +127,7 @@ function PlanLeftPaneComponent({
         value={tabValue}
         onChange={handleTabChange}
         requiredFieldsFilled={requiredFieldsFilled}
+        productSelected={productSelected}
       />
 
       {/* Tab Content - Scrollable */}
@@ -149,6 +158,7 @@ function PlanLeftPaneComponent({
           featureIds={featureIds}
           components={components}
           calendarIds={calendarIds}
+          indicatorIds={indicatorIds}
           references={references}
           hasLocalChanges={false}
           isSaving={isSaving}
@@ -165,6 +175,7 @@ function PlanLeftPaneComponent({
           onFeatureIdsChange={onFeatureIdsChange}
           onComponentsChange={onComponentsChange}
           onCalendarIdsChange={onCalendarIdsChange}
+          onIndicatorIdsChange={onIndicatorIdsChange}
           onReferencesChange={onReferencesChange}
           onScrollToDate={onScrollToDate}
           onSaveTab={onSaveTab}
@@ -217,7 +228,8 @@ function compareStateProps(
 ): boolean {
   return (
     prevProps.isSaving === nextProps.isSaving &&
-    prevProps.hasTabChanges === nextProps.hasTabChanges
+    prevProps.hasTabChanges === nextProps.hasTabChanges &&
+    prevProps.tabValue === nextProps.tabValue
   );
 }
 
@@ -237,7 +249,8 @@ function compareHandlers(
     prevProps.onComponentsChange === nextProps.onComponentsChange &&
     prevProps.onCalendarIdsChange === nextProps.onCalendarIdsChange &&
     prevProps.onReferencesChange === nextProps.onReferencesChange &&
-    prevProps.onSaveTab === nextProps.onSaveTab
+    prevProps.onSaveTab === nextProps.onSaveTab &&
+    prevProps.onTabChange === nextProps.onTabChange
   );
 }
 

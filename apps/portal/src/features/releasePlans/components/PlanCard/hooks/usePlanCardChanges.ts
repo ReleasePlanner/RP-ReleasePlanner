@@ -28,6 +28,7 @@ export function usePlanCardChanges(
       originalMetadata.featureIds !== localMetadata.featureIds ||
       originalMetadata.components !== localMetadata.components ||
       originalMetadata.calendarIds !== localMetadata.calendarIds ||
+      originalMetadata.indicatorIds !== localMetadata.indicatorIds ||
       originalMetadata.references !== localMetadata.references ||
       originalMetadata.phases !== localMetadata.phases ||
       originalMetadata.milestones !== localMetadata.milestones
@@ -144,6 +145,22 @@ export function usePlanCardChanges(
     );
   }, [originalMetadata.references, localMetadata.references]);
 
+  // Tab 5: Metrics (Indicators) - check reference first, then content
+  const hasTab5Changes = useMemo(() => {
+    if (originalMetadata.indicatorIds === localMetadata.indicatorIds)
+      return false;
+    const origSorted = [...(originalMetadata.indicatorIds || [])].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
+    const localSorted = [...(localMetadata.indicatorIds || [])].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
+    return (
+      origSorted.length !== localSorted.length ||
+      origSorted.some((id, idx) => id !== localSorted[idx])
+    );
+  }, [originalMetadata.indicatorIds, localMetadata.indicatorIds]);
+
   // Combine all tab changes - use useMemo with stable reference
   const hasTabChanges = useMemo(
     () => ({
@@ -152,6 +169,7 @@ export function usePlanCardChanges(
       2: hasTab2Changes,
       3: hasTab3Changes,
       4: hasTab4Changes,
+      5: hasTab5Changes,
     }),
     [
       hasTab0Changes,
@@ -159,6 +177,7 @@ export function usePlanCardChanges(
       hasTab2Changes,
       hasTab3Changes,
       hasTab4Changes,
+      hasTab5Changes,
     ]
   );
 
@@ -176,7 +195,8 @@ export function usePlanCardChanges(
       hasTabChangesRef.current[1] !== hasTabChanges[1] ||
       hasTabChangesRef.current[2] !== hasTabChanges[2] ||
       hasTabChangesRef.current[3] !== hasTabChanges[3] ||
-      hasTabChangesRef.current[4] !== hasTabChanges[4];
+      hasTabChangesRef.current[4] !== hasTabChanges[4] ||
+      hasTabChangesRef.current[5] !== hasTabChanges[5];
 
     if (changed) {
       hasTabChangesRef.current = hasTabChanges;

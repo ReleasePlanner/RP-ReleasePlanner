@@ -128,6 +128,11 @@ export class PlanService {
       dto.calendarIds.forEach((cid) => validateId(cid, 'Calendar'));
       plan.calendarIds = dto.calendarIds;
     }
+    if (dto.indicatorIds) {
+      validateArray(dto.indicatorIds, 'Indicator IDs');
+      dto.indicatorIds.forEach((iid) => validateId(iid, 'Indicator'));
+      plan.indicatorIds = dto.indicatorIds;
+    }
 
     // Add phases if provided
     if (dto.phases) {
@@ -274,6 +279,11 @@ export class PlanService {
       validateArray(dto.calendarIds, 'Calendar IDs');
       dto.calendarIds.forEach((cid) => validateId(cid, 'Calendar'));
       plan.calendarIds = dto.calendarIds;
+    }
+    if (dto.indicatorIds !== undefined) {
+      validateArray(dto.indicatorIds, 'Indicator IDs');
+      dto.indicatorIds.forEach((iid) => validateId(iid, 'Indicator'));
+      plan.indicatorIds = dto.indicatorIds;
     }
     if (dto.components !== undefined) {
       validateArray(dto.components, 'Components');

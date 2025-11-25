@@ -231,6 +231,16 @@ export function usePlanCardHandlers({
     [setLocalMetadata]
   );
 
+  const handleIndicatorIdsChange = useCallback(
+    (newIndicatorIds: string[]) => {
+      setLocalMetadata((prev) => ({
+        ...prev,
+        indicatorIds: newIndicatorIds,
+      }));
+    },
+    [setLocalMetadata]
+  );
+
   const handleNameChange = useCallback(
     (newName: string) => {
       setLocalMetadata((prev) => ({
@@ -256,6 +266,7 @@ export function usePlanCardHandlers({
     handleFeatureIdsChange,
     handleComponentsChange,
     handleCalendarIdsChange,
+    handleIndicatorIdsChange,
     handleNameChange,
     handlePhaseUpdate,
   };

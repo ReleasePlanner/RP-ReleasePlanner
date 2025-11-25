@@ -32,6 +32,9 @@ export function prepareTabData(
         metadata.references || []
       );
       break;
+    case 5: // Metrics
+      updateData.indicatorIds = metadata.indicatorIds;
+      break;
   }
 
   return updateData;

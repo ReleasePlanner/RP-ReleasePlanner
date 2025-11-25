@@ -53,6 +53,9 @@ export class Plan extends BaseEntity {
   @Column({ type: 'jsonb', default: '[]' })
   calendarIds: string[];
 
+  @Column({ type: 'jsonb', default: '[]' })
+  indicatorIds: string[];
+
   // Relations
   @OneToMany(() => PlanPhase, (phase) => phase.plan, {
     cascade: true,
@@ -115,6 +118,7 @@ export class Plan extends BaseEntity {
     this.featureIds = [];
     this.components = [];
     this.calendarIds = [];
+    this.indicatorIds = [];
     if (name !== undefined && startDate !== undefined && endDate !== undefined) {
       this.validate();
     }
