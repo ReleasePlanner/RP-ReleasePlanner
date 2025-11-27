@@ -6,6 +6,8 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
+  ValidateIf,
+  IsObject,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -48,6 +50,15 @@ export class CreatePlanPhaseDto {
   @IsString()
   @IsOptional()
   color?: string;
+
+  @ApiProperty({
+    description: 'Metric values for this phase (indicatorId -> value)',
+    example: { 'indicator-1': '100', 'indicator-2': '50' },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject({}, { message: 'metricValues must be an object' })
+  metricValues?: Record<string, string>;
 }
 
 export class CreatePlanTaskDto {

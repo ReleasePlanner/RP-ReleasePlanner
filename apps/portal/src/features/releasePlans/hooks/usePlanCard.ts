@@ -16,7 +16,8 @@ export function usePlanCard<TData = Plan, TContext = unknown>(
     Error,
     { id: string; data: UpdatePlanDto },
     TContext
-  >
+  >,
+  localMetadata?: Plan["metadata"]
 ) {
   const dispatch = useAppDispatch();
 
@@ -51,14 +52,23 @@ export function usePlanCard<TData = Plan, TContext = unknown>(
 
   const openEdit = useCallback(
     (phaseId: string) => {
-      const ph = (plan.metadata.phases ?? []).find(
+      console.log("[usePlanCard] openEdit called with phaseId:", phaseId);
+      // Use localMetadata if available, otherwise fall back to plan.metadata
+      const phasesToSearch = localMetadata?.phases ?? plan.metadata.phases ?? [];
+      console.log("[usePlanCard] Available phases:", phasesToSearch.map(p => ({ id: p.id, name: p.name })));
+      const ph = phasesToSearch.find(
         (phase) => phase.id === phaseId
       );
-      if (!ph) return;
+      console.log("[usePlanCard] Found phase:", ph ? { id: ph.id, name: ph.name } : null);
+      if (!ph) {
+        console.error("[usePlanCard] Phase not found:", phaseId);
+        return;
+      }
       setEditingPhase(ph);
       setEditOpen(true);
+      console.log("[usePlanCard] Dialog state set - editOpen: true, editingPhase:", { id: ph.id, name: ph.name });
     },
-    [plan.metadata.phases]
+    [plan.metadata.phases, localMetadata?.phases]
   );
 
   const handleAddPhase = useCallback(

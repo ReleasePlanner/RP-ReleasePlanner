@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
   COUNTRIES: '/countries',
   PLANS: '/plans',
   INDICATORS: '/indicators',
+  TEAMS: '/teams',
+  ROLES: '/roles',
 } as const;
 
 // Token storage keys

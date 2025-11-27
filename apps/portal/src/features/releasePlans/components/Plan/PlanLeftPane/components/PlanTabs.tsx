@@ -108,12 +108,12 @@ export function PlanTabs({
         <Tab
           label="Features"
           {...a11yProps(1)}
-          disabled={!requiredFieldsFilled}
+          disabled={!productSelected}
         />
         <Tab
           label="Components"
           {...a11yProps(2)}
-          disabled={!requiredFieldsFilled}
+          disabled={!productSelected}
         />
         <Tab 
           label="Calendars" 

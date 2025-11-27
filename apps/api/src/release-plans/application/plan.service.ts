@@ -145,7 +145,7 @@ export class PlanService {
         validateString(p.name, 'Phase name');
         if (p.startDate) validateDateString(p.startDate, 'Phase start date');
         if (p.endDate) validateDateString(p.endDate, 'Phase end date');
-        const phase = new PlanPhase(p.name, p.startDate, p.endDate, p.color);
+        const phase = new PlanPhase(p.name, p.startDate, p.endDate, p.color, p.metricValues);
         plan.addPhase(phase);
       });
     }
@@ -176,6 +176,20 @@ export class PlanService {
     // Defensive: Validate inputs
     validateId(id, 'Plan');
     validateObject(dto, 'UpdatePlanDto');
+    
+    // Log phases data for debugging
+    if (dto.phases) {
+      console.log('[PlanService.update] Received phases:', {
+        count: dto.phases.length,
+        phases: dto.phases.map((p: any) => ({
+          name: p.name,
+          hasMetricValues: !!p.metricValues,
+          metricValues: p.metricValues,
+          metricValuesType: typeof p.metricValues,
+          isArray: Array.isArray(p.metricValues),
+        })),
+      });
+    }
 
     const plan = await this.repository.findById(id);
     if (!plan) {
@@ -590,7 +604,29 @@ export class PlanService {
         validateString(p.name, 'Phase name');
         if (p.startDate) validateDateString(p.startDate, 'Phase start date');
         if (p.endDate) validateDateString(p.endDate, 'Phase end date');
-        const phase = new PlanPhase(p.name, p.startDate, p.endDate, p.color);
+        
+        // Log metricValues before creating phase
+        console.log('[PlanService.update] Creating phase with metricValues:', {
+          phaseName: p.name,
+          hasMetricValues: !!p.metricValues,
+          metricValues: p.metricValues,
+          metricValuesType: typeof p.metricValues,
+          isArray: Array.isArray(p.metricValues),
+          keys: p.metricValues ? Object.keys(p.metricValues) : [],
+        });
+        
+        const phase = new PlanPhase(p.name, p.startDate, p.endDate, p.color, p.metricValues);
+        
+        // Log phase after creation to verify metricValues
+        console.log('[PlanService.update] Phase created with metricValues:', {
+          phaseName: phase.name,
+          phaseId: phase.id,
+          hasMetricValues: !!phase.metricValues,
+          metricValues: phase.metricValues,
+          metricValuesType: typeof phase.metricValues,
+          keys: phase.metricValues ? Object.keys(phase.metricValues) : [],
+        });
+        
         // Explicitly set planId before adding to ensure it's not null
         // This is critical to prevent null constraint violations
         phase.planId = plan.id;
@@ -909,7 +945,7 @@ export class PlanService {
       // Reload plan to verify components were saved correctly (TypeORM might cache the entity)
       const reloadedPlan = await this.repository.findById(updated.id);
       
-      // Verify components were saved correctly
+      // Verify components and phases with metricValues were saved correctly
       this.logger.log('[PlanService.update] Plan saved successfully:', {
         id: updated.id,
         name: updated.name,
@@ -919,6 +955,15 @@ export class PlanService {
           componentId: c.componentId,
           currentVersion: c.currentVersion,
           finalVersion: c.finalVersion,
+        })) || [],
+        phasesCount: reloadedPlan?.phases?.length || 0,
+        phases: reloadedPlan?.phases?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          hasMetricValues: !!p.metricValues,
+          metricValues: p.metricValues,
+          metricValuesType: typeof p.metricValues,
+          keys: p.metricValues ? Object.keys(p.metricValues) : [],
         })) || [],
       });
       

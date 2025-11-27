@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { Box, Stack } from "@mui/material";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { Box, Tabs, Tab, useTheme, alpha } from "@mui/material";
 import { useAppSelector } from "../../../../../store/hooks";
 import type { PlanPhase } from "../../../types";
 import { BaseEditDialog } from "../../../../../components/BaseEditDialog";
@@ -9,27 +9,39 @@ import {
   usePhaseValidation,
   usePhaseFormValidation,
 } from "./hooks";
-import { PhaseNameField, PhaseDateFields, PhaseColorField } from "./components";
+import {
+  PhaseCommonDataTab,
+  PhaseMetricsTab,
+} from "./components";
 
 export type PhaseEditDialogProps = {
   readonly open: boolean;
   readonly phase: PlanPhase | null;
   readonly planPhases?: PlanPhase[]; // All phases in the current plan
+  readonly indicatorIds?: string[]; // IDs of indicators assigned to the plan
   readonly onCancel: () => void;
   readonly onSave: (phase: PlanPhase) => void;
+  readonly onSaveMetrics?: (phaseId: string, metricValues: Record<string, string>) => Promise<void>;
 };
 
 export default function PhaseEditDialog({
   open,
   phase,
   planPhases = [],
+  indicatorIds = [],
   onCancel,
   onSave,
+  onSaveMetrics,
 }: PhaseEditDialogProps) {
+  const theme = useTheme();
   const basePhases = useAppSelector(
     (state: RootState) => state.basePhases.phases
   );
   const isNew = !phase?.id || phase.id.startsWith("new-");
+  const [tabValue, setTabValue] = useState(0);
+  const [metricValues, setMetricValues] = useState<Record<string, string>>({});
+  const [isSavingMetrics, setIsSavingMetrics] = useState(false);
+  const [hasMetricsChanges, setHasMetricsChanges] = useState(false);
 
   // Form state management
   const {
@@ -95,6 +107,17 @@ export default function PhaseEditDialog({
     );
   }, [formData, errors, isValidating, isBasePhase]);
 
+  // Track changes in Common Data tab
+  const hasCommonDataChanges = useMemo(() => {
+    if (!phase) return false;
+    return (
+      formData.name.trim() !== (phase.name || "") ||
+      formData.startDate !== (phase.startDate || "") ||
+      formData.endDate !== (phase.endDate || "") ||
+      formData.color !== (phase.color || "#185ABD")
+    );
+  }, [phase, formData]);
+
   // Helper: Validate and convert dates
   const validateAndConvertDates = useCallback((): {
     startDateUTC: string;
@@ -145,8 +168,8 @@ export default function PhaseEditDialog({
     [setErrorsState]
   );
 
-  // Save handler
-  const handleSave = useCallback(() => {
+  // Save handler for Common Data tab - independent, atomic save
+  const handleSave = useCallback(async () => {
     // Validate based on phase type
     const isValid = isBasePhase ? validateBasePhase() : validateLocalPhase();
     if (!isValid) return;
@@ -165,8 +188,13 @@ export default function PhaseEditDialog({
     // Final validation
     if (!validateSavedPhase(savedPhase)) return;
 
-    onSave(savedPhase);
-    onCancel();
+    // Save phase data (atomic operation)
+    try {
+      onSave(savedPhase);
+      // Don't close dialog - allow user to continue editing or switch tabs
+    } catch (error) {
+      console.error("[PhaseEditDialog] Error saving phase:", error);
+    }
   }, [
     isBasePhase,
     validateBasePhase,
@@ -175,13 +203,57 @@ export default function PhaseEditDialog({
     createSavedPhase,
     validateSavedPhase,
     onSave,
-    onCancel,
   ]);
+
+  // Load metricValues when phase changes
+  useEffect(() => {
+    if (phase?.metricValues) {
+      setMetricValues(phase.metricValues);
+    } else {
+      setMetricValues({});
+    }
+  }, [phase?.metricValues]);
+
+  // Reset state when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setTabValue(0);
+      setMetricValues({});
+      setHasMetricsChanges(false);
+    }
+  }, [open]);
+
+  // Handle metric value changes
+  const handleMetricValueChange = useCallback(
+    (indicatorId: string, value: string) => {
+      setMetricValues((prev) => {
+        const updated = { ...prev, [indicatorId]: value };
+        setHasMetricsChanges(true);
+        return updated;
+      });
+    },
+    []
+  );
+
+  // Handle save metrics
+  const handleSaveMetrics = useCallback(async () => {
+    if (!phase?.id || !onSaveMetrics) return;
+
+    setIsSavingMetrics(true);
+    try {
+      await onSaveMetrics(phase.id, metricValues);
+      setHasMetricsChanges(false);
+    } catch (error) {
+      console.error("[PhaseEditDialog] Error saving metrics:", error);
+    } finally {
+      setIsSavingMetrics(false);
+    }
+  }, [phase?.id, metricValues, onSaveMetrics]);
 
   // Keyboard handler
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && isFormValid) {
+      if (e.key === "Enter" && isFormValid && tabValue === 0) {
         e.preventDefault();
         handleSave();
       }
@@ -189,7 +261,14 @@ export default function PhaseEditDialog({
         onCancel();
       }
     },
-    [isFormValid, handleSave, onCancel]
+    [isFormValid, handleSave, onCancel, tabValue]
+  );
+
+  const handleTabChange = useCallback(
+    (_event: React.SyntheticEvent, newValue: number) => {
+      setTabValue(newValue);
+    },
+    []
   );
 
   return (
@@ -204,44 +283,88 @@ export default function PhaseEditDialog({
           : "Modify phase details"
       }
       subtitleChip={isBasePhase ? "Base Phase" : undefined}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth={true}
-      onSave={handleSave}
-      saveButtonText="Save Changes"
+      onSave={tabValue === 0 ? handleSave : handleSaveMetrics}
+      saveButtonText={
+        tabValue === 0
+          ? "Save Changes"
+          : isSavingMetrics
+          ? "Saving..."
+          : "Save Metrics"
+      }
       cancelButtonText="Cancel"
-      isFormValid={isFormValid}
-      saveButtonDisabled={!isFormValid}
+      isFormValid={tabValue === 0 ? isFormValid : hasMetricsChanges}
+      saveButtonDisabled={
+        tabValue === 0 ? !isFormValid : !hasMetricsChanges || isSavingMetrics
+      }
       showDefaultActions={true}
     >
-      <Box sx={{ pt: 1, width: "100%" }}>
-        <Stack spacing={3} sx={{ width: "100%" }}>
-          <PhaseNameField
-            isBasePhase={isBasePhase}
-            phaseName={phase?.name}
-            formData={formData}
-            errors={errors}
-            isValidating={isValidating}
-            hasInteracted={hasInteracted}
-            onNameChange={(value) => updateField("name", value)}
-            onKeyDown={handleKeyDown}
-          />
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+            mb: 2,
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.875rem",
+              minHeight: 48,
+            },
+          }}
+        >
+          <Tab label="Common Data" id="phase-tab-0" aria-controls="phase-tabpanel-0" />
+          <Tab label="Metrics" id="phase-tab-1" aria-controls="phase-tabpanel-1" />
+        </Tabs>
 
-          <PhaseDateFields
-            formData={formData}
-            errors={errors}
-            onStartDateChange={(value) => updateField("startDate", value)}
-            onEndDateChange={(value) => updateField("endDate", value)}
-            onKeyDown={handleKeyDown}
-          />
+        <Box
+          role="tabpanel"
+          hidden={tabValue !== 0}
+          id="phase-tabpanel-0"
+          aria-labelledby="phase-tab-0"
+        >
+          {tabValue === 0 && (
+            <PhaseCommonDataTab
+              isBasePhase={isBasePhase}
+              phaseName={phase?.name}
+              phaseColor={phase?.color}
+              formData={formData}
+              errors={errors}
+              isValidating={isValidating}
+              hasInteracted={hasInteracted}
+              isFormValid={isFormValid}
+              isSaving={false}
+              hasPendingChanges={hasCommonDataChanges}
+              onNameChange={(value) => updateField("name", value)}
+              onStartDateChange={(value) => updateField("startDate", value)}
+              onEndDateChange={(value) => updateField("endDate", value)}
+              onColorChange={(value) => updateField("color", value)}
+              onKeyDown={handleKeyDown}
+              onSave={handleSave}
+            />
+          )}
+        </Box>
 
-          <PhaseColorField
-            isBasePhase={isBasePhase}
-            phaseColor={phase?.color}
-            formData={formData}
-            errors={errors}
-            onColorChange={(value) => updateField("color", value)}
-          />
-        </Stack>
+        <Box
+          role="tabpanel"
+          hidden={tabValue !== 1}
+          id="phase-tabpanel-1"
+          aria-labelledby="phase-tab-1"
+        >
+          {tabValue === 1 && phase?.id && (
+            <PhaseMetricsTab
+              indicatorIds={indicatorIds}
+              phaseId={phase.id}
+              metricValues={metricValues}
+              onMetricValueChange={handleMetricValueChange}
+              isSaving={isSavingMetrics}
+              hasPendingChanges={hasMetricsChanges}
+              onSave={handleSaveMetrics}
+            />
+          )}
+        </Box>
       </Box>
     </BaseEditDialog>
   );

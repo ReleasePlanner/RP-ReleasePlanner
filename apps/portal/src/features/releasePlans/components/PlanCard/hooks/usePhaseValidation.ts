@@ -35,6 +35,7 @@ export function validatePhases(phases: PlanPhase[]): PlanPhase[] {
       startDate: p.startDate || "",
       endDate: p.endDate || "",
       color: p.color || "#185ABD",
+      metricValues: p.metricValues || {},
     }));
 }
 

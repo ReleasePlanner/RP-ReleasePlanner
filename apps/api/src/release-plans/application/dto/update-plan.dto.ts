@@ -1,10 +1,56 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePlanDto, CreatePlanPhaseDto, CreatePlanTaskDto } from './create-plan.dto';
-import { IsEnum, IsOptional, IsArray, ValidateNested, IsString, IsDateString } from 'class-validator';
+import { IsEnum, IsOptional, IsArray, ValidateNested, IsString, IsDateString, IsObject, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PlanStatus } from '../../domain/plan.entity';
 import { PLAN_API_PROPERTY_DESCRIPTIONS, PLAN_API_PROPERTY_EXAMPLES } from '../../constants';
+
+export class UpdatePlanPhaseDto {
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_NAME,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_NAME,
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_START_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_START_DATE,
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_END_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_END_DATE,
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_COLOR,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_COLOR,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @ApiProperty({
+    description: 'Metric values for this phase (indicatorId -> value)',
+    example: { 'indicator-1': '100', 'indicator-2': '50' },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject({}, { message: 'metricValues must be an object' })
+  metricValues?: Record<string, string>;
+}
 
 export class UpdatePlanMilestoneDto {
   @ApiProperty({
@@ -160,6 +206,17 @@ export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   references?: UpdatePlanReferenceDto[];
 
   // Note: cellData has been removed - references (comments, files, links) are now handled via plan_references table
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASES_LIST,
+    type: [UpdatePlanPhaseDto],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UpdatePlanPhaseDto)
+  override phases?: UpdatePlanPhaseDto[];
 
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.COMPONENTS_LIST,

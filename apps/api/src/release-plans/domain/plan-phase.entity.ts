@@ -16,6 +16,9 @@ export class PlanPhase extends BaseEntity {
   @Column({ type: 'varchar', length: 7, nullable: true })
   color?: string;
 
+  @Column({ type: 'jsonb', default: '{}' })
+  metricValues: Record<string, string>; // indicatorId -> value
+
   @Column({ type: 'uuid' })
   planId: string;
 
@@ -23,7 +26,7 @@ export class PlanPhase extends BaseEntity {
   @JoinColumn({ name: 'planId' })
   plan: any;
 
-  constructor(name?: string, startDate?: string, endDate?: string, color?: string) {
+  constructor(name?: string, startDate?: string, endDate?: string, color?: string, metricValues?: Record<string, string>) {
     super();
     if (name !== undefined) {
       this.name = name;
@@ -36,6 +39,11 @@ export class PlanPhase extends BaseEntity {
     }
     if (color !== undefined) {
       this.color = color;
+    }
+    if (metricValues !== undefined) {
+      this.metricValues = metricValues;
+    } else {
+      this.metricValues = {};
     }
     if (name !== undefined) {
       this.validate();

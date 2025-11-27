@@ -20,6 +20,8 @@ export type PlanCardDialogsProps = {
   metadata: Plan["metadata"];
   handleAddPhaseOptimized: (phases: PlanPhase[]) => void;
   onPhaseSave: (updatedPhase: PlanPhase) => void;
+  handleSaveTimeline: (phasesOverride?: Plan["metadata"]["phases"]) => Promise<void>;
+  setLocalMetadata: React.Dispatch<React.SetStateAction<Plan["metadata"]>>;
   isEditingRef: React.MutableRefObject<boolean>;
 
   // Milestone dialog
@@ -47,6 +49,8 @@ export function PlanCardDialogs({
   metadata,
   handleAddPhaseOptimized,
   onPhaseSave,
+  handleSaveTimeline,
+  setLocalMetadata,
   isEditingRef,
   milestoneDialogOpen,
   selectedMilestoneDate,
@@ -75,8 +79,43 @@ export function PlanCardDialogs({
         open={editOpen}
         phase={editingPhase}
         planPhases={metadata.phases || []}
+        indicatorIds={metadata.indicatorIds || []}
         onCancel={() => setEditOpen(false)}
         onSave={onPhaseSave}
+        onSaveMetrics={async (phaseId, metricValues) => {
+          console.log("[PlanCardDialogs] Saving metrics for phase:", {
+            phaseId,
+            metricValues,
+          });
+
+          // Update the phase in local metadata with new metricValues and get updated phases
+          let updatedPhases: PlanPhase[] = [];
+          setLocalMetadata((prev) => {
+            updatedPhases = (prev.phases || []).map((p) =>
+              p.id === phaseId ? { ...p, metricValues } : p
+            );
+            
+            console.log("[PlanCardDialogs] Updated phases with metricValues:", {
+              phaseId,
+              updatedPhase: updatedPhases.find((p) => p.id === phaseId),
+              allPhases: updatedPhases.map((p) => ({
+                id: p.id,
+                name: p.name,
+                hasMetricValues: !!p.metricValues,
+                metricValues: p.metricValues,
+              })),
+            });
+            
+            return {
+              ...prev,
+              phases: updatedPhases,
+            };
+          });
+
+          // Save all phases to backend (includes the updated metricValues)
+          // Pass updatedPhases directly to handleSaveTimeline to avoid closure issues
+          await handleSaveTimeline(updatedPhases);
+        }}
       />
 
       <MilestoneEditDialog

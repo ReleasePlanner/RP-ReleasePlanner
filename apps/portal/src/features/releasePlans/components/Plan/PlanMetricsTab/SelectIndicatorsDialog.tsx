@@ -35,7 +35,7 @@ import { BaseEditDialog } from "@/components/BaseEditDialog";
 
 export type SelectIndicatorsDialogProps = {
   open: boolean;
-  selectedIndicatorIds: string[];
+  selectedIndicatorIds?: string[]; // IDs of indicators already in the plan
   onClose: () => void;
   onAddIndicators: (indicatorIds: string[]) => void;
 };
@@ -58,9 +58,11 @@ export function SelectIndicatorsDialog({
   } = useIndicators();
 
   // Filter out indicators already in the plan
+  // Only show indicators that haven't been registered in the plan
   const availableIndicators = useMemo(() => {
+    const safeSelectedIds = selectedIndicatorIds || [];
     return allIndicators.filter(
-      (indicator: Indicator) => !selectedIndicatorIds.includes(indicator.id)
+      (indicator: Indicator) => !safeSelectedIds.includes(indicator.id)
     );
   }, [allIndicators, selectedIndicatorIds]);
 

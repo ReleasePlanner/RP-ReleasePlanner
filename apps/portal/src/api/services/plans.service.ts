@@ -10,6 +10,7 @@ export interface PlanPhase {
   startDate?: string;
   endDate?: string;
   color?: string;
+  metricValues?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,6 +80,7 @@ export interface Plan {
   featureIds: string[];
   components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
+  indicatorIds: string[]; // IDs of indicators/KPIs associated with this plan
   milestones?: PlanMilestone[];
   references?: PlanReference[];
   tasks?: PlanTask[];
@@ -91,6 +93,7 @@ export interface CreatePlanPhaseDto {
   startDate?: string;
   endDate?: string;
   color?: string;
+  metricValues?: Record<string, string>;
 }
 
 export interface CreatePlanDto {
@@ -112,6 +115,7 @@ export interface UpdatePlanPhaseDto {
   startDate?: string;
   endDate?: string;
   color?: string;
+  metricValues?: Record<string, string>;
 }
 
 export interface UpdatePlanTaskDto {
@@ -160,6 +164,7 @@ export interface UpdatePlanDto {
   itOwner?: string;
   featureIds?: string[];
   calendarIds?: string[];
+  indicatorIds?: string[]; // IDs of indicators/KPIs associated with this plan
   components?: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   updatedAt?: string; // For optimistic locking
 }

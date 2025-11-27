@@ -101,6 +101,8 @@ export const API_TAGS = {
   COUNTRIES: 'Countries',
   PLANS: 'plans',
   INDICATORS: 'indicators',
+  TEAMS: 'teams',
+  ROLES: 'roles',
 } as const;
 
 /**

@@ -19,10 +19,12 @@ import {
   alpha,
   Fade,
   Chip,
+  IconButton,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 
 export interface BaseEditDialogProps {
@@ -173,6 +175,22 @@ export function BaseEditDialog({
             )}
           </Box>
         </Stack>
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: theme.palette.text.secondary,
+            "&:hover": {
+              backgroundColor: alpha(theme.palette.action.hover, 0.5),
+              color: theme.palette.text.primary,
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 20 }} />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3, pb: 2, px: 3, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -253,4 +271,3 @@ export function BaseEditDialog({
     </Dialog>
   );
 }
-

@@ -151,9 +151,11 @@ async function handleResponse<T>(
     let error: string | undefined;
     let errorCode: string | undefined;
 
+    let errorResponseData: any = null;
     if (isJson) {
       try {
         const errorData = await response.json();
+        errorResponseData = errorData;
         // NestJS may wrap error responses in { data: {...}, message: ..., statusCode: ... }
         // or { message: ..., error: ..., statusCode: ... }
         if (errorData && typeof errorData === 'object') {
@@ -166,6 +168,16 @@ async function handleResponse<T>(
           } else {
             // Standard error format - check for errorMessage and exception fields in development
             errorMessage = errorData.errorMessage || errorData.message || errorData.error || errorMessage;
+            // Include validation errors if available
+            if (errorData.errors && Array.isArray(errorData.errors)) {
+              errorMessage = `${errorMessage}\nValidation errors: ${errorData.errors.join(', ')}`;
+            }
+            if (errorData.details && Array.isArray(errorData.details)) {
+              const detailsStr = errorData.details.map((d: any) => 
+                `${d.property}: ${Object.values(d.constraints || {}).join(', ')}`
+              ).join('; ');
+              errorMessage = `${errorMessage}\nDetails: ${detailsStr}`;
+            }
             // Include exception details if available (development mode)
             if (errorData.exception && errorData.exception.message) {
               errorMessage = `${errorMessage} (${errorData.exception.message})`;
@@ -187,6 +199,11 @@ async function handleResponse<T>(
       responseCorrelationId,
       requestId
     );
+    
+    // Attach response data for debugging
+    if (errorResponseData) {
+      (httpError as any).responseData = errorResponseData;
+    }
 
     // Log error
     logger.error("API request failed", httpError, {

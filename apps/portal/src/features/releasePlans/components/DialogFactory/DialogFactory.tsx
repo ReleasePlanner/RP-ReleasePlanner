@@ -4,7 +4,11 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  IconButton,
+  useTheme,
+  alpha,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import type { ReactNode } from "react";
 
 /**
@@ -43,6 +47,8 @@ export function DialogFactory({
   disableConfirm = false,
   children,
 }: DialogFactoryProps) {
+  const theme = useTheme();
+  
   return (
     <Dialog
       open={open}
@@ -50,7 +56,29 @@ export function DialogFactory({
       maxWidth={maxWidth}
       fullWidth={fullWidth}
     >
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle
+        sx={{
+          position: "relative",
+        }}
+      >
+        {title}
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: theme.palette.text.secondary,
+            "&:hover": {
+              backgroundColor: alpha(theme.palette.action.hover, 0.5),
+              color: theme.palette.text.primary,
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>{children}</DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">

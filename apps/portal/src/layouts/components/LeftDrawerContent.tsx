@@ -37,6 +37,8 @@ import {
   Label as FeatureCategoryIcon,
   Public as CountryIcon,
   Assessment as IndicatorsIcon,
+  Groups as TeamsIcon,
+  Badge as RolesIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -59,6 +61,8 @@ export const NAVIGATION_LABELS = {
   FEATURE_CATEGORIES: "Feature Categories",
   COUNTRIES: "Countries",
   INDICATORS: "Indicators",
+  TEAMS: "Teams",
+  ROLES: "Roles",
 } as const;
 
 export const NAVIGATION_DESCRIPTIONS = {
@@ -72,6 +76,8 @@ export const NAVIGATION_DESCRIPTIONS = {
   FEATURE_CATEGORIES: "Manage feature categories",
   COUNTRIES: "Manage countries and regions",
   INDICATORS: "Manage KPIs and indicators",
+  TEAMS: "Manage teams and talents",
+  ROLES: "Manage roles and profiles",
 } as const;
 
 /**
@@ -158,6 +164,18 @@ const NAV_ITEMS: NavItem[] = [
     path: "/indicators-maintenance",
     icon: <IndicatorsIcon />,
     description: NAVIGATION_DESCRIPTIONS.INDICATORS,
+  },
+  {
+    label: NAVIGATION_LABELS.TEAMS,
+    path: "/teams-maintenance",
+    icon: <TeamsIcon />,
+    description: NAVIGATION_DESCRIPTIONS.TEAMS,
+  },
+  {
+    label: NAVIGATION_LABELS.ROLES,
+    path: "/roles-maintenance",
+    icon: <RolesIcon />,
+    description: NAVIGATION_DESCRIPTIONS.ROLES,
   },
 ];
 

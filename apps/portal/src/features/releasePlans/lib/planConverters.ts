@@ -74,6 +74,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
           startDate,
           endDate,
           color: p.color,
+          metricValues: p.metricValues || {},
         };
       }),
       productId: apiPlan.productId,
@@ -85,6 +86,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
         finalVersion: c.finalVersion,
       })),
       calendarIds: apiPlan.calendarIds || [],
+      indicatorIds: apiPlan.indicatorIds || [],
       milestones: apiPlan.milestones?.map((m) => ({
         phaseId: m.phaseId,
         id: m.id,
@@ -232,6 +234,7 @@ export function convertLocalPlanToUpdateDto(
     itOwner: localPlan.metadata.itOwner,
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
+    indicatorIds: localPlan.metadata.indicatorIds,
     // Note: milestones, references, and tasks are managed separately
     // They should be included in the update if needed
   };
@@ -270,12 +273,32 @@ function mapPhasesToDto(phases: LocalPlan["metadata"]["phases"]) {
     return [];
   }
   
-  return validPhases.map((p) => ({
-    name: p.name.trim(),
-    startDate: p.startDate.trim(),
-    endDate: p.endDate.trim(),
-    color: p.color || "#185ABD", // Default color if missing
-  }));
+  return validPhases.map((p) => {
+    const phaseDto: any = {
+      name: p.name.trim(),
+      startDate: p.startDate.trim(),
+      endDate: p.endDate.trim(),
+      color: p.color || "#185ABD", // Default color if missing
+    };
+    
+    // Always include metricValues - ensure it's always an object
+    // This ensures the field is always present in the DTO, even if empty
+    if (p.metricValues && typeof p.metricValues === 'object' && !Array.isArray(p.metricValues)) {
+      // Use the provided metricValues
+      phaseDto.metricValues = p.metricValues;
+      console.log('[planConverters.mapPhasesToDto] Including metricValues:', {
+        phaseName: p.name,
+        metricValues: p.metricValues,
+        keys: Object.keys(p.metricValues),
+      });
+    } else {
+      // Default to empty object if not provided or invalid
+      phaseDto.metricValues = {};
+      console.log('[planConverters.mapPhasesToDto] Using empty metricValues for phase:', p.name);
+    }
+    
+    return phaseDto;
+  });
 }
 
 function mapMilestonesToDto(milestones: LocalPlan["metadata"]["milestones"]) {
@@ -347,6 +370,7 @@ export function createPartialUpdateDto(
     "itOwner",
     "featureIds",
     "calendarIds",
+    "indicatorIds",
     "components",
   ];
 

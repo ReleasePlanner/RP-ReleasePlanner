@@ -10,6 +10,7 @@ export class PlanPhaseResponseDto {
   startDate?: string;
   endDate?: string;
   color?: string;
+  metricValues: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
 
@@ -19,6 +20,7 @@ export class PlanPhaseResponseDto {
     this.startDate = entity.startDate;
     this.endDate = entity.endDate;
     this.color = entity.color;
+    this.metricValues = entity.metricValues || {};
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }

@@ -41,7 +41,7 @@ export type PlanCardContentProps = {
   readonly handleAddCellLink: (phaseId: string, date: string) => void;
   readonly handleToggleCellMilestone: (phaseId: string, date: string) => void;
   readonly setScrollToDateFn: (fn: ((date: string) => void) | null) => void;
-  readonly handleSaveTimeline: () => Promise<void>;
+  readonly handleSaveTimeline: (phasesOverride?: Plan["metadata"]["phases"]) => Promise<void>;
   readonly openEditOptimized: (phaseId: string) => void;
   readonly handlePhaseRangeChangeOptimized: (
     phaseId: string,

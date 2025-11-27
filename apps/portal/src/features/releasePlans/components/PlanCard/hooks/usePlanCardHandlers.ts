@@ -235,7 +235,7 @@ export function usePlanCardHandlers({
     (newIndicatorIds: string[]) => {
       setLocalMetadata((prev) => ({
         ...prev,
-        indicatorIds: newIndicatorIds,
+        indicatorIds: newIndicatorIds || [],
       }));
     },
     [setLocalMetadata]

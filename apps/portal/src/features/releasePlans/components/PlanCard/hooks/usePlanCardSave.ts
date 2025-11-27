@@ -177,14 +177,27 @@ export function usePlanCardSave({
     ]
   );
 
-  const handleSaveTimeline = useCallback(async () => {
+  const handleSaveTimeline = useCallback(async (phasesOverride?: Plan["metadata"]["phases"]) => {
     const maxRetries = 3;
     let retryCount = 0;
     let lastError: Error | null = null;
 
     while (retryCount < maxRetries) {
+      let updateDto: any = null;
       try {
-        const phasesToSave = metadata.phases || [];
+        // Use phasesOverride if provided, otherwise use localMetadata to get the latest state including metricValues
+        const phasesToSave = phasesOverride || localMetadata.phases || [];
+        
+        console.log("[usePlanCardSave] Saving timeline with phases:", {
+          phaseCount: phasesToSave.length,
+          phases: phasesToSave.map((p) => ({
+            id: p.id,
+            name: p.name,
+            hasMetricValues: !!p.metricValues,
+            metricValues: p.metricValues,
+          })),
+        });
+        
         const validatedPhases = validatePhases(phasesToSave);
 
         if (validatedPhases.length !== phasesToSave.length) {
@@ -199,14 +212,23 @@ export function usePlanCardSave({
           );
         }
 
-        const updateDto = createPartialUpdateDto(
+        updateDto = createPartialUpdateDto(
           plan,
           {
-            phases: validatedPhases as typeof metadata.phases,
-            milestones: metadata.milestones,
+            phases: validatedPhases as typeof localMetadata.phases,
+            milestones: localMetadata.milestones,
           },
           plan.updatedAt
         );
+
+        console.log("[usePlanCardSave] Update DTO phases:", {
+          phaseCount: updateDto.phases?.length || 0,
+          phases: updateDto.phases?.map((p: any) => ({
+            name: p.name,
+            hasMetricValues: !!p.metricValues,
+            metricValues: p.metricValues,
+          })),
+        });
 
         if (updateDto.phases) {
           validatePhaseData(updateDto.phases);
@@ -222,12 +244,36 @@ export function usePlanCardSave({
 
         setLocalMetadata((prev) => ({
           ...prev,
-          phases: metadata.phases,
-          milestones: metadata.milestones,
+          phases: localMetadata.phases,
+          milestones: localMetadata.milestones,
         }));
 
         return;
       } catch (error: unknown) {
+        // Log detailed error information for debugging
+        const errorResponseData = (error as any)?.responseData || (error as any)?.response?.data || (error as any)?.data;
+        console.error("[usePlanCardSave] Error saving timeline:", {
+          error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorResponseData,
+          validationErrors: errorResponseData?.errors,
+          validationDetails: errorResponseData?.details,
+          updateDto: updateDto ? {
+            hasPhases: !!updateDto.phases,
+            phaseCount: updateDto.phases?.length || 0,
+            phases: updateDto.phases?.map((p: any) => ({
+              name: p.name,
+              startDate: p.startDate,
+              endDate: p.endDate,
+              color: p.color,
+              hasMetricValues: !!p.metricValues,
+              metricValues: p.metricValues,
+              metricValuesType: typeof p.metricValues,
+              metricValuesKeys: p.metricValues ? Object.keys(p.metricValues) : [],
+            })),
+          } : null,
+        });
+        
         lastError = error instanceof Error ? error : new Error(String(error));
 
         const shouldContinue = await handleRetryLogic(
@@ -252,7 +298,7 @@ export function usePlanCardSave({
     throw (
       lastError || new Error("Failed to save timeline after multiple retries")
     );
-  }, [plan, metadata, updatePlanMutation, queryClient, setLocalMetadata]);
+  }, [plan, localMetadata, updatePlanMutation, queryClient, setLocalMetadata]);
 
   const handleSaveAll = useCallback(async () => {
     // Validate required fields before saving

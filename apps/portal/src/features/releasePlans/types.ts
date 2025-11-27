@@ -11,13 +11,14 @@ export type PlanPhase = {
   startDate?: string; // ISO date (optional until set)
   endDate?: string; // ISO date (optional until set)
   color?: string;
+  metricValues?: Record<string, string>; // indicatorId -> value
 };
 
 export type PlanComponent = {
-  componentId: string; // ID del componente del producto
-  currentVersion: string; // Versión actual del componente en el producto (al momento de asignar al plan)
-  finalVersion: string; // Versión final que se usará en el plan
+  componentId: string; // ID del componente del productoen el plan
 };
+currentVersion: string; // Versión actual del componente en el producto (al momento de asignar al plan)
+finalVersion: string; // Versión final que se usará
 
 export type PlanMilestone = {
   id: string;

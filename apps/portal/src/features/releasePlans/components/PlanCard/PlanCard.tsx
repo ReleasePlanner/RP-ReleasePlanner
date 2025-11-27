@@ -51,6 +51,19 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
   // Get products to access components for version updates
   const { data: products = [] } = useProducts();
 
+  // State management hook
+  const {
+    localMetadata,
+    setLocalMetadata,
+    isEditingRef,
+    scrollToDateFn,
+    setScrollToDateFn,
+    errorSnackbar,
+    setErrorSnackbar,
+  } = usePlanCardState(plan);
+
+  const metadata = localMetadata;
+
   // ⭐ Clean Architecture - Business logic separated in custom hook
   const {
     leftPercent,
@@ -65,7 +78,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
     handlePhaseRangeChange,
     setPhaseOpen,
     setEditOpen,
-  } = usePlanCard(plan, updatePlanMutation);
+  } = usePlanCard(plan, updatePlanMutation, localMetadata);
 
   const { metadata: originalMetadata, tasks } = plan;
 
@@ -73,19 +86,6 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
   const { data: allProductFeatures = [] } = useFeatures(
     originalMetadata?.productId
   );
-
-  // State management hook
-  const {
-    localMetadata,
-    setLocalMetadata,
-    isEditingRef,
-    scrollToDateFn,
-    setScrollToDateFn,
-    errorSnackbar,
-    setErrorSnackbar,
-  } = usePlanCardState(plan);
-
-  const metadata = localMetadata;
 
   // Handlers hook
   const {
@@ -320,6 +320,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
         setEditOpen={setEditOpen}
         handleAddPhaseOptimized={handleAddPhaseOptimized}
         onPhaseSave={handlePhaseSave}
+        handleSaveTimeline={handleSaveTimeline}
+        setLocalMetadata={setLocalMetadata}
         isEditingRef={isEditingRef}
         metadata={metadata}
         milestoneDialogOpen={milestoneDialogOpen}

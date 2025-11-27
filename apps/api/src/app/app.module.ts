@@ -16,6 +16,8 @@ import { FeatureCategoryModule } from '../feature-categories/feature-category.mo
 import { CountryModule } from '../countries/country.module';
 import { PlanModule } from '../release-plans/plan.module';
 import { IndicatorModule } from '../indicators/indicator.module';
+import { TeamModule } from '../teams/team.module';
+import { RoleModule } from '../roles/role.module';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { FileModule } from '../files/file.module';
@@ -78,6 +80,8 @@ import { HealthController } from './health.controller';
     CountryModule,
     PlanModule,
     IndicatorModule,
+    RoleModule, // Load RoleModule before TeamModule since Talent depends on Role
+    TeamModule,
     FileModule,
   ],
   controllers: [AppController, HealthController],

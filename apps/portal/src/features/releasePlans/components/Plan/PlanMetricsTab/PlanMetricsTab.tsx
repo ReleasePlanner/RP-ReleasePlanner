@@ -14,7 +14,9 @@ export function PlanMetricsTab({
   onIndicatorIdsChange,
 }: PlanMetricsTabProps) {
   const [selectDialogOpen, setSelectDialogOpen] = useState(false);
-  const { planMetrics, isLoading, hasError } = usePlanMetrics(indicatorIds);
+  // Ensure indicatorIds is always an array
+  const safeIndicatorIds = indicatorIds || [];
+  const { planMetrics, isLoading, hasError } = usePlanMetrics(safeIndicatorIds);
   const styles = usePlanMetricsStyles();
 
   const handleAddIndicators = useCallback(
@@ -22,24 +24,24 @@ export function PlanMetricsTab({
       if (onIndicatorIdsChange) {
         // Filter out duplicates - only add indicators that aren't already in the plan
         const uniqueNewIds = newIndicatorIds.filter(
-          (id) => !indicatorIds.includes(id)
+          (id) => !safeIndicatorIds.includes(id)
         );
         if (uniqueNewIds.length > 0) {
-          onIndicatorIdsChange([...indicatorIds, ...uniqueNewIds]);
+          onIndicatorIdsChange([...safeIndicatorIds, ...uniqueNewIds]);
         }
       }
       setSelectDialogOpen(false);
     },
-    [indicatorIds, onIndicatorIdsChange]
+    [safeIndicatorIds, onIndicatorIdsChange]
   );
 
   const handleDeleteIndicator = useCallback(
     (indicatorId: string) => {
       if (onIndicatorIdsChange) {
-        onIndicatorIdsChange(indicatorIds.filter((id) => id !== indicatorId));
+        onIndicatorIdsChange(safeIndicatorIds.filter((id) => id !== indicatorId));
       }
     },
-    [indicatorIds, onIndicatorIdsChange]
+    [safeIndicatorIds, onIndicatorIdsChange]
   );
 
   return (
@@ -83,7 +85,7 @@ export function PlanMetricsTab({
 
       <SelectIndicatorsDialog
         open={selectDialogOpen}
-        selectedIndicatorIds={indicatorIds}
+        selectedIndicatorIds={safeIndicatorIds}
         onClose={() => setSelectDialogOpen(false)}
         onAddIndicators={handleAddIndicators}
       />

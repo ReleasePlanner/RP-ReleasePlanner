@@ -8,7 +8,11 @@ import {
   TextField,
   Stack,
   CircularProgress,
+  IconButton,
+  useTheme,
+  alpha,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import type { BasePhase } from "@/features/releasePlans/types";
 
 export type PhaseEditDialogProps = {
@@ -33,10 +37,32 @@ export const PhaseEditDialog = memo(function PhaseEditDialog({
   onSave,
   onFormDataChange,
 }: PhaseEditDialogProps) {
+  const theme = useTheme();
+  
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+      <DialogTitle
+        sx={{
+          position: "relative",
+        }}
+      >
         {editingPhase ? "Edit Base Phase" : "New Base Phase"}
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: theme.palette.text.secondary,
+            "&:hover": {
+              backgroundColor: alpha(theme.palette.action.hover, 0.5),
+              color: theme.palette.text.primary,
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 20 }} />
+        </IconButton>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>

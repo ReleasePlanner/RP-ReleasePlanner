@@ -81,20 +81,90 @@ async function bootstrap() {
         enableImplicitConversion: true,
       },
       exceptionFactory: (errors) => {
+        // Log errors for debugging - use a custom serializer to handle circular references
+        const serializeError = (error: any): any => {
+          return {
+            property: error.property,
+            value: error.value,
+            constraints: error.constraints,
+            children: error.children?.map((child: any) => serializeError(child)),
+          };
+        };
+        
+        const serializedErrors = errors.map((error: any) => serializeError(error));
+        console.error('[ValidationPipe] Validation errors:', JSON.stringify(serializedErrors, null, 2));
+        
         const messages = errors.map((error) => {
           const constraints = error.constraints || {};
           const property = error.property || 'unknown';
           const constraintMessages = Object.values(constraints).join(', ');
-          return `${property}: ${constraintMessages}`;
+          
+          // If there are nested errors (children), include them in the message
+          if (error.children && error.children.length > 0) {
+            const nestedMessages = error.children.map((child: any) => {
+              const childConstraints = child.constraints || {};
+              const childProperty = child.property || 'unknown';
+              const childMessages = Object.values(childConstraints).join(', ');
+              
+              // Recursively handle nested children
+              if (child.children && child.children.length > 0) {
+                const grandchildMessages = child.children.map((grandchild: any) => {
+                  const grandchildConstraints = grandchild.constraints || {};
+                  const grandchildProperty = grandchild.property || 'unknown';
+                  const grandchildMessages = Object.values(grandchildConstraints).join(', ');
+                  return grandchildMessages ? `${grandchildProperty}: ${grandchildMessages}` : grandchildProperty;
+                }).filter((msg: string) => msg).join('; ');
+                
+                if (grandchildMessages) {
+                  return `${childProperty}: ${childMessages || 'validation failed'} (${grandchildMessages})`;
+                }
+              }
+              
+              return childMessages ? `${childProperty}: ${childMessages}` : childProperty;
+            }).filter((msg: string) => msg).join('; ');
+            
+            if (nestedMessages) {
+              return `${property}: ${constraintMessages || 'validation failed'} (${nestedMessages})`;
+            }
+          }
+          
+          return constraintMessages ? `${property}: ${constraintMessages}` : `${property}: validation failed`;
         });
-        return new BadRequestException({
-          message: 'Validation failed',
-          errors: messages,
-          details: errors.map((error) => ({
+        
+        const details = errors.map((error) => {
+          const detail: any = {
             property: error.property,
             constraints: error.constraints,
             value: error.value,
-          })),
+          };
+          
+          if (error.children && error.children.length > 0) {
+            detail.children = error.children.map((child: any) => {
+              const childDetail: any = {
+                property: child.property,
+                constraints: child.constraints,
+                value: child.value,
+              };
+              
+              if (child.children && child.children.length > 0) {
+                childDetail.children = child.children.map((grandchild: any) => ({
+                  property: grandchild.property,
+                  constraints: grandchild.constraints,
+                  value: grandchild.value,
+                }));
+              }
+              
+              return childDetail;
+            });
+          }
+          
+          return detail;
+        });
+        
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: messages,
+          details,
         });
       },
     })
