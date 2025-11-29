@@ -2,7 +2,7 @@
  * Release Plans React Query Hooks
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { plansService, CreatePlanDto, UpdatePlanDto } from '../services/plans.service';
+import { plansService, CreatePlanDto, UpdatePlanDto, PhaseReschedule } from '../services/plans.service';
 
 const QUERY_KEYS = {
   all: ['plans'] as const,
@@ -10,6 +10,8 @@ const QUERY_KEYS = {
   list: () => [...QUERY_KEYS.lists()] as const,
   details: () => [...QUERY_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...QUERY_KEYS.details(), id] as const,
+  reschedules: (planId: string) => [...QUERY_KEYS.all, 'reschedules', planId] as const,
+  phaseReschedules: (planId: string, phaseId: string) => [...QUERY_KEYS.all, 'reschedules', planId, 'phases', phaseId] as const,
 };
 
 export function usePlans() {
@@ -87,6 +89,32 @@ export function useDeletePlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
     },
+  });
+}
+
+export function usePlanReschedules(planId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.reschedules(planId),
+    queryFn: () => plansService.getPlanReschedules(planId),
+    enabled: !!planId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+export function usePhaseReschedules(planId: string, phaseId: string) {
+  const enabled = !!planId && !!phaseId;
+  console.log('[usePhaseReschedules] Hook called:', { planId, phaseId, enabled });
+  
+  return useQuery({
+    queryKey: QUERY_KEYS.phaseReschedules(planId, phaseId),
+    queryFn: async () => {
+      console.log('[usePhaseReschedules] Fetching reschedules for:', { planId, phaseId });
+      const result = await plansService.getPhaseReschedules(planId, phaseId);
+      console.log('[usePhaseReschedules] Received reschedules:', { count: result.length, result });
+      return result;
+    },
+    enabled,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 

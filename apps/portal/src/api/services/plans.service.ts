@@ -25,6 +25,21 @@ export interface PlanTask {
   updatedAt: string;
 }
 
+export interface PhaseReschedule {
+  id: string;
+  planPhaseId: string;
+  phaseName: string;
+  rescheduledAt: string;
+  originalStartDate?: string;
+  originalEndDate?: string;
+  newStartDate?: string;
+  newEndDate?: string;
+  rescheduleTypeId?: string;
+  rescheduleTypeName?: string;
+  ownerId?: string;
+  ownerName?: string;
+}
+
 export interface PlanMilestone {
   id: string;
   date: string;
@@ -77,6 +92,7 @@ export interface Plan {
   phases?: PlanPhase[];
   productId?: string;
   itOwner?: string;
+  leadId?: string;
   featureIds: string[];
   components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
@@ -106,6 +122,7 @@ export interface CreatePlanDto {
   phases?: CreatePlanPhaseDto[];
   productId: string; // Required
   itOwner?: string;
+  leadId?: string;
   featureIds?: string[];
   calendarIds?: string[];
 }
@@ -162,6 +179,7 @@ export interface UpdatePlanDto {
   // Note: cellData has been removed - references are now handled via plan_references table
   productId?: string;
   itOwner?: string;
+  leadId?: string;
   featureIds?: string[];
   calendarIds?: string[];
   indicatorIds?: string[]; // IDs of indicators/KPIs associated with this plan
@@ -188,6 +206,14 @@ export const plansService = {
 
   async delete(id: string): Promise<void> {
     return httpClient.delete<void>(`${API_ENDPOINTS.PLANS}/${id}`);
+  },
+
+  async getPlanReschedules(planId: string): Promise<PhaseReschedule[]> {
+    return httpClient.get<PhaseReschedule[]>(`${API_ENDPOINTS.PLANS}/${planId}/reschedules`);
+  },
+
+  async getPhaseReschedules(planId: string, phaseId: string): Promise<PhaseReschedule[]> {
+    return httpClient.get<PhaseReschedule[]>(`${API_ENDPOINTS.PLANS}/${planId}/phases/${phaseId}/reschedules`);
   },
 };
 

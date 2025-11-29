@@ -116,6 +116,12 @@ export function useTeamMaintenanceHandlers({
               phone: talent.phone || undefined,
               roleId: talent.roleId || undefined,
             });
+            // Ensure we have a valid UUID from the created talent
+            if (!created.id || created.id.trim() === "") {
+              throw new Error(
+                `Talent "${talent.name}" was created but did not receive a valid ID`
+              );
+            }
             return {
               ...talent,
               id: created.id,
@@ -137,22 +143,48 @@ export function useTeamMaintenanceHandlers({
   );
 
   const buildTalentAssignments = useCallback((talents: Team["talents"]) => {
-    return (talents || []).map((talent) => ({
-      talentId: talent.id,
-      allocationPercentage: Math.max(
-        0,
-        Math.min(100, talent.allocationPercentage ?? 100)
-      ),
-    }));
+    // Only include talents with valid UUIDs (not temporary IDs)
+    return (talents || [])
+      .filter((talent) => {
+        // Filter out talents with temporary IDs or invalid IDs
+        const id = talent?.id;
+        return (
+          id &&
+          typeof id === "string" &&
+          !id.startsWith("talent-") &&
+          id.trim() !== ""
+        );
+      })
+      .map((talent) => {
+        // TypeScript knows id exists due to filter above
+        const id = talent.id;
+        if (!id) return null;
+        return {
+          talentId: id,
+          allocationPercentage: Math.max(
+            0,
+            Math.min(100, talent.allocationPercentage ?? 100)
+          ),
+        };
+      })
+      .filter(
+        (
+          assignment
+        ): assignment is { talentId: string; allocationPercentage: number } =>
+          assignment !== null
+      );
   }, []);
 
   const prepareTalentsForSave = useCallback(
     async (talents: Team["talents"]) => {
-      const newTalents = (talents || []).filter((talent) =>
-        talent.id.startsWith("talent-")
+      const newTalents = (talents || []).filter(
+        (talent) => talent.id && talent.id.startsWith("talent-")
       );
       const existingTalents = (talents || []).filter(
-        (talent) => talent.id && !talent.id.startsWith("talent-")
+        (talent) =>
+          talent.id &&
+          !talent.id.startsWith("talent-") &&
+          talent.id.trim() !== ""
       );
 
       if (newTalents.length === 0) {
@@ -160,7 +192,14 @@ export function useTeamMaintenanceHandlers({
       }
 
       const createdTalents = await createNewTalents(newTalents);
-      return [...existingTalents, ...createdTalents];
+      // Filter out any created talents that don't have valid IDs
+      const validCreatedTalents = createdTalents.filter(
+        (talent) =>
+          talent.id &&
+          !talent.id.startsWith("talent-") &&
+          talent.id.trim() !== ""
+      );
+      return [...existingTalents, ...validCreatedTalents];
     },
     [createNewTalents]
   );
@@ -213,6 +252,7 @@ export function useTeamMaintenanceHandlers({
           id: editingTeam.id,
           data: {
             ...teamData,
+            id: editingTeam.id, // Include id in the body as required by UpdateTeamDto
             updatedAt: editingTeam.updatedAt,
           },
         });

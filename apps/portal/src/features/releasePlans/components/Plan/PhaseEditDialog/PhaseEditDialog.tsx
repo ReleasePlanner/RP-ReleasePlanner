@@ -12,11 +12,13 @@ import {
 import {
   PhaseCommonDataTab,
   PhaseMetricsTab,
+  PhaseReschedulesTab,
 } from "./components";
 
 export type PhaseEditDialogProps = {
   readonly open: boolean;
   readonly phase: PlanPhase | null;
+  readonly planId?: string; // Plan ID for fetching reschedules
   readonly planPhases?: PlanPhase[]; // All phases in the current plan
   readonly indicatorIds?: string[]; // IDs of indicators assigned to the plan
   readonly onCancel: () => void;
@@ -27,6 +29,7 @@ export type PhaseEditDialogProps = {
 export default function PhaseEditDialog({
   open,
   phase,
+  planId,
   planPhases = [],
   indicatorIds = [],
   onCancel,
@@ -317,6 +320,9 @@ export default function PhaseEditDialog({
         >
           <Tab label="Common Data" id="phase-tab-0" aria-controls="phase-tabpanel-0" />
           <Tab label="Metrics" id="phase-tab-1" aria-controls="phase-tabpanel-1" />
+          {!isNew && phase?.id && planId && (
+            <Tab label="Re-schedules" id="phase-tab-2" aria-controls="phase-tabpanel-2" />
+          )}
         </Tabs>
 
         <Box
@@ -365,6 +371,23 @@ export default function PhaseEditDialog({
             />
           )}
         </Box>
+
+        {!isNew && phase?.id && planId && (
+          <Box
+            role="tabpanel"
+            hidden={tabValue !== 2}
+            id="phase-tabpanel-2"
+            aria-labelledby="phase-tab-2"
+            sx={{ width: "100%" }}
+          >
+            {tabValue === 2 && planId && phase.id && (
+              <PhaseReschedulesTab
+                planId={planId}
+                phaseId={phase.id}
+              />
+            )}
+          </Box>
+        )}
       </Box>
     </BaseEditDialog>
   );

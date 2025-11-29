@@ -8,7 +8,8 @@ export function useLocalState(
   startDate: string,
   endDate: string,
   productId: string | undefined,
-  itOwner: string | undefined
+  itOwner: string | undefined,
+  leadId: string | undefined
 ) {
   const [localName, setLocalName] = useState(name);
   const [localDescription, setLocalDescription] = useState(description || "");
@@ -19,6 +20,7 @@ export function useLocalState(
     productId
   );
   const [localItOwner, setLocalItOwner] = useState<string | undefined>(itOwner);
+  const [localLeadId, setLocalLeadId] = useState<string | undefined>(leadId);
 
   // Refs for original values
   const originalNameRef = useRef(name);
@@ -28,6 +30,7 @@ export function useLocalState(
   const originalEndDateRef = useRef(endDate);
   const originalProductIdRef = useRef(productId);
   const originalItOwnerRef = useRef(itOwner);
+  const originalLeadIdRef = useRef(leadId);
 
   // Timeouts for debouncing text inputs
   const nameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +47,7 @@ export function useLocalState(
     const newEndDate = endDate;
     const newProductId = productId;
     const newItOwner = itOwner;
+    const newLeadId = leadId;
 
     setLocalName(newName);
     setLocalDescription(newDescription);
@@ -52,6 +56,7 @@ export function useLocalState(
     setLocalEndDate(newEndDate);
     setLocalProductId(newProductId);
     setLocalItOwner(newItOwner);
+    setLocalLeadId(newLeadId);
 
     originalNameRef.current = newName;
     originalDescriptionRef.current = newDescription;
@@ -60,7 +65,8 @@ export function useLocalState(
     originalEndDateRef.current = newEndDate;
     originalProductIdRef.current = newProductId;
     originalItOwnerRef.current = newItOwner;
-  }, [name, description, status, startDate, endDate, productId, itOwner]);
+    originalLeadIdRef.current = newLeadId;
+  }, [name, description, status, startDate, endDate, productId, itOwner, leadId]);
 
   // Cleanup all timeouts on unmount
   useEffect(() => {
@@ -93,6 +99,8 @@ export function useLocalState(
     setLocalProductId,
     localItOwner,
     setLocalItOwner,
+    localLeadId,
+    setLocalLeadId,
     nameTimeoutRef,
     descriptionTimeoutRef,
     startDateTimeoutRef,
@@ -104,6 +112,7 @@ export function useLocalState(
     originalEndDateRef,
     originalProductIdRef,
     originalItOwnerRef,
+    originalLeadIdRef,
   };
 }
 

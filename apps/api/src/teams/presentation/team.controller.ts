@@ -20,6 +20,9 @@ import { TeamService } from '../application/team.service';
 import { CreateTeamDto } from '../application/dto/create-team.dto';
 import { UpdateTeamDto } from '../application/dto/update-team.dto';
 import { TeamResponseDto } from '../application/dto/team-response.dto';
+import { AddTalentToTeamDto } from '../application/dto/add-talent-to-team.dto';
+import { AddMultipleTalentsToTeamDto } from '../application/dto/add-multiple-talents-to-team.dto';
+import { CreateTalentAndAssignDto } from '../application/dto/create-talent-and-assign.dto';
 import {
   API_TAGS,
   API_OPERATION_SUMMARIES,
@@ -44,6 +47,105 @@ export class TeamController {
   })
   async findAll(): Promise<TeamResponseDto[]> {
     return this.service.findAll();
+  }
+
+  @Post(':teamId/talents/add-multiple')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add multiple existing talents to a team atomically' })
+  @ApiParam({
+    name: 'teamId',
+    description: 'ID of the team',
+    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+  })
+  @ApiBody({ type: AddMultipleTalentsToTeamDto })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.OK,
+    description: 'Talents successfully added to team',
+    type: TeamResponseDto,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.NOT_FOUND,
+    description: API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.BAD_REQUEST,
+    description: API_RESPONSE_DESCRIPTIONS.INVALID_INPUT,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.CONFLICT,
+    description: API_RESPONSE_DESCRIPTIONS.CONFLICT,
+  })
+  async addMultipleTalentsToTeam(
+    @Param('teamId') teamId: string,
+    @Body() dto: AddMultipleTalentsToTeamDto,
+  ): Promise<TeamResponseDto> {
+    return this.service.addMultipleTalentsToTeam(teamId, dto);
+  }
+
+  @Post(':teamId/talents/create-and-assign')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new talent and assign it to a team atomically' })
+  @ApiParam({
+    name: 'teamId',
+    description: 'ID of the team',
+    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+  })
+  @ApiBody({ type: CreateTalentAndAssignDto })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.CREATED,
+    description: 'Talent created and assigned to team successfully',
+    type: TeamResponseDto,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.NOT_FOUND,
+    description: API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.BAD_REQUEST,
+    description: API_RESPONSE_DESCRIPTIONS.INVALID_INPUT,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.CONFLICT,
+    description: API_RESPONSE_DESCRIPTIONS.CONFLICT,
+  })
+  async createTalentAndAssign(
+    @Param('teamId') teamId: string,
+    @Body() dto: CreateTalentAndAssignDto,
+  ): Promise<TeamResponseDto> {
+    return this.service.createTalentAndAssign(teamId, dto);
+  }
+
+  @Post(':teamId/talents/add')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add an existing talent to a team' })
+  @ApiParam({
+    name: 'teamId',
+    description: 'ID of the team',
+    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+  })
+  @ApiBody({ type: AddTalentToTeamDto })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.OK,
+    description: 'Talent successfully added to team',
+    type: TeamResponseDto,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.NOT_FOUND,
+    description: API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.BAD_REQUEST,
+    description: API_RESPONSE_DESCRIPTIONS.INVALID_INPUT,
+  })
+  @ApiResponse({
+    status: HTTP_STATUS_CODES.CONFLICT,
+    description: API_RESPONSE_DESCRIPTIONS.CONFLICT,
+  })
+  async addTalentToTeam(
+    @Param('teamId') teamId: string,
+    @Body() dto: AddTalentToTeamDto,
+  ): Promise<TeamResponseDto> {
+    return this.service.addTalentToTeam(teamId, dto);
   }
 
   @Get(':id')

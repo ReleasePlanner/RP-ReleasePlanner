@@ -43,6 +43,9 @@ export class Plan extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   itOwner?: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  leadId?: string; // ID of the lead talent assigned to this plan
+
   // Arrays stored as JSON columns
   @Column({ type: 'jsonb', default: '[]' })
   featureIds: string[];
@@ -55,6 +58,9 @@ export class Plan extends BaseEntity {
 
   @Column({ type: 'jsonb', default: '[]' })
   indicatorIds: string[];
+
+  @Column({ type: 'jsonb', default: '[]' })
+  teamIds: string[];
 
   // Relations
   @OneToMany(() => PlanPhase, (phase) => phase.plan, {
@@ -119,6 +125,7 @@ export class Plan extends BaseEntity {
     this.components = [];
     this.calendarIds = [];
     this.indicatorIds = [];
+    this.teamIds = [];
     if (name !== undefined && startDate !== undefined && endDate !== undefined) {
       this.validate();
     }

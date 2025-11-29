@@ -10,4 +10,5 @@ export * from './plans.service';
 export * from './indicators.service';
 export * from './teams.service';
 export * from './roles.service';
+export * from './rescheduleTypes.service';
 

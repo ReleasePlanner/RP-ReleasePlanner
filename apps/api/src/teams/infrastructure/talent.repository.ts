@@ -27,6 +27,28 @@ export class TalentRepository
     this.assignmentRepository = this.dataSource.getRepository(TeamTalentAssignment);
   }
 
+  override async findAll(): Promise<Talent[]> {
+    return this.handleDatabaseOperation(
+      () =>
+        this.repository.find({
+          relations: ['role'],
+          order: { createdAt: 'DESC' },
+        }),
+      'findAll',
+    );
+  }
+
+  override async findById(id: string): Promise<Talent | null> {
+    return this.handleDatabaseOperation(
+      () =>
+        this.repository.findOne({
+          where: { id } as any,
+          relations: ['role'],
+        }),
+      `findById(${id})`,
+    );
+  }
+
   async findByIdWithAssignments(id: string): Promise<Talent | null> {
     return this.handleDatabaseOperation(
       () =>

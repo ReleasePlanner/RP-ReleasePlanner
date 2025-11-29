@@ -207,5 +207,25 @@ export class CreatePlanDto {
   @IsOptional()
   @IsString({ each: true })
   indicatorIds?: string[];
+
+  @ApiProperty({
+    description: 'List of team IDs associated with this plan',
+    type: [String],
+    example: ['team-1', 'team-2'],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  teamIds?: string[];
+
+  @ApiProperty({
+    description: 'ID of the lead talent assigned to this plan',
+    example: 'talent-1',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  leadId?: string;
 }
 

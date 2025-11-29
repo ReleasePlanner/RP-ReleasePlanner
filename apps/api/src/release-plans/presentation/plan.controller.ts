@@ -8,29 +8,30 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
-} from '@nestjs/swagger';
-import { PlanService } from '../application/plan.service';
-import { CreatePlanDto } from '../application/dto/create-plan.dto';
-import { UpdatePlanDto } from '../application/dto/update-plan.dto';
-import { PlanResponseDto } from '../application/dto/plan-response.dto';
+} from "@nestjs/swagger";
+import { PlanService } from "../application/plan.service";
+import { CreatePlanDto } from "../application/dto/create-plan.dto";
+import { UpdatePlanDto } from "../application/dto/update-plan.dto";
+import { PlanResponseDto } from "../application/dto/plan-response.dto";
+import { PhaseRescheduleResponseDto } from "../application/dto/phase-reschedule-response.dto";
 import {
   PLAN_API_OPERATION_SUMMARIES,
   PLAN_API_RESPONSE_DESCRIPTIONS,
   PLAN_HTTP_STATUS_CODES,
   PLAN_API_PARAM_DESCRIPTIONS,
-} from '../constants';
-import { API_TAGS } from '../../common/constants';
-import { Public } from '../../auth/decorators/public.decorator';
+} from "../constants";
+import { API_TAGS } from "../../common/constants";
+import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags(API_TAGS.PLANS)
-@Controller('plans')
+@Controller("plans")
 @Public() // TODO: Remove this in production - temporary for development
 export class PlanController {
   constructor(private readonly service: PlanService) {}
@@ -46,10 +47,53 @@ export class PlanController {
     return this.service.findAll();
   }
 
-  @Get(':id')
+  // Reschedules endpoints must be defined BEFORE :id route to avoid route conflicts
+  @Get(":planId/reschedules")
+  @ApiOperation({ summary: "Get all phase reschedules for a plan" })
+  @ApiParam({
+    name: "planId",
+    description: PLAN_API_PARAM_DESCRIPTIONS.ID,
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.LIST_RETRIEVED,
+    type: [PhaseRescheduleResponseDto],
+  })
+  async getPlanReschedules(
+    @Param("planId") planId: string
+  ): Promise<PhaseRescheduleResponseDto[]> {
+    return this.service.getPlanReschedules(planId);
+  }
+
+  @Get(":planId/phases/:phaseId/reschedules")
+  @ApiOperation({ summary: "Get reschedules for a specific phase" })
+  @ApiParam({
+    name: "planId",
+    description: PLAN_API_PARAM_DESCRIPTIONS.ID,
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiParam({
+    name: "phaseId",
+    description: "Phase ID",
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.LIST_RETRIEVED,
+    type: [PhaseRescheduleResponseDto],
+  })
+  async getPhaseReschedules(
+    @Param("planId") planId: string, // planId is not used in service, but kept for route consistency
+    @Param("phaseId") phaseId: string
+  ): Promise<PhaseRescheduleResponseDto[]> {
+    return this.service.getPhaseReschedules(phaseId);
+  }
+
+  @Get(":id")
   @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.GET_BY_ID })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PLAN_API_PARAM_DESCRIPTIONS.ID,
     example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -62,7 +106,7 @@ export class PlanController {
     status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
     description: PLAN_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async findById(@Param('id') id: string): Promise<PlanResponseDto> {
+  async findById(@Param("id") id: string): Promise<PlanResponseDto> {
     return this.service.findById(id);
   }
 
@@ -87,10 +131,10 @@ export class PlanController {
     return this.service.create(dto);
   }
 
-  @Put(':id')
+  @Put(":id")
   @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.UPDATE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PLAN_API_PARAM_DESCRIPTIONS.ID,
     example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -109,17 +153,17 @@ export class PlanController {
     description: PLAN_API_RESPONSE_DESCRIPTIONS.CONFLICT,
   })
   async update(
-    @Param('id') id: string,
-    @Body() dto: UpdatePlanDto,
+    @Param("id") id: string,
+    @Body() dto: UpdatePlanDto
   ): Promise<PlanResponseDto> {
     return this.service.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.DELETE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PLAN_API_PARAM_DESCRIPTIONS.ID,
     example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -131,8 +175,7 @@ export class PlanController {
     status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
     description: PLAN_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(@Param("id") id: string): Promise<void> {
     return this.service.delete(id);
   }
 }
-

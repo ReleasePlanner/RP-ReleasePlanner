@@ -241,6 +241,40 @@ export function usePlanCardHandlers({
     [setLocalMetadata]
   );
 
+  const handleTeamIdsChange = useCallback(
+    (newTeamIds: string[]) => {
+      console.log('[usePlanCardHandlers] handleTeamIdsChange called:', {
+        newTeamIds,
+        newTeamIdsCount: newTeamIds.length,
+        newTeamIdsIsArray: Array.isArray(newTeamIds),
+      });
+      setLocalMetadata((prev) => {
+        const updated = {
+          ...prev,
+          teamIds: newTeamIds || [],
+        };
+        console.log('[usePlanCardHandlers] Updating localMetadata:', {
+          prevTeamIds: prev.teamIds,
+          prevTeamIdsCount: prev.teamIds?.length || 0,
+          newTeamIds: updated.teamIds,
+          newTeamIdsCount: updated.teamIds?.length || 0,
+        });
+        return updated;
+      });
+    },
+    [setLocalMetadata]
+  );
+
+  const handleLeadIdChange = useCallback(
+    (newLeadId: string) => {
+      setLocalMetadata((prev) => ({
+        ...prev,
+        leadId: newLeadId || undefined,
+      }));
+    },
+    [setLocalMetadata]
+  );
+
   const handleNameChange = useCallback(
     (newName: string) => {
       setLocalMetadata((prev) => ({
@@ -267,6 +301,8 @@ export function usePlanCardHandlers({
     handleComponentsChange,
     handleCalendarIdsChange,
     handleIndicatorIdsChange,
+    handleTeamIdsChange,
+    handleLeadIdChange,
     handleNameChange,
     handlePhaseUpdate,
   };

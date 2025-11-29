@@ -12,6 +12,7 @@ import { ReferenceEditDialog } from "../../Plan/PlanReferencesTab/ReferenceEditD
 
 export type PlanCardDialogsProps = {
   // Phase dialogs
+  planId: string;
   phaseOpen: boolean;
   setPhaseOpen: (open: boolean) => void;
   editOpen: boolean;
@@ -41,6 +42,7 @@ export type PlanCardDialogsProps = {
 };
 
 export function PlanCardDialogs({
+  planId,
   phaseOpen,
   setPhaseOpen,
   editOpen,
@@ -78,6 +80,7 @@ export function PlanCardDialogs({
       <PhaseEditDialog
         open={editOpen}
         phase={editingPhase}
+        planId={planId}
         planPhases={metadata.phases || []}
         indicatorIds={metadata.indicatorIds || []}
         onCancel={() => setEditOpen(false)}
@@ -91,12 +94,17 @@ export function PlanCardDialogs({
           // Update the phase in local metadata with new metricValues and get updated phases
           let updatedPhases: PlanPhase[] = [];
           setLocalMetadata((prev) => {
-            updatedPhases = (prev.phases || []).map((p) =>
+            // Ensure prev.phases is always an array
+            const prevPhases = Array.isArray(prev.phases) ? prev.phases : [];
+            updatedPhases = prevPhases.map((p) =>
               p.id === phaseId ? { ...p, metricValues } : p
             );
             
             console.log("[PlanCardDialogs] Updated phases with metricValues:", {
               phaseId,
+              prevPhasesType: typeof prev.phases,
+              prevPhasesIsArray: Array.isArray(prev.phases),
+              prevPhasesLength: prevPhases.length,
               updatedPhase: updatedPhases.find((p) => p.id === phaseId),
               allPhases: updatedPhases.map((p) => ({
                 id: p.id,
@@ -114,6 +122,11 @@ export function PlanCardDialogs({
 
           // Save all phases to backend (includes the updated metricValues)
           // Pass updatedPhases directly to handleSaveTimeline to avoid closure issues
+          // Ensure updatedPhases is always an array before passing
+          if (!Array.isArray(updatedPhases)) {
+            console.error("[PlanCardDialogs] updatedPhases is not an array:", updatedPhases);
+            updatedPhases = [];
+          }
           await handleSaveTimeline(updatedPhases);
         }}
       />

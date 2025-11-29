@@ -13,4 +13,5 @@ export * from './useIndicators';
 export * from './useTeams';
 export * from './useRoles';
 export * from './usePlans';
+export * from './useRescheduleTypes';
 

@@ -13,7 +13,7 @@ import { Role } from '../roles/domain/role.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Team, Talent, TeamTalentAssignment, Role])],
-  controllers: [TeamController, TalentController],
+  controllers: [TalentController, TeamController], // TalentController must be registered before TeamController to avoid route conflicts
   providers: [
     TeamService,
     TalentService,

@@ -16,24 +16,22 @@ export function prepareTabData(
       updateData.endDate = metadata.endDate;
       updateData.productId = metadata.productId;
       updateData.itOwner = metadata.itOwner;
+      updateData.leadId = metadata.leadId;
       break;
-    case 1: // Features
+    case 1: // Product (Features + Components)
       updateData.featureIds = metadata.featureIds;
-      break;
-    case 2: // Componentes
       updateData.components = filterValidComponents(metadata.components || []);
       break;
-    case 3: // Calendarios
+    case 2: // Setup (Calendars + Metrics + Teams)
       updateData.calendarIds = metadata.calendarIds;
+      updateData.indicatorIds = metadata.indicatorIds || [];
+      updateData.teamIds = metadata.teamIds || [];
       break;
-    case 4: // Referencias
+    case 3: // Referencias
       updateData.references = metadata.references;
       updateData.milestones = extractMilestonesFromReferences(
         metadata.references || []
       );
-      break;
-    case 5: // Metrics
-      updateData.indicatorIds = metadata.indicatorIds || [];
       break;
   }
 

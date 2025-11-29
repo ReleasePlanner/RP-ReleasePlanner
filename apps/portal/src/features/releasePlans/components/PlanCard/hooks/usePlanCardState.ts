@@ -61,6 +61,15 @@ export function usePlanCardState(plan: Plan) {
         });
       }
 
+      // Debug: Log teamIds when syncing
+      console.log("[PlanCard] Syncing teamIds from originalMetadata:", {
+        teamIdsCount: originalMetadata.teamIds?.length || 0,
+        teamIds: originalMetadata.teamIds || [],
+        localTeamIdsCount: localMetadata?.teamIds?.length || 0,
+        localTeamIds: localMetadata?.teamIds || [],
+        willSync: updatedAtChanged && !isEditingRef.current,
+      });
+
       setLocalMetadata(originalMetadata);
       lastSyncedUpdatedAtRef.current = plan.updatedAt;
     }

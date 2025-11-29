@@ -79,6 +79,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
       }),
       productId: apiPlan.productId,
       itOwner: apiPlan.itOwner,
+      leadId: apiPlan.leadId,
       featureIds: apiPlan.featureIds || [],
       components: (apiPlan.components || []).map((c) => ({
         componentId: c.componentId,
@@ -87,6 +88,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
       })),
       calendarIds: apiPlan.calendarIds || [],
       indicatorIds: apiPlan.indicatorIds || [],
+      teamIds: apiPlan.teamIds || [],
       milestones: apiPlan.milestones?.map((m) => ({
         phaseId: m.phaseId,
         id: m.id,
@@ -225,16 +227,20 @@ export function convertLocalPlanToUpdateDto(
     status: localPlan.metadata.status,
     description: localPlan.metadata.description,
     phases: localPlan.metadata.phases?.map((p) => ({
+      id: p.id, // Include ID to identify existing phases for reschedule tracking
       name: p.name,
       startDate: p.startDate,
       endDate: p.endDate,
       color: p.color,
+      metricValues: p.metricValues || {},
     })),
     productId: localPlan.metadata.productId,
     itOwner: localPlan.metadata.itOwner,
+    leadId: localPlan.metadata.leadId,
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
     indicatorIds: localPlan.metadata.indicatorIds,
+    teamIds: localPlan.metadata.teamIds,
     // Note: milestones, references, and tasks are managed separately
     // They should be included in the update if needed
   };
@@ -275,6 +281,7 @@ function mapPhasesToDto(phases: LocalPlan["metadata"]["phases"]) {
   
   return validPhases.map((p) => {
     const phaseDto: any = {
+      id: p.id, // Include ID to identify existing phases for reschedule tracking
       name: p.name.trim(),
       startDate: p.startDate.trim(),
       endDate: p.endDate.trim(),
@@ -368,9 +375,11 @@ export function createPartialUpdateDto(
     "description",
     "productId",
     "itOwner",
+    "leadId",
     "featureIds",
     "calendarIds",
     "indicatorIds",
+    "teamIds",
     "components",
   ];
 
@@ -433,8 +442,10 @@ export function createFullUpdateDto(
     description: localPlan.metadata.description,
     productId: localPlan.metadata.productId,
     itOwner: localPlan.metadata.itOwner,
+    leadId: localPlan.metadata.leadId,
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
+    teamIds: localPlan.metadata.teamIds,
     components: localPlan.metadata.components?.map((c) => ({
       componentId: c.componentId,
       currentVersion: c.currentVersion,
@@ -448,10 +459,12 @@ export function createFullUpdateDto(
           : originalUpdatedAt.toISOString(),
     }),
     phases: localPlan.metadata.phases?.map((p) => ({
+      id: p.id, // Include ID to identify existing phases for reschedule tracking
       name: p.name,
       startDate: p.startDate,
       endDate: p.endDate,
       color: p.color,
+      metricValues: p.metricValues || {},
     })),
     milestones: localPlan.metadata.milestones?.map((m) => ({
       name: m.name,

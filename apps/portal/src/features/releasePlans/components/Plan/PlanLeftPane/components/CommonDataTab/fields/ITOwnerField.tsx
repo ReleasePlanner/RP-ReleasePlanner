@@ -39,7 +39,7 @@ export function ITOwnerField({
           display: "block",
         }}
       >
-        IT Owner
+        Product Owner
       </Typography>
       <Select
         id="plan-it-owner-select"

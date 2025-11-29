@@ -70,6 +70,20 @@ export function usePlanCardSave({
       try {
         const updateData = prepareTabData(tabIndex, metadata);
 
+        // Debug: Log updateData for Setup tab
+        if (tabIndex === 2) {
+          console.log('[usePlanCardSave] Saving Setup tab:', {
+            tabIndex,
+            updateData,
+            calendarIds: updateData.calendarIds,
+            indicatorIds: updateData.indicatorIds,
+            teamIds: updateData.teamIds,
+            teamIdsCount: updateData.teamIds?.length || 0,
+            metadataTeamIds: metadata.teamIds,
+            metadataTeamIdsCount: metadata.teamIds?.length || 0,
+          });
+        }
+
         const maxRetries = 3;
         let retryCount = 0;
         let lastError: Error | null = null;
@@ -90,6 +104,18 @@ export function usePlanCardSave({
               plan.updatedAt
             );
 
+            // Debug: Log updateDto for Setup tab
+            if (tabIndex === 2) {
+              console.log('[usePlanCardSave] Update DTO for Setup tab:', {
+                calendarIds: updateDto.calendarIds,
+                indicatorIds: updateDto.indicatorIds,
+                teamIds: updateDto.teamIds,
+                teamIdsCount: updateDto.teamIds?.length || 0,
+                updateDtoKeys: Object.keys(updateDto),
+                fullUpdateDto: updateDto,
+              });
+            }
+
             await updatePlanMutation.mutateAsync({
               id: plan.id,
               data: updateDto,
@@ -109,13 +135,43 @@ export function usePlanCardSave({
             await queryClient.invalidateQueries({ queryKey: ["plans"] });
             await queryClient.invalidateQueries({ queryKey: ["features"] });
             await queryClient.invalidateQueries({ queryKey: ["products"] });
+            
+                   // Invalidate teams cache when saving Setup tab (tab 2)
+                   // This will invalidate all team queries including ["teams", "detail", id]
+                   if (tabIndex === 2) {
+                     // Invalidate all team-related queries
+                     await queryClient.invalidateQueries({ queryKey: ["teams"] });
+                   }
 
+            // Wait for refetch to complete before updating local metadata
             await queryClient.refetchQueries({ queryKey: ["plans"] });
             await queryClient.refetchQueries({ queryKey: ["features"] });
             await queryClient.refetchQueries({ queryKey: ["products"] });
+            
+            // Refetch teams when saving Setup tab (tab 2)
+            if (tabIndex === 2) {
+              // Refetch all team queries to ensure new teams are loaded
+              await queryClient.refetchQueries({ queryKey: ["teams"] });
+              
+              // Debug: Log after refetch to verify plan was updated
+              console.log('[usePlanCardSave] After refetch for Setup tab:', {
+                planId: plan.id,
+                updateDataTeamIds: updateData.teamIds,
+                updateDataTeamIdsCount: updateData.teamIds?.length || 0,
+              });
+            }
 
+            // Temporarily update localMetadata with updateData to show changes immediately
+            // The useEffect in usePlanCardState will sync from originalMetadata when plan prop updates
             setLocalMetadata((prev) => {
               const merged = { ...prev, ...updateData };
+              console.log('[usePlanCardSave] Updating localMetadata:', {
+                tabIndex,
+                updateData,
+                prevTeamIds: prev.teamIds,
+                mergedTeamIds: merged.teamIds,
+                mergedTeamIdsCount: merged.teamIds?.length || 0,
+              });
               return merged;
             });
 
@@ -186,10 +242,19 @@ export function usePlanCardSave({
       let updateDto: any = null;
       try {
         // Use phasesOverride if provided, otherwise use localMetadata to get the latest state including metricValues
-        const phasesToSave = phasesOverride || localMetadata.phases || [];
+        // Ensure phasesToSave is always an array
+        const phasesToSave = Array.isArray(phasesOverride) 
+          ? phasesOverride 
+          : (Array.isArray(localMetadata.phases) ? localMetadata.phases : []);
         
         console.log("[usePlanCardSave] Saving timeline with phases:", {
           phaseCount: phasesToSave.length,
+          phasesToSaveType: typeof phasesToSave,
+          isArray: Array.isArray(phasesToSave),
+          phasesOverrideType: typeof phasesOverride,
+          phasesOverrideIsArray: Array.isArray(phasesOverride),
+          localMetadataPhasesType: typeof localMetadata.phases,
+          localMetadataPhasesIsArray: Array.isArray(localMetadata.phases),
           phases: phasesToSave.map((p) => ({
             id: p.id,
             name: p.name,

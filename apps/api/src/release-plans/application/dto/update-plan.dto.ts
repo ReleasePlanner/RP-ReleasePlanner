@@ -8,6 +8,15 @@ import { PLAN_API_PROPERTY_DESCRIPTIONS, PLAN_API_PROPERTY_EXAMPLES } from '../.
 
 export class UpdatePlanPhaseDto {
   @ApiProperty({
+    description: 'Phase ID (for existing phases)',
+    example: 'uuid-here',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  id?: string;
+
+  @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_NAME,
     example: PLAN_API_PROPERTY_EXAMPLES.PHASE_NAME,
   })
@@ -50,6 +59,24 @@ export class UpdatePlanPhaseDto {
   @IsOptional()
   @IsObject({}, { message: 'metricValues must be an object' })
   metricValues?: Record<string, string>;
+
+  @ApiProperty({
+    description: 'Reschedule type ID (optional, used when dates change)',
+    example: 'uuid-here',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  rescheduleTypeId?: string;
+
+  @ApiProperty({
+    description: 'Owner ID who approved the reschedule (optional)',
+    example: 'uuid-here',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  rescheduleOwnerId?: string;
 }
 
 export class UpdatePlanMilestoneDto {

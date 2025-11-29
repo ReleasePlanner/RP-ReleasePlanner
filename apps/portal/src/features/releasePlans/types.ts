@@ -89,10 +89,12 @@ export type PlanMetadata = {
   phases?: PlanPhase[]; // ordered list of phases
   productId?: string; // ID of the associated product
   itOwner?: string; // IT Owner ID responsible for the plan (references owners table)
+  leadId?: string; // Lead talent ID assigned to this plan (from teams assigned to the plan)
   featureIds?: string[]; // IDs of features associated with this plan
   components?: PlanComponent[]; // Components with final versions for this plan
   calendarIds?: string[]; // IDs of calendars associated with this plan
   indicatorIds?: string[]; // IDs of indicators/KPIs associated with this plan
+  teamIds?: string[]; // IDs of teams associated with this plan
   milestones?: PlanMilestone[]; // Milestones for this plan
   references?: PlanReference[]; // References (links, documents, notes, milestones) for this plan
   // Note: cellData has been removed - references are now handled via plan_references table

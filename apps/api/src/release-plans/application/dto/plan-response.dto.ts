@@ -121,10 +121,12 @@ export class PlanResponseDto {
   phases: PlanPhaseResponseDto[];
   productId?: string;
   itOwner?: string;
+  leadId?: string;
   featureIds: string[];
   components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
   indicatorIds: string[];
+  teamIds: string[];
   milestones: PlanMilestoneResponseDto[];
   references: PlanReferenceResponseDto[];
   tasks: PlanTaskResponseDto[];
@@ -146,10 +148,12 @@ export class PlanResponseDto {
       : [];
     this.productId = entity.productId;
     this.itOwner = entity.itOwner;
+    this.leadId = entity.leadId;
     this.featureIds = entity.featureIds || [];
     this.components = entity.components || [];
     this.calendarIds = entity.calendarIds || [];
     this.indicatorIds = entity.indicatorIds || [];
+    this.teamIds = entity.teamIds || [];
     this.milestones = (entity.milestones && Array.isArray(entity.milestones))
       ? entity.milestones.map((m) => new PlanMilestoneResponseDto(m))
       : [];

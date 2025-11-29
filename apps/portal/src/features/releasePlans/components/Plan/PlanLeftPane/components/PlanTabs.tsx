@@ -106,28 +106,23 @@ export function PlanTabs({
       >
         <Tab label="Common Data" {...a11yProps(0)} />
         <Tab
-          label="Features"
+          label="Product"
           {...a11yProps(1)}
           disabled={!productSelected}
         />
-        <Tab
-          label="Components"
+        <Tab 
+          label="Setup" 
           {...a11yProps(2)}
           disabled={!productSelected}
         />
         <Tab 
-          label="Calendars" 
+          label="References" 
           {...a11yProps(3)}
           disabled={!productSelected}
         />
         <Tab 
-          label="References" 
+          label="Re-schedules" 
           {...a11yProps(4)}
-          disabled={!productSelected}
-        />
-        <Tab 
-          label="Metrics" 
-          {...a11yProps(5)}
           disabled={!productSelected}
         />
       </Tabs>

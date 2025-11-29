@@ -23,6 +23,7 @@ export type PlanCardContentProps = {
   readonly handleDescriptionChange: (description: string) => void;
   readonly handleStatusChange: (status: Plan["metadata"]["status"]) => void;
   readonly handleITOwnerChange: (itOwnerId: string) => void;
+  readonly handleLeadIdChange: (leadId: string) => void;
   readonly handleStartDateChange: (date: string) => void;
   readonly handleEndDateChange: (date: string) => void;
   readonly handleFeatureIdsChange: (newFeatureIds: string[]) => void;
@@ -31,6 +32,7 @@ export type PlanCardContentProps = {
   ) => void;
   readonly handleCalendarIdsChange: (newCalendarIds: string[]) => void;
   readonly handleIndicatorIdsChange: (newIndicatorIds: string[]) => void;
+  readonly handleTeamIdsChange: (newTeamIds: string[]) => void;
   readonly handleReferencesChange: (newReferences: PlanReference[]) => void;
   readonly handleSaveTab: (tabIndex: number) => Promise<void>;
   // Gantt handlers
@@ -66,12 +68,14 @@ export function PlanCardContent({
   handleDescriptionChange,
   handleStatusChange,
   handleITOwnerChange,
+  handleLeadIdChange,
   handleStartDateChange,
   handleEndDateChange,
   handleFeatureIdsChange,
   handleComponentsChange,
   handleCalendarIdsChange,
   handleIndicatorIdsChange,
+  handleTeamIdsChange,
   handleReferencesChange,
   handleSaveTab,
   handleMilestoneAdd,
@@ -107,22 +111,35 @@ export function PlanCardContent({
       productId={metadata.productId}
       originalProductId={originalMetadata.productId}
       itOwner={metadata.itOwner}
+      leadId={metadata.leadId}
       featureIds={metadata.featureIds}
       components={metadata.components}
       calendarIds={metadata.calendarIds}
       indicatorIds={metadata.indicatorIds}
+      teamIds={(() => {
+        const teamIdsValue = metadata.teamIds || [];
+        console.log('[PlanCardContent] Passing teamIds to PlanLeftPane:', {
+          metadataTeamIds: metadata.teamIds,
+          teamIdsValue,
+          teamIdsValueCount: teamIdsValue.length,
+          teamIdsValueIsArray: Array.isArray(teamIdsValue),
+        });
+        return teamIdsValue;
+      })()}
       references={consolidatedReferences}
       onNameChange={handleNameChange}
       onProductChange={handleProductChange}
       onDescriptionChange={handleDescriptionChange}
       onStatusChange={handleStatusChange}
       onITOwnerChange={handleITOwnerChange}
+      onLeadIdChange={handleLeadIdChange}
       onStartDateChange={handleStartDateChange}
       onEndDateChange={handleEndDateChange}
       onFeatureIdsChange={handleFeatureIdsChange}
       onComponentsChange={handleComponentsChange}
       onCalendarIdsChange={handleCalendarIdsChange}
       onIndicatorIdsChange={handleIndicatorIdsChange}
+      onTeamIdsChange={handleTeamIdsChange}
       onReferencesChange={handleReferencesChange}
       onScrollToDate={
         scrollToDateFn

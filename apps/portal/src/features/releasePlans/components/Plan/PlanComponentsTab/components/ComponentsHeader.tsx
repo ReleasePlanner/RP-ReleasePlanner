@@ -7,12 +7,14 @@ export type ComponentsHeaderProps = {
   readonly componentCount: number;
   readonly onAddClick: () => void;
   readonly styles: PlanComponentsStyles;
+  readonly productId?: string;
 };
 
 export const ComponentsHeader = memo(function ComponentsHeader({
   componentCount,
   onAddClick,
   styles,
+  productId,
 }: ComponentsHeaderProps) {
   const theme = useTheme();
 
@@ -46,6 +48,7 @@ export const ComponentsHeader = memo(function ComponentsHeader({
           size="small"
           startIcon={<AddIcon sx={{ fontSize: 14 }} />}
           onClick={onAddClick}
+          disabled={!productId}
           sx={styles.getAddButtonStyles()}
         >
           Add

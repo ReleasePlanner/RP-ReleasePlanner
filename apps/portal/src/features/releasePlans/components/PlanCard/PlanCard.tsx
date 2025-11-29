@@ -105,6 +105,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
     handleComponentsChange,
     handleCalendarIdsChange,
     handleIndicatorIdsChange,
+    handleTeamIdsChange,
+    handleLeadIdChange,
   } = usePlanCardHandlers({
     plan,
     localMetadata,
@@ -271,6 +273,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             handleComponentsChange={handleComponentsChange}
             handleCalendarIdsChange={handleCalendarIdsChange}
             handleIndicatorIdsChange={handleIndicatorIdsChange}
+            handleTeamIdsChange={handleTeamIdsChange}
+            handleLeadIdChange={handleLeadIdChange}
             handleReferencesChange={handleReferencesChange}
             handleSaveTab={handleSaveTab}
             handleMilestoneAdd={handleMilestoneAdd}
@@ -313,6 +317,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
       />
 
       <PlanCardDialogs
+        planId={plan.id}
         phaseOpen={phaseOpen}
         setPhaseOpen={setPhaseOpen}
         editOpen={editOpen}

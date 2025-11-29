@@ -140,6 +140,7 @@ export function PlanComponentsTab({
           componentCount={planComponentsWithDetails.length}
           onAddClick={() => setSelectDialogOpen(true)}
           styles={styles}
+          productId={productId}
         />
 
         <Box

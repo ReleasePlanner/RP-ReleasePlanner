@@ -19,22 +19,26 @@ export type PlanLeftPaneProps = {
   readonly productId?: string;
   readonly originalProductId?: string; // Product ID from saved plan (BD) - if exists, product is locked
   readonly itOwner?: string;
+  readonly leadId?: string;
   readonly featureIds?: string[];
   readonly components?: PlanComponent[];
   readonly calendarIds?: string[];
   readonly indicatorIds?: string[];
+  readonly teamIds?: string[];
   readonly references?: PlanReference[];
   readonly onNameChange?: (name: string) => void;
   readonly onProductChange: (productId: string) => void;
   readonly onDescriptionChange?: (description: string) => void;
   readonly onStatusChange?: (status: PlanStatus) => void;
   readonly onITOwnerChange?: (itOwnerId: string) => void;
+  readonly onLeadIdChange?: (leadId: string) => void;
   readonly onStartDateChange?: (date: string) => void;
   readonly onEndDateChange?: (date: string) => void;
   readonly onFeatureIdsChange?: (featureIds: string[]) => void;
   readonly onComponentsChange?: (components: PlanComponent[]) => void;
   readonly onCalendarIdsChange?: (calendarIds: string[]) => void;
   readonly onIndicatorIdsChange?: (indicatorIds: string[]) => void;
+  readonly onTeamIdsChange?: (teamIds: string[]) => void;
   readonly onReferencesChange?: (references: PlanReference[]) => void;
   readonly onScrollToDate?: (date: string) => void;
   readonly onSaveTab?: (tabIndex: number) => Promise<void>;
@@ -57,22 +61,26 @@ function PlanLeftPaneComponent({
   productId,
   originalProductId,
   itOwner,
+  leadId,
   featureIds = [],
   components = [],
   calendarIds = [],
   indicatorIds = [],
+  teamIds = [],
   references = [],
   onNameChange,
   onProductChange,
   onDescriptionChange,
   onStatusChange,
   onITOwnerChange,
+  onLeadIdChange,
   onStartDateChange,
   onEndDateChange,
   onFeatureIdsChange,
   onComponentsChange,
   onCalendarIdsChange,
   onIndicatorIdsChange,
+  onTeamIdsChange,
   onReferencesChange,
   onScrollToDate,
   onSaveTab,
@@ -155,10 +163,12 @@ function PlanLeftPaneComponent({
           productId={productId}
           originalProductId={originalProductId}
           itOwner={itOwner}
+          leadId={leadId}
           featureIds={featureIds}
           components={components}
           calendarIds={calendarIds}
           indicatorIds={indicatorIds}
+          teamIds={teamIds}
           references={references}
           hasLocalChanges={false}
           isSaving={isSaving}
@@ -172,10 +182,12 @@ function PlanLeftPaneComponent({
           onEndDateChange={onEndDateChange}
           onProductChange={onProductChange}
           onITOwnerChange={onITOwnerChange}
+          onLeadIdChange={onLeadIdChange}
           onFeatureIdsChange={onFeatureIdsChange}
           onComponentsChange={onComponentsChange}
           onCalendarIdsChange={onCalendarIdsChange}
           onIndicatorIdsChange={onIndicatorIdsChange}
+          onTeamIdsChange={onTeamIdsChange}
           onReferencesChange={onReferencesChange}
           onScrollToDate={onScrollToDate}
           onSaveTab={onSaveTab}

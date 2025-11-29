@@ -1,10 +1,9 @@
 import { TabPanel } from "./TabPanel";
 import { CommonDataTab } from "./CommonDataTab";
-import { PlanFeaturesTab } from "../../PlanFeaturesTab/PlanFeaturesTab";
-import { PlanComponentsTab } from "../../PlanComponentsTab/PlanComponentsTab";
-import { PlanCalendarsTab } from "../../PlanCalendarsTab/PlanCalendarsTab";
+import { PlanProductTab } from "../../PlanProductTab";
+import { PlanSetupTab } from "../../PlanSetupTab";
 import { PlanReferencesTab } from "../../PlanReferencesTab/PlanReferencesTab";
-import { PlanMetricsTab } from "../../PlanMetricsTab/PlanMetricsTab";
+import { PlanReschedulesTab } from "../../PlanReschedulesTab";
 import type {
   PlanStatus,
   PlanComponent,
@@ -23,10 +22,12 @@ export type TabPanelsProps = {
   readonly productId?: string;
   readonly originalProductId?: string;
   readonly itOwner?: string;
+  readonly leadId?: string;
   readonly featureIds?: string[];
   readonly components?: PlanComponent[];
   readonly calendarIds?: string[];
   readonly indicatorIds?: string[];
+  readonly teamIds?: string[];
   readonly references?: PlanReference[];
   readonly hasLocalChanges: boolean;
   readonly isSaving: boolean;
@@ -40,10 +41,12 @@ export type TabPanelsProps = {
   readonly onEndDateChange?: (date: string) => void;
   readonly onProductChange: (productId: string) => void;
   readonly onITOwnerChange?: (itOwnerId: string) => void;
+  readonly onLeadIdChange?: (leadId: string) => void;
   readonly onFeatureIdsChange?: (featureIds: string[]) => void;
   readonly onComponentsChange?: (components: PlanComponent[]) => void;
   readonly onCalendarIdsChange?: (calendarIds: string[]) => void;
   readonly onIndicatorIdsChange?: (indicatorIds: string[]) => void;
+  readonly onTeamIdsChange?: (teamIds: string[]) => void;
   readonly onReferencesChange?: (references: PlanReference[]) => void;
   readonly onScrollToDate?: (date: string) => void;
   readonly onSaveTab?: (tabIndex: number) => Promise<void>;
@@ -60,10 +63,12 @@ export function TabPanels({
   productId,
   originalProductId,
   itOwner,
+  leadId,
   featureIds = [],
   components = [],
   calendarIds = [],
   indicatorIds = [],
+  teamIds = [],
   references = [],
   hasLocalChanges,
   isSaving,
@@ -77,10 +82,12 @@ export function TabPanels({
   onEndDateChange,
   onProductChange,
   onITOwnerChange,
+  onLeadIdChange,
   onFeatureIdsChange,
   onComponentsChange,
   onCalendarIdsChange,
   onIndicatorIdsChange,
+  onTeamIdsChange,
   onReferencesChange,
   onScrollToDate,
   onSaveTab,
@@ -104,6 +111,8 @@ export function TabPanels({
           productId={productId}
           originalProductId={originalProductId}
           itOwner={itOwner}
+          leadId={leadId}
+          teamIds={teamIds}
           onNameChange={onNameChange}
           onDescriptionChange={onDescriptionChange}
           onStatusChange={onStatusChange}
@@ -111,63 +120,59 @@ export function TabPanels({
           onEndDateChange={onEndDateChange}
           onProductChange={onProductChange}
           onITOwnerChange={onITOwnerChange}
+          onLeadIdChange={onLeadIdChange}
         />
       </TabPanel>
 
-      {/* Tab 2: Features */}
+      {/* Tab 2: Product (Features + Components) */}
       <TabPanel
         value={tabValue}
         index={1}
         onSave={onSaveTab ? () => onSaveTab(1) : undefined}
         isSaving={isSaving}
-        hasPendingChanges={hasTabChanges[1] || false}
+        hasPendingChanges={(hasTabChanges[1] || false) || (hasTabChanges[2] || false)}
       >
-        <PlanFeaturesTab
+        <PlanProductTab
           productId={productId}
           featureIds={featureIds}
+          components={components}
           planId={id}
           planUpdatedAt={planUpdatedAt}
           plan={plan}
           onFeatureIdsChange={onFeatureIdsChange}
+          onComponentsChange={onComponentsChange}
         />
       </TabPanel>
 
-      {/* Tab 3: Components */}
+      {/* Tab 2: Setup (Calendars + Metrics + Teams) */}
       <TabPanel
         value={tabValue}
         index={2}
         onSave={onSaveTab ? () => onSaveTab(2) : undefined}
         isSaving={isSaving}
-        hasPendingChanges={hasTabChanges[2] || false}
+        hasPendingChanges={
+          (hasTabChanges[2] || false) || // Calendars (antes tab 2)
+          (hasTabChanges[4] || false) || // Metrics (antes tab 4)
+          (hasTabChanges[5] || false)    // Teams (antes tab 5)
+        }
       >
-        <PlanComponentsTab
-          productId={productId}
-          components={components}
-          onComponentsChange={onComponentsChange}
+        <PlanSetupTab
+          calendarIds={calendarIds}
+          indicatorIds={indicatorIds}
+          teamIds={teamIds}
+          onCalendarIdsChange={onCalendarIdsChange}
+          onIndicatorIdsChange={onIndicatorIdsChange}
+          onTeamIdsChange={onTeamIdsChange}
         />
       </TabPanel>
 
-      {/* Tab 4: Calendars */}
+      {/* Tab 3: References */}
       <TabPanel
         value={tabValue}
         index={3}
         onSave={onSaveTab ? () => onSaveTab(3) : undefined}
         isSaving={isSaving}
         hasPendingChanges={hasTabChanges[3] || false}
-      >
-        <PlanCalendarsTab
-          calendarIds={calendarIds}
-          onCalendarIdsChange={onCalendarIdsChange}
-        />
-      </TabPanel>
-
-      {/* Tab 5: References */}
-      <TabPanel
-        value={tabValue}
-        index={4}
-        onSave={onSaveTab ? () => onSaveTab(4) : undefined}
-        isSaving={isSaving}
-        hasPendingChanges={hasTabChanges[4] || false}
       >
         <PlanReferencesTab
           references={references}
@@ -180,18 +185,15 @@ export function TabPanels({
         />
       </TabPanel>
 
-      {/* Tab 6: Metrics */}
+      {/* Tab 4: Re-schedules */}
       <TabPanel
         value={tabValue}
-        index={5}
-        onSave={onSaveTab ? () => onSaveTab(5) : undefined}
-        isSaving={isSaving}
-        hasPendingChanges={hasTabChanges[5] || false}
+        index={4}
+        onSave={undefined}
+        isSaving={false}
+        hasPendingChanges={false}
       >
-        <PlanMetricsTab
-          indicatorIds={indicatorIds}
-          onIndicatorIdsChange={onIndicatorIdsChange}
-        />
+        <PlanReschedulesTab planId={id} />
       </TabPanel>
     </>
   );

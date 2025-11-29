@@ -137,15 +137,6 @@ const releasePlansSlice = createSlice({
       if (!name) return;
 
       // Validate that the phase name is unique within this plan
-      const existingPhaseNames = (plan.metadata.phases ?? []).map((ph) =>
-        ph.name.toLowerCase().trim()
-      );
-      const normalizedName = name.toLowerCase().trim();
-
-      // If a phase with this name already exists, don't add it
-      if (existingPhaseNames.includes(normalizedName)) {
-        return; // Silently skip - validation should happen in UI
-      }
 
       const usedColors = (plan.metadata.phases ?? []).map((ph) => ph.color);
       // Use UTC dates for storage

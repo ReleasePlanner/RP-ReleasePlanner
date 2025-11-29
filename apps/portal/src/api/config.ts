@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   INDICATORS: '/indicators',
   TEAMS: '/teams',
   ROLES: '/roles',
+  RESCHEDULE_TYPES: '/reschedule-types',
 } as const;
 
 // Token storage keys

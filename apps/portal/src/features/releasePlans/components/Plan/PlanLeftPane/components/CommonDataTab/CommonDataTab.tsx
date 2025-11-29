@@ -7,6 +7,8 @@ import { StatusField } from "./fields/StatusField";
 import { PeriodField } from "./fields/PeriodField";
 import { ProductField } from "./fields/ProductField";
 import { ITOwnerField } from "./fields/ITOwnerField";
+import { LeadField } from "./fields/LeadField";
+import { usePlanTalents } from "./hooks/usePlanTalents";
 import type { PlanStatus } from "../../../../../types";
 
 export type CommonDataTabProps = {
@@ -18,6 +20,8 @@ export type CommonDataTabProps = {
   readonly productId?: string;
   readonly originalProductId?: string;
   readonly itOwner?: string;
+  readonly leadId?: string;
+  readonly teamIds?: string[];
   readonly onNameChange?: (name: string) => void;
   readonly onDescriptionChange?: (description: string) => void;
   readonly onStatusChange?: (status: PlanStatus) => void;
@@ -25,6 +29,7 @@ export type CommonDataTabProps = {
   readonly onEndDateChange?: (date: string) => void;
   readonly onProductChange: (productId: string) => void;
   readonly onITOwnerChange?: (itOwnerId: string) => void;
+  readonly onLeadIdChange?: (leadId: string) => void;
 };
 
 export function CommonDataTab({
@@ -36,6 +41,8 @@ export function CommonDataTab({
   productId,
   originalProductId,
   itOwner,
+  leadId,
+  teamIds = [],
   onNameChange,
   onDescriptionChange,
   onStatusChange,
@@ -43,6 +50,7 @@ export function CommonDataTab({
   onEndDateChange,
   onProductChange,
   onITOwnerChange,
+  onLeadIdChange,
 }: CommonDataTabProps) {
   // Local state hook
   const {
@@ -71,6 +79,9 @@ export function CommonDataTab({
     originalEndDateRef,
     originalProductIdRef,
     originalItOwnerRef,
+    localLeadId,
+    setLocalLeadId,
+    originalLeadIdRef,
   } = useLocalState(
     name,
     description,
@@ -78,7 +89,8 @@ export function CommonDataTab({
     startDate,
     endDate,
     productId,
-    itOwner
+    itOwner,
+    leadId
   );
 
   // Calculations hook
@@ -90,17 +102,22 @@ export function CommonDataTab({
   // Data hooks
   const { data: products = [], isLoading: isLoadingProducts } = useProducts();
   const { data: itOwners = [], isLoading: isLoadingITOwners } = useITOwners();
+  const { talents, isLoading: isLoadingTalents } = usePlanTalents(teamIds);
 
   // Validation hook
-  const { validProductId, validItOwner } = useFieldValidation(
+  const { validProductId, validItOwner, validLeadId } = useFieldValidation(
     localProductId,
     localItOwner,
+    localLeadId,
     products,
     itOwners,
+    talents,
     isLoadingProducts,
     isLoadingITOwners,
+    isLoadingTalents,
     onProductChange,
-    onITOwnerChange
+    onITOwnerChange,
+    onLeadIdChange
   );
 
   return (
@@ -241,6 +258,19 @@ export function CommonDataTab({
             setLocalItOwner(newValue || undefined);
             if (onITOwnerChange && newValue !== itOwner) {
               onITOwnerChange(newValue);
+            }
+          }}
+        />
+
+        <LeadField
+          talents={talents}
+          validLeadId={validLeadId}
+          localLeadId={localLeadId}
+          isLoadingTalents={isLoadingTalents}
+          onLeadIdChange={(newValue) => {
+            setLocalLeadId(newValue || undefined);
+            if (onLeadIdChange && newValue !== leadId) {
+              onLeadIdChange(newValue);
             }
           }}
         />

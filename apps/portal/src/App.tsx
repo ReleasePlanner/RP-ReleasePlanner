@@ -18,6 +18,8 @@ const PhasesMaintenancePage = lazy(() => import("./pages/phasesMaintenancePage")
 const IndicatorMaintenancePage = lazy(() => import("./pages/indicatorMaintenancePage"));
 const TeamMaintenancePage = lazy(() => import("./pages/teamMaintenancePage"));
 const RoleMaintenancePage = lazy(() => import("./pages/roleMaintenancePage"));
+const TalentMaintenancePage = lazy(() => import("./pages/talentMaintenancePage"));
+const RescheduleTypeMaintenancePage = lazy(() => import("./pages/rescheduleTypeMaintenancePage"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -66,6 +68,8 @@ export default function App() {
           <Route path="indicators-maintenance" element={<IndicatorMaintenancePage />} />
           <Route path="teams-maintenance" element={<TeamMaintenancePage />} />
           <Route path="roles-maintenance" element={<RoleMaintenancePage />} />
+          <Route path="talents-maintenance" element={<TalentMaintenancePage />} />
+          <Route path="reschedule-types-maintenance" element={<RescheduleTypeMaintenancePage />} />
         </Route>
       </Routes>
     </Suspense>

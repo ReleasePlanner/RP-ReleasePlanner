@@ -4,4 +4,5 @@ export { StatusField } from "./StatusField";
 export { PeriodField } from "./PeriodField";
 export { ProductField } from "./ProductField";
 export { ITOwnerField } from "./ITOwnerField";
+export { LeadField } from "./LeadField";
 

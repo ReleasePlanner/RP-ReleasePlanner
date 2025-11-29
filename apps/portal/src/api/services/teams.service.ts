@@ -54,6 +54,7 @@ export interface CreateTeamDto {
 }
 
 export interface UpdateTeamDto {
+  id?: string; // Required by backend DTO validation
   name?: string;
   description?: string;
   type?: TeamType;
@@ -93,23 +94,28 @@ interface TeamApiResponse {
 
 // Mapper functions to convert API response to frontend format
 function mapApiTeamToTeam(apiTeam: TeamApiResponse): Team {
+  // Filter out assignments without talent data and map to talents
+  const talents = (apiTeam.talentAssignments || [])
+    .filter((assignment) => assignment.talent != null) // Only include assignments with talent data
+    .map((assignment) => ({
+      id: assignment.talentId,
+      name: assignment.talent!.name,
+      email: assignment.talent!.email,
+      phone: assignment.talent!.phone,
+      roleId: assignment.talent!.roleId,
+      role: assignment.talent!.role,
+      teamId: assignment.teamId,
+      allocationPercentage: assignment.allocationPercentage,
+      createdAt: assignment.createdAt,
+      updatedAt: assignment.updatedAt,
+    }));
+
   return {
     id: apiTeam.id,
     name: apiTeam.name,
     description: apiTeam.description,
     type: apiTeam.type,
-    talents: apiTeam.talentAssignments.map((assignment) => ({
-      id: assignment.talentId,
-      name: assignment.talent?.name || '',
-      email: assignment.talent?.email,
-      phone: assignment.talent?.phone,
-      roleId: assignment.talent?.roleId,
-      role: assignment.talent?.role,
-      teamId: assignment.teamId,
-      allocationPercentage: assignment.allocationPercentage,
-      createdAt: assignment.createdAt,
-      updatedAt: assignment.updatedAt,
-    })),
+    talents,
     createdAt: apiTeam.createdAt,
     updatedAt: apiTeam.updatedAt,
   };
@@ -118,12 +124,53 @@ function mapApiTeamToTeam(apiTeam: TeamApiResponse): Team {
 export const teamsService = {
   getAll: async (): Promise<Team[]> => {
     const apiTeams = await httpClient.get<TeamApiResponse[]>(API_ENDPOINTS.TEAMS);
-    return apiTeams.map(mapApiTeamToTeam);
+    // Debug: Log API response to verify talentAssignments are being loaded
+    console.log('[teamsService.getAll] API Response:', {
+      teamsCount: apiTeams.length,
+      teams: apiTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        talentAssignmentsCount: t.talentAssignments?.length || 0,
+        talentAssignments: t.talentAssignments,
+        hasTalentAssignments: !!t.talentAssignments,
+        talentAssignmentsIsArray: Array.isArray(t.talentAssignments),
+      })),
+    });
+    const mappedTeams = apiTeams.map(mapApiTeamToTeam);
+    console.log('[teamsService.getAll] Mapped Teams:', {
+      teamsCount: mappedTeams.length,
+      teams: mappedTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        talentsCount: t.talents?.length || 0,
+        talents: t.talents,
+        hasTalents: !!t.talents,
+        talentsIsArray: Array.isArray(t.talents),
+      })),
+    });
+    return mappedTeams;
   },
 
   getById: async (id: string): Promise<Team> => {
     const apiTeam = await httpClient.get<TeamApiResponse>(`${API_ENDPOINTS.TEAMS}/${id}`);
-    return mapApiTeamToTeam(apiTeam);
+    // Debug: Log the API response to verify talentAssignments are being loaded
+    console.log('[teamsService.getById] API Response for team:', id, {
+      teamId: apiTeam.id,
+      teamName: apiTeam.name,
+      talentAssignmentsCount: apiTeam.talentAssignments?.length || 0,
+      talentAssignments: apiTeam.talentAssignments,
+      hasTalentAssignments: !!apiTeam.talentAssignments,
+      talentAssignmentsIsArray: Array.isArray(apiTeam.talentAssignments),
+    });
+    const mappedTeam = mapApiTeamToTeam(apiTeam);
+    console.log('[teamsService.getById] Mapped Team:', {
+      teamId: mappedTeam.id,
+      talentsCount: mappedTeam.talents?.length || 0,
+      talents: mappedTeam.talents,
+      hasTalents: !!mappedTeam.talents,
+      talentsIsArray: Array.isArray(mappedTeam.talents),
+    });
+    return mappedTeam;
   },
 
   create: async (data: CreateTeamDto): Promise<Team> => {
@@ -138,6 +185,49 @@ export const teamsService = {
 
   delete: async (id: string): Promise<void> => {
     return httpClient.delete<void>(`${API_ENDPOINTS.TEAMS}/${id}`);
+  },
+
+  addTalentToTeam: async (
+    teamId: string,
+    talentId: string,
+    allocationPercentage: number,
+  ): Promise<Team> => {
+    const apiTeam = await httpClient.post<TeamApiResponse>(
+      `${API_ENDPOINTS.TEAMS}/${teamId}/talents/add`,
+      {
+        talentId,
+        allocationPercentage,
+      },
+    );
+    return mapApiTeamToTeam(apiTeam);
+  },
+
+  addMultipleTalentsToTeam: async (
+    teamId: string,
+    talents: Array<{ talentId: string; allocationPercentage: number }>,
+  ): Promise<Team> => {
+    const apiTeam = await httpClient.post<TeamApiResponse>(
+      `${API_ENDPOINTS.TEAMS}/${teamId}/talents/add-multiple`,
+      { talents },
+    );
+    return mapApiTeamToTeam(apiTeam);
+  },
+
+  createTalentAndAssign: async (
+    teamId: string,
+    talentData: {
+      name: string;
+      email?: string;
+      phone?: string;
+      roleId?: string;
+      allocationPercentage: number;
+    },
+  ): Promise<Team> => {
+    const apiTeam = await httpClient.post<TeamApiResponse>(
+      `${API_ENDPOINTS.TEAMS}/${teamId}/talents/create-and-assign`,
+      talentData,
+    );
+    return mapApiTeamToTeam(apiTeam);
   },
 };
 

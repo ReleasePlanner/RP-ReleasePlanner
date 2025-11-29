@@ -10,6 +10,7 @@
  * - Full accessibility support
  */
 
+import React, { useState } from "react";
 import {
   Box,
   List,
@@ -23,6 +24,7 @@ import {
   useTheme,
   alpha,
   useMediaQuery,
+  Collapse,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -39,6 +41,10 @@ import {
   Assessment as IndicatorsIcon,
   Groups as TeamsIcon,
   Badge as RolesIcon,
+  People as TalentsIcon,
+  Schedule as RescheduleTypeIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -56,13 +62,15 @@ export const NAVIGATION_LABELS = {
   PRODUCTS: "Products",
   FEATURES: "Features",
   CALENDARS: "Calendars",
-  IT_OWNERS: "IT Owners",
+  IT_OWNERS: "Owners",
   COMPONENT_TYPES: "Component Types",
   FEATURE_CATEGORIES: "Feature Categories",
   COUNTRIES: "Countries",
   INDICATORS: "Indicators",
   TEAMS: "Teams",
   ROLES: "Roles",
+  TALENTS: "Talents",
+  RESCHEDULE_TYPES: "Reschedule Types",
 } as const;
 
 export const NAVIGATION_DESCRIPTIONS = {
@@ -78,6 +86,8 @@ export const NAVIGATION_DESCRIPTIONS = {
   INDICATORS: "Manage KPIs and indicators",
   TEAMS: "Manage teams and talents",
   ROLES: "Manage roles and profiles",
+  TALENTS: "Manage talents and resources",
+  RESCHEDULE_TYPES: "Manage reschedule types for phase changes",
 } as const;
 
 /**
@@ -85,9 +95,10 @@ export const NAVIGATION_DESCRIPTIONS = {
  */
 interface NavItem {
   label: string;
-  path: string;
+  path?: string;
   icon: React.ReactNode;
   description?: string;
+  children?: NavItem[];
 }
 
 /**
@@ -107,75 +118,109 @@ interface LeftDrawerContentProps {
 const NAV_ITEMS: NavItem[] = [
   {
     label: NAVIGATION_LABELS.RELEASE_PLANNER,
-    path: "/release-planner",
     icon: <DashboardIcon />,
-    description: NAVIGATION_DESCRIPTIONS.RELEASE_PLANNER,
-  },
-  {
-    label: NAVIGATION_LABELS.PHASES,
-    path: "/phases-maintenance",
-    icon: <PhasesIcon />,
-    description: NAVIGATION_DESCRIPTIONS.PHASES,
+    description: "Release planning and configuration",
+    children: [
+      {
+        label: NAVIGATION_LABELS.RELEASE_PLANNER,
+        path: "/release-planner",
+        icon: <DashboardIcon />,
+        description: NAVIGATION_DESCRIPTIONS.RELEASE_PLANNER,
+      },
+      {
+        label: NAVIGATION_LABELS.PHASES,
+        path: "/phases-maintenance",
+        icon: <PhasesIcon />,
+        description: NAVIGATION_DESCRIPTIONS.PHASES,
+      },
+      {
+        label: NAVIGATION_LABELS.CALENDARS,
+        path: "/calendars",
+        icon: <CalendarsIcon />,
+        description: NAVIGATION_DESCRIPTIONS.CALENDARS,
+      },
+      {
+        label: NAVIGATION_LABELS.INDICATORS,
+        path: "/indicators-maintenance",
+        icon: <IndicatorsIcon />,
+        description: NAVIGATION_DESCRIPTIONS.INDICATORS,
+      },
+      {
+        label: NAVIGATION_LABELS.COUNTRIES,
+        path: "/countries",
+        icon: <CountryIcon />,
+        description: NAVIGATION_DESCRIPTIONS.COUNTRIES,
+      },
+      {
+        label: NAVIGATION_LABELS.IT_OWNERS,
+        path: "/it-owners",
+        icon: <PersonIcon />,
+        description: NAVIGATION_DESCRIPTIONS.IT_OWNERS,
+      },
+      {
+        label: NAVIGATION_LABELS.RESCHEDULE_TYPES,
+        path: "/reschedule-types-maintenance",
+        icon: <RescheduleTypeIcon />,
+        description: NAVIGATION_DESCRIPTIONS.RESCHEDULE_TYPES,
+      },
+    ],
   },
   {
     label: NAVIGATION_LABELS.PRODUCTS,
-    path: "/product-maintenance",
     icon: <ProductsIcon />,
-    description: NAVIGATION_DESCRIPTIONS.PRODUCTS,
+    description:
+      "Manage products, features, component types and feature categories",
+    children: [
+      {
+        label: NAVIGATION_LABELS.PRODUCTS,
+        path: "/product-maintenance",
+        icon: <ProductsIcon />,
+        description: NAVIGATION_DESCRIPTIONS.PRODUCTS,
+      },
+      {
+        label: NAVIGATION_LABELS.FEATURES,
+        path: "/features",
+        icon: <FeaturesIcon />,
+        description: NAVIGATION_DESCRIPTIONS.FEATURES,
+      },
+      {
+        label: NAVIGATION_LABELS.COMPONENT_TYPES,
+        path: "/component-types",
+        icon: <ComponentTypeIcon />,
+        description: NAVIGATION_DESCRIPTIONS.COMPONENT_TYPES,
+      },
+      {
+        label: NAVIGATION_LABELS.FEATURE_CATEGORIES,
+        path: "/feature-categories",
+        icon: <FeatureCategoryIcon />,
+        description: NAVIGATION_DESCRIPTIONS.FEATURE_CATEGORIES,
+      },
+    ],
   },
   {
-    label: NAVIGATION_LABELS.FEATURES,
-    path: "/features",
-    icon: <FeaturesIcon />,
-    description: NAVIGATION_DESCRIPTIONS.FEATURES,
-  },
-  {
-    label: NAVIGATION_LABELS.CALENDARS,
-    path: "/calendars",
-    icon: <CalendarsIcon />,
-    description: NAVIGATION_DESCRIPTIONS.CALENDARS,
-  },
-  {
-    label: NAVIGATION_LABELS.IT_OWNERS,
-    path: "/it-owners",
-    icon: <PersonIcon />,
-    description: NAVIGATION_DESCRIPTIONS.IT_OWNERS,
-  },
-  {
-    label: NAVIGATION_LABELS.COMPONENT_TYPES,
-    path: "/component-types",
-    icon: <ComponentTypeIcon />,
-    description: NAVIGATION_DESCRIPTIONS.COMPONENT_TYPES,
-  },
-  {
-    label: NAVIGATION_LABELS.FEATURE_CATEGORIES,
-    path: "/feature-categories",
-    icon: <FeatureCategoryIcon />,
-    description: NAVIGATION_DESCRIPTIONS.FEATURE_CATEGORIES,
-  },
-  {
-    label: NAVIGATION_LABELS.COUNTRIES,
-    path: "/countries",
-    icon: <CountryIcon />,
-    description: NAVIGATION_DESCRIPTIONS.COUNTRIES,
-  },
-  {
-    label: NAVIGATION_LABELS.INDICATORS,
-    path: "/indicators-maintenance",
-    icon: <IndicatorsIcon />,
-    description: NAVIGATION_DESCRIPTIONS.INDICATORS,
-  },
-  {
-    label: NAVIGATION_LABELS.TEAMS,
-    path: "/teams-maintenance",
-    icon: <TeamsIcon />,
-    description: NAVIGATION_DESCRIPTIONS.TEAMS,
-  },
-  {
-    label: NAVIGATION_LABELS.ROLES,
-    path: "/roles-maintenance",
-    icon: <RolesIcon />,
-    description: NAVIGATION_DESCRIPTIONS.ROLES,
+    label: NAVIGATION_LABELS.TALENTS,
+    icon: <TalentsIcon />,
+    description: "Manage teams, roles and talents",
+    children: [
+      {
+        label: NAVIGATION_LABELS.TEAMS,
+        path: "/teams-maintenance",
+        icon: <TeamsIcon />,
+        description: NAVIGATION_DESCRIPTIONS.TEAMS,
+      },
+      {
+        label: NAVIGATION_LABELS.ROLES,
+        path: "/roles-maintenance",
+        icon: <RolesIcon />,
+        description: NAVIGATION_DESCRIPTIONS.ROLES,
+      },
+      {
+        label: NAVIGATION_LABELS.TALENTS,
+        path: "/talents-maintenance",
+        icon: <TalentsIcon />,
+        description: NAVIGATION_DESCRIPTIONS.TALENTS,
+      },
+    ],
   },
 ];
 
@@ -185,6 +230,7 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
 
   const handleClose = onClose || (() => dispatch(toggleLeftSidebar()));
 
@@ -193,6 +239,16 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
    */
   const isActive = (path: string): boolean => {
     return location.pathname === path;
+  };
+
+  /**
+   * Check if any child route is active
+   */
+  const hasActiveChild = (item: NavItem): boolean => {
+    if (item.children) {
+      return item.children.some((child) => child.path && isActive(child.path));
+    }
+    return false;
   };
 
   /**
@@ -208,6 +264,16 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
         handleClose();
       }, 50);
     }
+  };
+
+  /**
+   * Toggle submenu open/closed
+   */
+  const handleToggleMenu = (label: string) => {
+    setOpenMenus((prev) => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
   };
 
   return (
@@ -284,95 +350,243 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
       >
         <List disablePadding>
           {NAV_ITEMS.map((item, index) => {
-            const active = isActive(item.path);
+            const active = item.path ? isActive(item.path) : false;
+            const hasChildren = item.children && item.children.length > 0;
+            const isOpen = openMenus[item.label] || hasActiveChild(item);
+
             return (
-              <ListItem
-                key={item.path}
-                disablePadding
-                sx={{
-                  px: 1.5,
-                  mb: 0.125,
-                }}
-              >
-                <Tooltip
-                  title={item.description || ""}
-                  placement="right"
-                  arrow
-                  enterDelay={300}
+              <React.Fragment key={item.label}>
+                <ListItem
+                  disablePadding
+                  sx={{
+                    px: 1.5,
+                    mb: 0.125,
+                  }}
                 >
-                  <ListItemButton
-                    onClick={() => handleNavItemClick(item.path)}
-                    selected={active}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.875,
-                      px: 1.5,
-                      minHeight: 40,
-                      transition: theme.transitions.create(
-                        ["background-color", "color"],
-                        {
-                          duration: theme.transitions.duration.shortest,
-                          easing: theme.transitions.easing.easeInOut,
-                        }
-                      ),
-                      backgroundColor: active
-                        ? alpha(theme.palette.primary.main, 0.08)
-                        : "transparent",
-                      color: active
-                        ? theme.palette.primary.main
-                        : theme.palette.text.primary,
-                      "&:hover": {
-                        backgroundColor: active
-                          ? alpha(theme.palette.primary.main, 0.12)
-                          : alpha(theme.palette.action.hover, 0.04),
-                      },
-                      "&.Mui-selected": {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                        color: theme.palette.primary.main,
-                        "&:hover": {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                        },
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          left: 0,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: 2.5,
-                          height: 18,
-                          backgroundColor: theme.palette.primary.main,
-                          borderRadius: "0 2px 2px 0",
-                        },
-                      },
-                      "&:focus-visible": {
-                        outline: `2px solid ${theme.palette.primary.main}`,
-                        outlineOffset: 2,
-                      },
-                    }}
+                  <Tooltip
+                    title={item.description || ""}
+                    placement="right"
+                    arrow
+                    enterDelay={300}
                   >
-                    <ListItemIcon
+                    <ListItemButton
+                      onClick={() => {
+                        if (hasChildren) {
+                          handleToggleMenu(item.label);
+                        } else if (item.path) {
+                          handleNavItemClick(item.path);
+                        }
+                      }}
+                      selected={active || hasActiveChild(item)}
                       sx={{
-                        minWidth: 36,
-                        color: "inherit",
-                        "& .MuiSvgIcon-root": {
-                          fontSize: 18,
+                        borderRadius: 1.5,
+                        py: 0.875,
+                        px: 1.5,
+                        minHeight: 40,
+                        transition: theme.transitions.create(
+                          ["background-color", "color"],
+                          {
+                            duration: theme.transitions.duration.shortest,
+                            easing: theme.transitions.easing.easeInOut,
+                          }
+                        ),
+                        backgroundColor:
+                          active || hasActiveChild(item)
+                            ? alpha(theme.palette.primary.main, 0.08)
+                            : "transparent",
+                        color:
+                          active || hasActiveChild(item)
+                            ? theme.palette.primary.main
+                            : theme.palette.text.primary,
+                        "&:hover": {
+                          backgroundColor:
+                            active || hasActiveChild(item)
+                              ? alpha(theme.palette.primary.main, 0.12)
+                              : alpha(theme.palette.action.hover, 0.04),
+                        },
+                        "&.Mui-selected": {
+                          backgroundColor: alpha(
+                            theme.palette.primary.main,
+                            0.08
+                          ),
+                          color: theme.palette.primary.main,
+                          "&:hover": {
+                            backgroundColor: alpha(
+                              theme.palette.primary.main,
+                              0.12
+                            ),
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            left: 0,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            width: 2.5,
+                            height: 18,
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: "0 2px 2px 0",
+                          },
+                        },
+                        "&:focus-visible": {
+                          outline: `2px solid ${theme.palette.primary.main}`,
+                          outlineOffset: 2,
                         },
                       }}
                     >
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{
-                        fontSize: "0.8125rem",
-                        fontWeight: active ? 600 : 500,
-                        letterSpacing: "-0.01em",
-                        lineHeight: 1.4,
-                      }}
-                    />
-                  </ListItemButton>
-                </Tooltip>
-              </ListItem>
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 36,
+                          color: "inherit",
+                          "& .MuiSvgIcon-root": {
+                            fontSize: 18,
+                          },
+                        }}
+                      >
+                        {item.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={item.label}
+                        primaryTypographyProps={{
+                          fontSize: "0.8125rem",
+                          fontWeight:
+                            active || hasActiveChild(item) ? 600 : 500,
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1.4,
+                        }}
+                      />
+                      {hasChildren && (
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 24,
+                            color: "inherit",
+                            justifyContent: "flex-end",
+                            "& .MuiSvgIcon-root": {
+                              fontSize: 18,
+                            },
+                          }}
+                        >
+                          {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </ListItemIcon>
+                      )}
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+
+                {/* Submenu Items */}
+                {hasChildren && item.children && (
+                  <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                    <List disablePadding>
+                      {item.children.map((child) => {
+                        const childActive = child.path
+                          ? isActive(child.path)
+                          : false;
+                        return (
+                          <ListItem
+                            key={child.path}
+                            disablePadding
+                            sx={{
+                              pl: 3.5,
+                              pr: 1.5,
+                              mb: 0.125,
+                            }}
+                          >
+                            <Tooltip
+                              title={child.description || ""}
+                              placement="right"
+                              arrow
+                              enterDelay={300}
+                            >
+                              <ListItemButton
+                                onClick={() =>
+                                  child.path && handleNavItemClick(child.path)
+                                }
+                                selected={childActive}
+                                sx={{
+                                  borderRadius: 1.5,
+                                  py: 0.75,
+                                  px: 1.5,
+                                  minHeight: 36,
+                                  transition: theme.transitions.create(
+                                    ["background-color", "color"],
+                                    {
+                                      duration:
+                                        theme.transitions.duration.shortest,
+                                      easing:
+                                        theme.transitions.easing.easeInOut,
+                                    }
+                                  ),
+                                  backgroundColor: childActive
+                                    ? alpha(theme.palette.primary.main, 0.08)
+                                    : "transparent",
+                                  color: childActive
+                                    ? theme.palette.primary.main
+                                    : theme.palette.text.secondary,
+                                  "&:hover": {
+                                    backgroundColor: childActive
+                                      ? alpha(theme.palette.primary.main, 0.12)
+                                      : alpha(theme.palette.action.hover, 0.04),
+                                  },
+                                  "&.Mui-selected": {
+                                    backgroundColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.08
+                                    ),
+                                    color: theme.palette.primary.main,
+                                    "&:hover": {
+                                      backgroundColor: alpha(
+                                        theme.palette.primary.main,
+                                        0.12
+                                      ),
+                                    },
+                                    "&::before": {
+                                      content: '""',
+                                      position: "absolute",
+                                      left: 0,
+                                      top: "50%",
+                                      transform: "translateY(-50%)",
+                                      width: 2.5,
+                                      height: 16,
+                                      backgroundColor:
+                                        theme.palette.primary.main,
+                                      borderRadius: "0 2px 2px 0",
+                                    },
+                                  },
+                                  "&:focus-visible": {
+                                    outline: `2px solid ${theme.palette.primary.main}`,
+                                    outlineOffset: 2,
+                                  },
+                                }}
+                              >
+                                <ListItemIcon
+                                  sx={{
+                                    minWidth: 32,
+                                    color: "inherit",
+                                    "& .MuiSvgIcon-root": {
+                                      fontSize: 16,
+                                    },
+                                  }}
+                                >
+                                  {child.icon}
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={child.label}
+                                  primaryTypographyProps={{
+                                    fontSize: "0.75rem",
+                                    fontWeight: childActive ? 600 : 500,
+                                    letterSpacing: "-0.01em",
+                                    lineHeight: 1.4,
+                                  }}
+                                />
+                              </ListItemButton>
+                            </Tooltip>
+                          </ListItem>
+                        );
+                      })}
+                    </List>
+                  </Collapse>
+                )}
+              </React.Fragment>
             );
           })}
         </List>

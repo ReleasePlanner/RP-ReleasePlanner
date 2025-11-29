@@ -41,33 +41,35 @@ export async function handlePostSaveOperations(
     }) => Promise<unknown>;
   }
 ): Promise<void> {
-  // If saving Features tab, update feature statuses to "assigned"
-  if (tabIndex === 1 && updateData.featureIds) {
-    await updateNewlyAddedFeatures(
-      originalMetadata.featureIds || [],
-      updateData.featureIds,
-      allProductFeatures,
-      updateFeatureMutation
-    );
-  }
+  // If saving Product tab (tab 1), handle both Features and Components
+  if (tabIndex === 1) {
+    // Update feature statuses to "assigned" if features changed
+    if (updateData.featureIds) {
+      await updateNewlyAddedFeatures(
+        originalMetadata.featureIds || [],
+        updateData.featureIds,
+        allProductFeatures,
+        updateFeatureMutation
+      );
+    }
 
-  // If saving Components tab, update component versions atomically and transactionally AFTER plan is saved
-  if (tabIndex === 2 && updateData.components && metadata.productId) {
-    const product = products.find((p) => p.id === metadata.productId);
-    if (product) {
-      const componentsToUpdate =
-        updateData.components.filter(
-          (comp) => comp.finalVersion && comp.finalVersion.trim() !== ""
-        ) || [];
+    // Update component versions atomically and transactionally AFTER plan is saved
+    if (updateData.components && metadata.productId) {
+      const product = products.find((p) => p.id === metadata.productId);
+      if (product) {
+        const componentsToUpdate =
+          updateData.components.filter(
+            (comp) => comp.finalVersion && comp.finalVersion.trim() !== ""
+          ) || [];
 
-      if (componentsToUpdate.length > 0) {
-        await saveComponentUpdates(
-          componentsToUpdate,
-          product as Parameters<typeof saveComponentUpdates>[1],
-          updateProductMutation
-        );
+        if (componentsToUpdate.length > 0) {
+          await saveComponentUpdates(
+            componentsToUpdate,
+            product as Parameters<typeof saveComponentUpdates>[1],
+            updateProductMutation
+          );
+        }
       }
     }
   }
 }
-

@@ -17,6 +17,7 @@ export function usePlanCardChanges(
       originalMetadata.status !== localMetadata.status ||
       originalMetadata.productId !== localMetadata.productId ||
       originalMetadata.itOwner !== localMetadata.itOwner ||
+      originalMetadata.leadId !== localMetadata.leadId ||
       originalMetadata.startDate !== localMetadata.startDate ||
       originalMetadata.endDate !== localMetadata.endDate
     ) {
@@ -29,6 +30,7 @@ export function usePlanCardChanges(
       originalMetadata.components !== localMetadata.components ||
       originalMetadata.calendarIds !== localMetadata.calendarIds ||
       originalMetadata.indicatorIds !== localMetadata.indicatorIds ||
+      originalMetadata.teamIds !== localMetadata.teamIds ||
       originalMetadata.references !== localMetadata.references ||
       originalMetadata.phases !== localMetadata.phases ||
       originalMetadata.milestones !== localMetadata.milestones
@@ -96,48 +98,102 @@ export function usePlanCardChanges(
     localMetadata.endDate,
   ]);
 
-  // Tab 1: Features - check reference first, then content
+  // Tab 1: Product (Features + Components) - check both features and components
   const hasTab1Changes = useMemo(() => {
-    if (originalMetadata.featureIds === localMetadata.featureIds) return false;
-    const origSorted = [...(originalMetadata.featureIds || [])].sort((a, b) =>
-      a.localeCompare(b)
-    );
-    const localSorted = [...(localMetadata.featureIds || [])].sort((a, b) =>
-      a.localeCompare(b)
-    );
-    return (
-      origSorted.length !== localSorted.length ||
-      origSorted.some((id, idx) => id !== localSorted[idx])
-    );
-  }, [originalMetadata.featureIds, localMetadata.featureIds]);
+    // Check Features changes
+    const hasFeaturesChanges = (() => {
+      if (originalMetadata.featureIds === localMetadata.featureIds) return false;
+      const origSorted = [...(originalMetadata.featureIds || [])].sort((a, b) =>
+        a.localeCompare(b)
+      );
+      const localSorted = [...(localMetadata.featureIds || [])].sort((a, b) =>
+        a.localeCompare(b)
+      );
+      return (
+        origSorted.length !== localSorted.length ||
+        origSorted.some((id, idx) => id !== localSorted[idx])
+      );
+    })();
 
-  // Tab 2: Components - check reference first
+    // Check Components changes
+    const hasComponentsChanges = (() => {
+      if (originalMetadata.components === localMetadata.components) return false;
+      return (
+        JSON.stringify(originalMetadata.components || []) !==
+        JSON.stringify(localMetadata.components || [])
+      );
+    })();
+
+    return hasFeaturesChanges || hasComponentsChanges;
+  }, [
+    originalMetadata.featureIds,
+    localMetadata.featureIds,
+    originalMetadata.components,
+    localMetadata.components,
+  ]);
+
+  // Tab 2: Setup (Calendars + Metrics + Teams) - check all three
   const hasTab2Changes = useMemo(() => {
-    if (originalMetadata.components === localMetadata.components) return false;
-    return (
-      JSON.stringify(originalMetadata.components || []) !==
-      JSON.stringify(localMetadata.components || [])
-    );
-  }, [originalMetadata.components, localMetadata.components]);
+    // Check Calendars changes
+    const hasCalendarsChanges = (() => {
+      if (originalMetadata.calendarIds === localMetadata.calendarIds)
+        return false;
+      const origSorted = [...(originalMetadata.calendarIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      const localSorted = [...(localMetadata.calendarIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      return (
+        origSorted.length !== localSorted.length ||
+        origSorted.some((id, idx) => id !== localSorted[idx])
+      );
+    })();
 
-  // Tab 3: Calendars - check reference first, then content
+    // Check Metrics changes
+    const hasMetricsChanges = (() => {
+      if (originalMetadata.indicatorIds === localMetadata.indicatorIds)
+        return false;
+      const origSorted = [...(originalMetadata.indicatorIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      const localSorted = [...(localMetadata.indicatorIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      return (
+        origSorted.length !== localSorted.length ||
+        origSorted.some((id, idx) => id !== localSorted[idx])
+      );
+    })();
+
+    // Check Teams changes
+    const hasTeamsChanges = (() => {
+      if (originalMetadata.teamIds === localMetadata.teamIds)
+        return false;
+      const origSorted = [...(originalMetadata.teamIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      const localSorted = [...(localMetadata.teamIds || [])].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      return (
+        origSorted.length !== localSorted.length ||
+        origSorted.some((id, idx) => id !== localSorted[idx])
+      );
+    })();
+
+    return hasCalendarsChanges || hasMetricsChanges || hasTeamsChanges;
+  }, [
+    originalMetadata.calendarIds,
+    localMetadata.calendarIds,
+    originalMetadata.indicatorIds,
+    localMetadata.indicatorIds,
+    originalMetadata.teamIds,
+    localMetadata.teamIds,
+  ]);
+
+  // Tab 3: References - check reference first
   const hasTab3Changes = useMemo(() => {
-    if (originalMetadata.calendarIds === localMetadata.calendarIds)
-      return false;
-    const origSorted = [...(originalMetadata.calendarIds || [])].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-    const localSorted = [...(localMetadata.calendarIds || [])].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-    return (
-      origSorted.length !== localSorted.length ||
-      origSorted.some((id, idx) => id !== localSorted[idx])
-    );
-  }, [originalMetadata.calendarIds, localMetadata.calendarIds]);
-
-  // Tab 4: References - check reference first
-  const hasTab4Changes = useMemo(() => {
     if (originalMetadata.references === localMetadata.references) return false;
     return (
       JSON.stringify(originalMetadata.references || []) !==
@@ -145,39 +201,19 @@ export function usePlanCardChanges(
     );
   }, [originalMetadata.references, localMetadata.references]);
 
-  // Tab 5: Metrics (Indicators) - check reference first, then content
-  const hasTab5Changes = useMemo(() => {
-    if (originalMetadata.indicatorIds === localMetadata.indicatorIds)
-      return false;
-    const origSorted = [...(originalMetadata.indicatorIds || [])].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-    const localSorted = [...(localMetadata.indicatorIds || [])].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-    return (
-      origSorted.length !== localSorted.length ||
-      origSorted.some((id, idx) => id !== localSorted[idx])
-    );
-  }, [originalMetadata.indicatorIds, localMetadata.indicatorIds]);
-
   // Combine all tab changes - use useMemo with stable reference
   const hasTabChanges = useMemo(
     () => ({
       0: hasTab0Changes,
-      1: hasTab1Changes,
-      2: hasTab2Changes,
-      3: hasTab3Changes,
-      4: hasTab4Changes,
-      5: hasTab5Changes,
+      1: hasTab1Changes, // Product (Features + Components)
+      2: hasTab2Changes, // Setup (Calendars + Metrics + Teams)
+      3: hasTab3Changes, // References
     }),
     [
       hasTab0Changes,
       hasTab1Changes,
       hasTab2Changes,
       hasTab3Changes,
-      hasTab4Changes,
-      hasTab5Changes,
     ]
   );
 
@@ -194,9 +230,7 @@ export function usePlanCardChanges(
       hasTabChangesRef.current[0] !== hasTabChanges[0] ||
       hasTabChangesRef.current[1] !== hasTabChanges[1] ||
       hasTabChangesRef.current[2] !== hasTabChanges[2] ||
-      hasTabChangesRef.current[3] !== hasTabChanges[3] ||
-      hasTabChangesRef.current[4] !== hasTabChanges[4] ||
-      hasTabChangesRef.current[5] !== hasTabChanges[5];
+      hasTabChangesRef.current[3] !== hasTabChanges[3];
 
     if (changed) {
       hasTabChangesRef.current = hasTabChanges;

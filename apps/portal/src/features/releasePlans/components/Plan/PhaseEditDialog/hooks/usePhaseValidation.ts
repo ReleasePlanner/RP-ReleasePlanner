@@ -11,31 +11,6 @@ export function usePhaseValidation(
   setError: (field: keyof PhaseFormErrors, error?: string) => void,
   setErrorsState: (errors: Partial<PhaseFormErrors>) => void
 ) {
-  // Memoize used colors set
-  const usedColorsSet = useMemo(() => {
-    if (!open) return new Set<string>();
-    const colors = new Set<string>();
-    for (const p of basePhases) {
-      if (p.color) colors.add(p.color);
-    }
-    for (const p of planPhases) {
-      if (p.id !== phase?.id && p.color) colors.add(p.color);
-    }
-    return colors;
-  }, [basePhases, planPhases, phase?.id, open]);
-
-  // Memoize phase names set
-  const existingPhaseNamesSet = useMemo(() => {
-    if (!open) return new Set<string>();
-    const names = new Set<string>();
-    for (const p of planPhases) {
-      if (p.id !== phase?.id && p.name) {
-        names.add(p.name.toLowerCase().trim());
-      }
-    }
-    return names;
-  }, [planPhases, phase?.id, open]);
-
   // Check if phase is a base phase
   const isBasePhase = useMemo(() => {
     if (!open || !phase) return false;
@@ -53,32 +28,19 @@ export function usePhaseValidation(
         return false;
       }
 
-      const normalizedNew = trimmedName.toLowerCase().trim();
-      if (existingPhaseNamesSet.has(normalizedNew)) {
-        setError("name", "A phase with this name already exists in the plan");
-        return false;
-      }
-
       setError("name");
       return true;
     },
-    [existingPhaseNamesSet, setError]
+    [setError]
   );
 
   // Validate color
   const validateColor = useCallback(
     (color: string): boolean => {
-      if (usedColorsSet.has(color)) {
-        setError(
-          "color",
-          "This color is already in use. Please select a different color."
-        );
-        return false;
-      }
       setError("color");
       return true;
     },
-    [usedColorsSet, setError]
+    [setError]
   );
 
   // Validate dates
@@ -100,8 +62,7 @@ export function usePhaseValidation(
       formData.endDate.trim() !== ""
     ) {
       if (formData.endDate < formData.startDate) {
-        dateErrors.dateRange =
-          "End date must be after or equal to start date";
+        dateErrors.dateRange = "End date must be after or equal to start date";
       }
     }
 
@@ -175,4 +136,3 @@ export function usePhaseValidation(
     validateLocalPhase,
   };
 }
-

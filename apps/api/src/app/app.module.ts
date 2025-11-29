@@ -15,6 +15,7 @@ import { ComponentTypeModule } from '../component-types/component-type.module';
 import { FeatureCategoryModule } from '../feature-categories/feature-category.module';
 import { CountryModule } from '../countries/country.module';
 import { PlanModule } from '../release-plans/plan.module';
+import { RescheduleTypeModule } from '../reschedule-types/reschedule-type.module';
 import { IndicatorModule } from '../indicators/indicator.module';
 import { TeamModule } from '../teams/team.module';
 import { RoleModule } from '../roles/role.module';
@@ -79,6 +80,7 @@ import { HealthController } from './health.controller';
     FeatureCategoryModule,
     CountryModule,
     PlanModule,
+    RescheduleTypeModule,
     IndicatorModule,
     RoleModule, // Load RoleModule before TeamModule since Talent depends on Role
     TeamModule,
