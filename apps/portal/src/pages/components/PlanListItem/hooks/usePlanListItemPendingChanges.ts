@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { PlanCardHandle } from "../../../../features/releasePlans/components/PlanCard/PlanCard";
+import { PENDING_CHANGES_CHECK_INTERVAL } from "../constants";
 
 interface UsePlanListItemPendingChangesProps {
   expanded: boolean;
@@ -7,11 +8,10 @@ interface UsePlanListItemPendingChangesProps {
   setHasPendingChanges: (value: boolean) => void;
 }
 
-const PENDING_CHANGES_CHECK_INTERVAL = 500; // Check every 500ms
-
 /**
  * Hook for tracking pending changes in PlanCard
  * Only checks when the item is expanded to avoid unnecessary work
+ * Optimized: Uses requestAnimationFrame for better performance and reduced CPU usage
  */
 export function usePlanListItemPendingChanges({
   expanded,
@@ -24,13 +24,24 @@ export function usePlanListItemPendingChanges({
       return;
     }
 
-    const interval = setInterval(() => {
-      if (planCardRef.current) {
-        setHasPendingChanges(planCardRef.current.hasPendingChanges());
-      }
-    }, PENDING_CHANGES_CHECK_INTERVAL);
+    // Use requestAnimationFrame for smoother performance
+    // This syncs with browser repaint cycles and reduces CPU usage
+    let rafId: number;
+    let lastCheckTime = 0;
 
-    return () => clearInterval(interval);
+    const checkChanges = (currentTime: number) => {
+      // Throttle checks to PENDING_CHANGES_CHECK_INTERVAL
+      if (currentTime - lastCheckTime >= PENDING_CHANGES_CHECK_INTERVAL) {
+        if (planCardRef.current) {
+          setHasPendingChanges(planCardRef.current.hasPendingChanges());
+        }
+        lastCheckTime = currentTime;
+      }
+      rafId = requestAnimationFrame(checkChanges);
+    };
+
+    rafId = requestAnimationFrame(checkChanges);
+    return () => cancelAnimationFrame(rafId);
   }, [expanded, planCardRef, setHasPendingChanges]);
 }
 

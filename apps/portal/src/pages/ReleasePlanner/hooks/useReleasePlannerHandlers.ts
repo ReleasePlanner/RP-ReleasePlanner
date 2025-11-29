@@ -4,6 +4,7 @@ import type { BasePhase } from "@/api/services/basePhases.service";
 import type { ViewMode, SortOption, FilterStatus } from "./useReleasePlannerState";
 import type { AppDispatch } from "@/store/hooks";
 import { setPlanExpanded } from "@/store/store";
+import { getStatusChipProps as getStatusChipPropsUtil } from "@/features/releasePlans/lib/planStatus";
 
 interface UseReleasePlannerHandlersProps {
   dialogOpen: boolean;
@@ -255,32 +256,9 @@ export function useReleasePlannerHandlers({
     [setLocalExpandedStates, dispatch]
   );
   
-  const getStatusChipProps = useCallback((status: PlanStatus) => {
-    switch (status) {
-      case "planned":
-        return {
-          label: "Planned",
-          color: "info" as const,
-        };
-      case "in_progress":
-        return {
-          label: "In Progress",
-          color: "primary" as const,
-        };
-      case "done":
-        return {
-          label: "Completed",
-          color: "success" as const,
-        };
-      case "paused":
-        return {
-          label: "Paused",
-          color: "warning" as const,
-        };
-      default:
-        return { label: status, color: "default" as const };
-    }
-  }, []);
+  // Use utility function directly - no need for useCallback since it's a pure function
+  // This ensures the function reference is stable and doesn't cause re-renders
+  const getStatusChipProps = getStatusChipPropsUtil;
 
   return {
     handleAddButtonClick,

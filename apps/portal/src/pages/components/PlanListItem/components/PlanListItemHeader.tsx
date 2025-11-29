@@ -1,5 +1,6 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Box, IconButton } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import { ExpandMore } from "@mui/icons-material";
 import type { PlanListItemInfoProps } from "./PlanListItemInfo";
 import type { PlanListItemActionsProps } from "./PlanListItemActions";
@@ -10,18 +11,18 @@ export type PlanListItemHeaderProps = {
   readonly expanded: boolean;
   readonly onToggle: () => void;
   readonly onContextMenu: (e: React.MouseEvent) => void;
-  readonly headerStyles: Record<string, unknown>;
-  readonly expandIconStyles: Record<string, unknown>;
-  readonly expandIconExpandedStyles: Record<string, unknown>;
-  readonly infoContainerStyles: Record<string, unknown>;
+  readonly headerStyles: SxProps<Theme>;
+  readonly expandIconStyles: SxProps<Theme>;
+  readonly expandIconExpandedStyles: SxProps<Theme>;
+  readonly infoContainerStyles: SxProps<Theme>;
   readonly planInfoProps: Omit<
     PlanListItemInfoProps,
     "planNameStyles" | "infoStackStyles" | "statusChipStyles" | "infoTextStyles"
   > & {
-    planNameStyles: Record<string, unknown>;
-    infoStackStyles: Record<string, unknown>;
-    statusChipStyles: Record<string, unknown>;
-    infoTextStyles: Record<string, unknown>;
+    planNameStyles: SxProps<Theme>;
+    infoStackStyles: SxProps<Theme>;
+    statusChipStyles: SxProps<Theme>;
+    infoTextStyles: SxProps<Theme>;
   };
   readonly actionsProps: PlanListItemActionsProps;
 };
@@ -40,8 +41,36 @@ export const PlanListItemHeader = memo(function PlanListItemHeader({
   planInfoProps,
   actionsProps,
 }: PlanListItemHeaderProps) {
+  const headerRef = useRef<HTMLDivElement>(null);
+  const prefetchedRef = useRef(false);
+
+  // Preload PlanCard module on hover for faster expansion
+  useEffect(() => {
+    if (!expanded && headerRef.current && !prefetchedRef.current) {
+      const handleMouseEnter = () => {
+        // Prefetch PlanCard chunk when hovering over the header
+        prefetchedRef.current = true;
+        import(
+          /* webpackChunkName: "plan-card" */
+          /* webpackPrefetch: true */
+          "../../../../features/releasePlans/components/PlanCard/PlanCard"
+        ).catch(() => {
+          // Silently fail if prefetch fails
+          prefetchedRef.current = false;
+        });
+      };
+
+      headerRef.current.addEventListener("mouseenter", handleMouseEnter, { once: true });
+      return () => {
+        if (headerRef.current) {
+          headerRef.current.removeEventListener("mouseenter", handleMouseEnter);
+        }
+      };
+    }
+  }, [expanded]);
+
   return (
-    <Box onClick={onToggle} onContextMenu={onContextMenu} sx={headerStyles}>
+    <Box ref={headerRef} onContextMenu={onContextMenu} sx={headerStyles}>
       {/* Expand/Collapse Icon */}
       <IconButton
         size="small"

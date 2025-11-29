@@ -1,7 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
 
-@Entity('phase_reschedules')
+@Entity('plan_phase_reschedules')
 @Index(['planPhaseId'])
 @Index(['rescheduledAt'])
 @Index(['rescheduleTypeId'])
@@ -10,9 +10,8 @@ export class PhaseReschedule extends BaseEntity {
   @Column({ type: 'uuid' })
   planPhaseId: string;
 
-  @ManyToOne(() => require('./plan-phase.entity').PlanPhase, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'planPhaseId' })
-  planPhase: any;
+  // Removed planPhase relation to avoid TypeORM inferring incorrect inverse relation name
+  // We load phases separately when needed instead
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   rescheduledAt: Date;

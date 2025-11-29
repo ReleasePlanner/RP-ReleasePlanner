@@ -46,6 +46,7 @@ export type PlanLeftPaneProps = {
   readonly hasTabChanges?: Record<number, boolean>;
   readonly planUpdatedAt?: string | Date; // Plan updatedAt for optimistic locking
   readonly plan?: Plan; // Full plan object for optimistic locking
+  readonly originalMetadata?: Plan["metadata"]; // Original metadata for comparing changes
   readonly tabValue?: number;
   readonly onTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
@@ -88,6 +89,7 @@ function PlanLeftPaneComponent({
   hasTabChanges = {},
   planUpdatedAt,
   plan,
+  originalMetadata,
   tabValue: externalTabValue,
   onTabChange: externalOnTabChange,
 }: PlanLeftPaneProps) {
@@ -175,6 +177,7 @@ function PlanLeftPaneComponent({
           hasTabChanges={hasTabChanges}
           planUpdatedAt={planUpdatedAt}
           plan={plan}
+          originalMetadata={originalMetadata}
           onNameChange={onNameChange}
           onDescriptionChange={onDescriptionChange}
           onStatusChange={onStatusChange}

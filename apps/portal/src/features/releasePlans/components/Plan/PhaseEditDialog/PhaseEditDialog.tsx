@@ -21,6 +21,7 @@ export type PhaseEditDialogProps = {
   readonly planId?: string; // Plan ID for fetching reschedules
   readonly planPhases?: PlanPhase[]; // All phases in the current plan
   readonly indicatorIds?: string[]; // IDs of indicators assigned to the plan
+  readonly originalPhase?: PlanPhase | null; // Fase original desde el plan (para comparar cambios)
   readonly onCancel: () => void;
   readonly onSave: (phase: PlanPhase) => void;
   readonly onSaveMetrics?: (phaseId: string, metricValues: Record<string, string>) => Promise<void>;
@@ -32,6 +33,7 @@ export default function PhaseEditDialog({
   planId,
   planPhases = [],
   indicatorIds = [],
+  originalPhase,
   onCancel,
   onSave,
   onSaveMetrics,
@@ -384,6 +386,8 @@ export default function PhaseEditDialog({
               <PhaseReschedulesTab
                 planId={planId}
                 phaseId={phase.id}
+                originalPhase={originalPhase}
+                currentPhase={phase}
               />
             )}
           </Box>

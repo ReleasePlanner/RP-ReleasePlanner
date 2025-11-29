@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useTheme } from "@mui/material/styles";
 import { daysBetween } from "../../../lib/date";
 import { laneTop } from "../../Gantt/utils";
@@ -27,8 +27,9 @@ export type GanttPhasesProps = {
 /**
  * Renders all phase bars in the Gantt chart
  * Follows SRP - only handles phase visualization and interactions
+ * ⚡ OPTIMIZATION: Memoized to prevent unnecessary re-renders
  */
-export function GanttPhases({
+export const GanttPhases = memo(function GanttPhases({
   phases,
   start,
   days,
@@ -179,4 +180,25 @@ export function GanttPhases({
       })}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // ⚡ OPTIMIZATION: Custom comparison to prevent unnecessary re-renders
+  // Only re-render if phases or relevant props change
+  if (prevProps.phases.length !== nextProps.phases.length) return false;
+  if (prevProps.days.length !== nextProps.days.length) return false;
+  if (prevProps.pxPerDay !== nextProps.pxPerDay) return false;
+  if (prevProps.trackHeight !== nextProps.trackHeight) return false;
+  if (prevProps.start.getTime() !== nextProps.start.getTime()) return false;
+  
+  // Deep comparison of phases (check if any phase changed)
+  return prevProps.phases.every((p, i) => {
+    const nextPhase = nextProps.phases[i];
+    return (
+      nextPhase &&
+      p.id === nextPhase.id &&
+      p.startDate === nextPhase.startDate &&
+      p.endDate === nextPhase.endDate &&
+      p.color === nextPhase.color &&
+      p.name === nextPhase.name
+    );
+  });
+});

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFeatures } from "../../../../../api/hooks";
 import type { Plan } from "../../../types";
 import {
   prepareTabData,
@@ -60,10 +61,23 @@ export function usePlanCardSave({
   updateFeatureMutation,
   updateProductMutation,
   products,
-  allProductFeatures,
+  allProductFeatures: allProductFeaturesFromProps,
   setErrorSnackbar,
 }: UsePlanCardSaveProps) {
   const queryClient = useQueryClient();
+  
+  // ⚡ OPTIMIZATION: Only fetch features when productId exists
+  // Features are already loaded by PlanProductTab when user navigates to that tab
+  // This ensures we have features when saving even if they weren't loaded yet
+  const { data: allProductFeaturesFromQuery = [] } = useFeatures(
+    originalMetadata?.productId
+  );
+  
+  // Use features from props (cache) if available, otherwise from query
+  // This prioritizes cached data but falls back to query if needed
+  const allProductFeatures = allProductFeaturesFromProps.length > 0 
+    ? allProductFeaturesFromProps 
+    : allProductFeaturesFromQuery;
 
   const handleSaveTab = useCallback(
     async (tabIndex: number) => {
@@ -286,10 +300,13 @@ export function usePlanCardSave({
           plan.updatedAt
         );
 
-        console.log("[usePlanCardSave] Update DTO phases:", {
+        console.log("[usePlanCardSave] ⚡ CRITICAL: Update DTO phases:", {
           phaseCount: updateDto.phases?.length || 0,
           phases: updateDto.phases?.map((p: any) => ({
+            id: p.id,
             name: p.name,
+            startDate: p.startDate,
+            endDate: p.endDate,
             hasMetricValues: !!p.metricValues,
             metricValues: p.metricValues,
           })),
@@ -306,6 +323,19 @@ export function usePlanCardSave({
 
         await queryClient.invalidateQueries({ queryKey: ["plans"] });
         await queryClient.refetchQueries({ queryKey: ["plans"] });
+        
+        // ⚡ CRITICAL: Invalidate reschedules queries to refresh reschedule lists
+        await queryClient.invalidateQueries({ queryKey: ["plans", "reschedules", plan.id] });
+        // Also invalidate phase reschedules for all phases
+        if (validatedPhases && validatedPhases.length > 0) {
+          validatedPhases.forEach((phase: any) => {
+            if (phase.id) {
+              queryClient.invalidateQueries({ 
+                queryKey: ["plans", "reschedules", plan.id, "phases", phase.id] 
+              });
+            }
+          });
+        }
 
         setLocalMetadata((prev) => ({
           ...prev,

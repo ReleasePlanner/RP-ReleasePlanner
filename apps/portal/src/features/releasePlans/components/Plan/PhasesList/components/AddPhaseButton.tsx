@@ -14,22 +14,11 @@ export const AddPhaseButton = memo(function AddPhaseButton({
   styles,
 }: AddPhaseButtonProps) {
   return (
-    <Box
-      sx={{
-        height: TRACK_HEIGHT,
-        marginBottom: `${LANE_GAP}px`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        px: 1,
-      }}
-    >
-      <Tooltip title="Add phase" arrow placement="left">
-        <IconButton size="small" onClick={onAdd} sx={styles.getAddButtonStyles()}>
-          <AddOutlinedIcon />
-        </IconButton>
-      </Tooltip>
-    </Box>
+    <Tooltip title="Add phase" arrow placement="left">
+      <IconButton size="small" onClick={onAdd} sx={styles.getAddButtonStyles()}>
+        <AddOutlinedIcon />
+      </IconButton>
+    </Tooltip>
   );
 });
 

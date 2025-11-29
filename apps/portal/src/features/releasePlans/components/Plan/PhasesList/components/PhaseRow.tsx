@@ -16,6 +16,7 @@ export type PhaseRowProps = {
   readonly calendarEnd?: string;
   readonly onPhaseRangeChange?: (id: string, start: string, end: string) => void;
   readonly styles: PhasesListStyles;
+  readonly dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 };
 
 export const PhaseRow = memo(function PhaseRow({
@@ -28,6 +29,7 @@ export const PhaseRow = memo(function PhaseRow({
   calendarEnd,
   onPhaseRangeChange,
   styles,
+  dragHandleProps,
 }: PhaseRowProps) {
   const handleRangeChange = useCallback(
     (start: string, end: string) => {
@@ -62,6 +64,7 @@ export const PhaseRow = memo(function PhaseRow({
           position: "relative",
           zIndex: 1,
         }}
+        {...dragHandleProps}
       >
         <PhaseListItem
           id={phase.id}

@@ -758,13 +758,21 @@ export class PlanService {
       );
 
       // Use transaction to ensure atomicity of phase updates and reschedule creation
-      console.log(`[PlanService.update] Starting transaction for phase updates and reschedule creation`);
+      console.log(
+        `[PlanService.update] Starting transaction for phase updates and reschedule creation`
+      );
       this.logger.log(
         `[PlanService.update] Starting transaction for phase updates and reschedule creation`
       );
+
+      // Track reschedules created during transaction for post-commit verification
+      const createdRescheduleIds: string[] = [];
+
       try {
         await manager.transaction(async (transactionalManager) => {
-          console.log(`[PlanService.update] Transaction started, getting/creating default reschedule type`);
+          console.log(
+            `[PlanService.update] Transaction started, getting/creating default reschedule type`
+          );
           this.logger.log(
             `[PlanService.update] Transaction started, getting/creating default reschedule type`
           );
@@ -772,7 +780,9 @@ export class PlanService {
           // Get or create default reschedule type within transaction
           const defaultRescheduleType =
             await this.getOrCreateDefaultRescheduleType(transactionalManager);
-          console.log(`[PlanService.update] Default reschedule type obtained: id=${defaultRescheduleType.id}, name=${defaultRescheduleType.name}`);
+          console.log(
+            `[PlanService.update] Default reschedule type obtained: id=${defaultRescheduleType.id}, name=${defaultRescheduleType.name}`
+          );
           this.logger.log(
             `[PlanService.update] Default reschedule type obtained: id=${defaultRescheduleType.id}, name=${defaultRescheduleType.name}`
           );
@@ -787,7 +797,11 @@ export class PlanService {
             throw new Error(`Plan ${plan.id} not found in transaction`);
           }
 
-          console.log(`[PlanService.update] Plan reloaded with ${planWithPhases.phases?.length || 0} phases`);
+          console.log(
+            `[PlanService.update] Plan reloaded with ${
+              planWithPhases.phases?.length || 0
+            } phases`
+          );
           this.logger.log(
             `[PlanService.update] Plan reloaded with ${
               planWithPhases.phases?.length || 0
@@ -795,18 +809,22 @@ export class PlanService {
           );
 
           // Get existing phases map by ID for comparison
+          // Normalize IDs (trim whitespace) to ensure proper matching
           const existingPhasesMap = new Map<string, PlanPhase>();
           if (planWithPhases.phases && planWithPhases.phases.length > 0) {
             planWithPhases.phases.forEach((phase) => {
               if (phase.id) {
-                existingPhasesMap.set(phase.id, phase);
+                const normalizedId = phase.id.trim();
+                existingPhasesMap.set(normalizedId, phase);
                 this.logger.debug(
-                  `Loaded existing phase ${phase.id}: name=${phase.name}, startDate=${phase.startDate}, endDate=${phase.endDate}`
+                  `Loaded existing phase ${normalizedId}: name=${phase.name}, startDate=${phase.startDate}, endDate=${phase.endDate}`
                 );
               }
             });
           }
-          console.log(`[PlanService.update] Loaded ${existingPhasesMap.size} existing phases for plan ${plan.id}`);
+          console.log(
+            `[PlanService.update] Loaded ${existingPhasesMap.size} existing phases for plan ${plan.id}`
+          );
           this.logger.log(
             `[PlanService.update] Loaded ${existingPhasesMap.size} existing phases for plan ${plan.id}`
           );
@@ -817,7 +835,9 @@ export class PlanService {
           const phasesToRemove: PlanPhase[] = [];
 
           // Process new/updated phases
-          console.log(`[PlanService.update] Processing ${dto.phases.length} phases from DTO`);
+          console.log(
+            `[PlanService.update] Processing ${dto.phases.length} phases from DTO`
+          );
           this.logger.log(
             `[PlanService.update] Processing ${dto.phases.length} phases from DTO`
           );
@@ -831,32 +851,101 @@ export class PlanService {
               validateDateString(p.startDate, "Phase start date");
             if (p.endDate) validateDateString(p.endDate, "Phase end date");
 
+            // Normalize phase ID (trim whitespace and filter temporary IDs)
+            let normalizedPhaseId: string | undefined = undefined;
+            if (p.id) {
+              const trimmedId = p.id.trim();
+              // Filter out temporary IDs that start with "phase-" or are empty
+              if (trimmedId && !trimmedId.startsWith("phase-")) {
+                // Validate that it's a proper UUID if it's not empty
+                try {
+                  validateId(trimmedId, "Phase");
+                  normalizedPhaseId = trimmedId;
+                } catch (error) {
+                  this.logger.warn(
+                    `[PlanService.update] Invalid phase ID format: "${trimmedId}" - treating as new phase`
+                  );
+                  // Invalid ID format - treat as new phase
+                  normalizedPhaseId = undefined;
+                }
+              } else {
+                this.logger.debug(
+                  `[PlanService.update] Skipping temporary phaseId: ${trimmedId}`
+                );
+              }
+            }
+
             this.logger.debug(
-              `[PlanService.update] Processing phase: id=${p.id}, name=${
+              `[PlanService.update] Processing phase: id=${normalizedPhaseId || "none"}, name=${
                 p.name
               }, startDate=${p.startDate}, endDate=${
                 p.endDate
-              }, hasId=${!!p.id}, existsInMap=${
-                p.id ? existingPhasesMap.has(p.id) : false
+              }, existsInMap=${
+                normalizedPhaseId ? existingPhasesMap.has(normalizedPhaseId) : false
               }`
             );
 
-            if (p.id && existingPhasesMap.has(p.id)) {
+            // ⚡ CRITICAL: Only update if phase ID exists in map AND is a valid UUID
+            // This prevents creating duplicates when IDs don't match
+            if (normalizedPhaseId && existingPhasesMap.has(normalizedPhaseId)) {
               // Existing phase - check for date changes
-              const existingPhase = existingPhasesMap.get(p.id)!;
+              const existingPhase = existingPhasesMap.get(normalizedPhaseId)!;
+
+              // ⚡ CRITICAL: Log phase IDs to verify matching
+              console.log(
+                `[PlanService.update] 🔍 PHASE MATCH CHECK: normalizedId="${normalizedPhaseId}", existsInMap=${existingPhasesMap.has(
+                  normalizedPhaseId
+                )}, existingPhase.id="${existingPhase.id}"`
+              );
+              this.logger.log(
+                `[PlanService.update] 🔍 PHASE MATCH CHECK: normalizedId="${normalizedPhaseId}", existsInMap=${existingPhasesMap.has(
+                  normalizedPhaseId
+                )}, existingPhase.id="${existingPhase.id}"`
+              );
 
               // Normalize dates for comparison (handle null/undefined and format differences)
               const normalizeDate = (
                 date: string | null | undefined
               ): string | null => {
                 if (!date) return null;
+                // Handle Date objects (though unlikely in this context)
+                if (
+                  typeof date === "object" &&
+                  "toISOString" in date &&
+                  typeof (date as any).toISOString === "function"
+                ) {
+                  return (date as any).toISOString().split("T")[0];
+                }
                 // Extract just the date part (YYYY-MM-DD) to avoid timezone/time differences
                 const dateStr = date.toString().split("T")[0];
-                return dateStr || null;
+                // Also handle cases where date might be in format "YYYY-MM-DD HH:mm:ss"
+                const normalized = dateStr.split(" ")[0];
+                // Validate format (YYYY-MM-DD)
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+                  console.warn(
+                    `[PlanService.update] Invalid date format: ${date}, normalized: ${normalized}`
+                  );
+                  this.logger.warn(
+                    `[PlanService.update] Invalid date format: ${date}, normalized: ${normalized}`
+                  );
+                }
+                return normalized || null;
               };
 
               // Log raw dates before normalization for debugging
-              console.log(`[PlanService.update] Phase ${p.id} RAW dates - existingPhase.startDate=${existingPhase.startDate} (type: ${typeof existingPhase.startDate}), existingPhase.endDate=${existingPhase.endDate} (type: ${typeof existingPhase.endDate}), p.startDate=${p.startDate} (type: ${typeof p.startDate}), p.endDate=${p.endDate} (type: ${typeof p.endDate})`);
+              console.log(
+                `[PlanService.update] Phase ${
+                  p.id
+                } RAW dates - existingPhase.startDate=${
+                  existingPhase.startDate
+                } (type: ${typeof existingPhase.startDate}), existingPhase.endDate=${
+                  existingPhase.endDate
+                } (type: ${typeof existingPhase.endDate}), p.startDate=${
+                  p.startDate
+                } (type: ${typeof p.startDate}), p.endDate=${
+                  p.endDate
+                } (type: ${typeof p.endDate})`
+              );
               this.logger.log(
                 `[PlanService.update] Phase ${
                   p.id
@@ -876,14 +965,38 @@ export class PlanService {
               const newStartDate = normalizeDate(p.startDate);
               const newEndDate = normalizeDate(p.endDate);
 
-              const hasDateChange =
-                existingStartDate !== newStartDate ||
+              // ⚡ CRITICAL: Enhanced date change detection with detailed logging
+              // Compare normalized dates - handle null/undefined cases
+              const startDateChanged =
+                (existingStartDate !== null || newStartDate !== null) &&
+                existingStartDate !== newStartDate;
+              const endDateChanged =
+                (existingEndDate !== null || newEndDate !== null) &&
                 existingEndDate !== newEndDate;
+              const hasDateChange = startDateChanged || endDateChanged;
 
-          console.log(`[PlanService.update] Phase ${p.id} date check: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}], hasChange=${hasDateChange}`);
-          this.logger.log(
-            `[PlanService.update] Phase ${p.id} date check: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}], hasChange=${hasDateChange}`
-          );
+              console.log(
+                `[PlanService.update] 🔍 Phase ${p.id} DETAILED date check:`
+              );
+              console.log(
+                `  - existingStartDate: "${existingStartDate}" (from DB: "${existingPhase.startDate}")`
+              );
+              console.log(
+                `  - newStartDate: "${newStartDate}" (from DTO: "${p.startDate}")`
+              );
+              console.log(`  - startDateChanged: ${startDateChanged}`);
+              console.log(
+                `  - existingEndDate: "${existingEndDate}" (from DB: "${existingPhase.endDate}")`
+              );
+              console.log(
+                `  - newEndDate: "${newEndDate}" (from DTO: "${p.endDate}")`
+              );
+              console.log(`  - endDateChanged: ${endDateChanged}`);
+              console.log(`  - hasDateChange: ${hasDateChange}`);
+
+              this.logger.log(
+                `[PlanService.update] Phase ${p.id} date check: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}], hasChange=${hasDateChange}, startChanged=${startDateChanged}, endChanged=${endDateChanged}`
+              );
 
               if (hasDateChange) {
                 this.logger.log(
@@ -902,12 +1015,16 @@ export class PlanService {
               }
 
               if (hasDateChange) {
-                console.log(`[PlanService.update] ⚠️ DATE CHANGE DETECTED for phase ${p.id} - will create reschedule`);
+                console.log(
+                  `[PlanService.update] ⚠️ DATE CHANGE DETECTED for phase ${p.id} - will create reschedule`
+                );
                 this.logger.log(
                   `[PlanService.update] DATE CHANGE DETECTED for phase ${p.id} - will create reschedule`
                 );
                 try {
-                  console.log(`[PlanService] Creating reschedule for phase ${existingPhase.id}: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`);
+                  console.log(
+                    `[PlanService] Creating reschedule for phase ${existingPhase.id}: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`
+                  );
                   this.logger.log(
                     `[PlanService] Creating reschedule for phase ${existingPhase.id}: existing=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`
                   );
@@ -923,7 +1040,27 @@ export class PlanService {
                     );
                   }
 
-                  // Create reschedule record with default type
+                  // Use plan's itOwner as default owner if rescheduleOwnerId is not provided
+                  // This ensures that the owner who approved the change is tracked
+                  const ownerId =
+                    p.rescheduleOwnerId || plan.itOwner || undefined;
+
+                  console.log(
+                    `[PlanService.update] Reschedule owner determination: provided=${
+                      p.rescheduleOwnerId || "none"
+                    }, plan.itOwner=${plan.itOwner || "none"}, final=${
+                      ownerId || "none"
+                    }`
+                  );
+                  this.logger.log(
+                    `[PlanService.update] Reschedule owner determination: provided=${
+                      p.rescheduleOwnerId || "none"
+                    }, plan.itOwner=${plan.itOwner || "none"}, final=${
+                      ownerId || "none"
+                    }`
+                  );
+
+                  // Create reschedule record with default type and owner
                   const reschedule = new PhaseReschedule(
                     existingPhase.id,
                     existingPhase.startDate || undefined,
@@ -931,7 +1068,7 @@ export class PlanService {
                     p.startDate || undefined,
                     p.endDate || undefined,
                     rescheduleTypeId, // Always includes rescheduleTypeId (default or provided)
-                    p.rescheduleOwnerId || undefined
+                    ownerId // Use provided owner or plan's itOwner as default
                   );
 
                   this.logger.log(
@@ -945,13 +1082,29 @@ export class PlanService {
                         rescheduleTypeId: reschedule.rescheduleTypeId,
                         ownerId: reschedule.ownerId,
                         rescheduledAt: reschedule.rescheduledAt,
+                        ownerSource: p.rescheduleOwnerId
+                          ? "provided"
+                          : plan.itOwner
+                          ? "plan.itOwner"
+                          : "none",
                       }
                     )}`
+                  );
+                  console.log(
+                    `[PlanService.update] Reschedule owner: ${ownerId} (source: ${
+                      p.rescheduleOwnerId
+                        ? "provided"
+                        : plan.itOwner
+                        ? "plan.itOwner"
+                        : "none"
+                    })`
                   );
 
                   // Save reschedule to database within transaction (atomic operation)
                   // This ensures phase update and reschedule creation happen together
-                  console.log(`[PlanService.update] Attempting to save reschedule to database using transactionalManager...`);
+                  console.log(
+                    `[PlanService.update] Attempting to save reschedule to database using transactionalManager...`
+                  );
                   this.logger.log(
                     `[PlanService.update] Attempting to save reschedule to database using transactionalManager...`
                   );
@@ -991,7 +1144,10 @@ export class PlanService {
                       rescheduledAt: reschedule.rescheduledAt || new Date(),
                     };
 
-                    console.log(`[PlanService.update] Inserting reschedule data:`, rescheduleData);
+                    console.log(
+                      `[PlanService.update] Inserting reschedule data:`,
+                      rescheduleData
+                    );
                     this.logger.log(
                       `[PlanService.update] Inserting reschedule data: ${JSON.stringify(
                         rescheduleData
@@ -1003,7 +1159,10 @@ export class PlanService {
                       rescheduleData
                     );
 
-                    console.log(`[PlanService.update] Insert result:`, insertResult);
+                    console.log(
+                      `[PlanService.update] Insert result:`,
+                      insertResult
+                    );
                     this.logger.log(
                       `[PlanService.update] Insert result: ${JSON.stringify(
                         insertResult
@@ -1028,12 +1187,30 @@ export class PlanService {
                       );
                     }
 
-                    console.log(`[PlanService.update] ✅ Phase reschedule INSERTED SUCCESSFULLY for phase ${existingPhase.id}: rescheduleId=${rescheduleId}, rescheduleTypeId=${rescheduleTypeId} (${p.rescheduleTypeId ? "provided" : "default"}), original=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`);
+                    console.log(
+                      `[PlanService.update] ✅ Phase reschedule INSERTED SUCCESSFULLY for phase ${
+                        existingPhase.id
+                      }: rescheduleId=${rescheduleId}, rescheduleTypeId=${rescheduleTypeId} (${
+                        p.rescheduleTypeId ? "provided" : "default"
+                      }), ownerId=${ownerId || "none"} (${
+                        p.rescheduleOwnerId
+                          ? "provided"
+                          : plan.itOwner
+                          ? "plan.itOwner"
+                          : "none"
+                      }), original=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`
+                    );
                     this.logger.log(
                       `[PlanService.update] ✅ Phase reschedule INSERTED SUCCESSFULLY for phase ${
                         existingPhase.id
                       }: rescheduleId=${rescheduleId}, rescheduleTypeId=${rescheduleTypeId} (${
                         p.rescheduleTypeId ? "provided" : "default"
+                      }), ownerId=${ownerId || "none"} (${
+                        p.rescheduleOwnerId
+                          ? "provided"
+                          : plan.itOwner
+                          ? "plan.itOwner"
+                          : "none"
                       }), original=[${existingStartDate}, ${existingEndDate}], new=[${newStartDate}, ${newEndDate}]`
                     );
 
@@ -1052,10 +1229,15 @@ export class PlanService {
                       throw new Error("Reschedule was not found after insert");
                     }
 
-                    console.log(`[PlanService.update] ✅ Reschedule ${rescheduleId} verified to exist in database`);
-                    this.logger.log(
-                      `[PlanService.update] ✅ Reschedule ${rescheduleId} verified to exist in database`
+                    console.log(
+                      `[PlanService.update] ✅ Reschedule ${rescheduleId} verified to exist in database (within transaction)`
                     );
+                    this.logger.log(
+                      `[PlanService.update] ✅ Reschedule ${rescheduleId} verified to exist in database (within transaction)`
+                    );
+
+                    // Track reschedule ID for post-commit verification
+                    createdRescheduleIds.push(rescheduleId);
                   } catch (saveError: any) {
                     this.logger.error(
                       `[PlanService.update] ❌ Error during save operation: ${saveError?.message}`,
@@ -1075,12 +1257,29 @@ export class PlanService {
                   throw error;
                 }
               } else {
+                console.log(
+                  `[PlanService.update] ⚠️ No date change detected for phase ${existingPhase.id} - skipping reschedule creation`
+                );
+                console.log(
+                  `[PlanService.update]   - existing: [${existingStartDate}, ${existingEndDate}]`
+                );
+                console.log(
+                  `[PlanService.update]   - new: [${newStartDate}, ${newEndDate}]`
+                );
                 this.logger.debug(
                   `No date change detected for phase ${existingPhase.id}`
                 );
               }
 
-              // Update existing phase
+              // Update existing phase (ALWAYS update, even if no date change)
+              // This ensures phase data is synchronized
+              console.log(
+                `[PlanService.update] Updating phase ${existingPhase.id}: name="${p.name}", startDate="${p.startDate}", endDate="${p.endDate}"`
+              );
+              this.logger.log(
+                `[PlanService.update] Updating phase ${existingPhase.id}: name="${p.name}", startDate="${p.startDate}", endDate="${p.endDate}"`
+              );
+
               existingPhase.name = p.name;
               existingPhase.startDate = p.startDate;
               existingPhase.endDate = p.endDate;
@@ -1088,7 +1287,18 @@ export class PlanService {
               existingPhase.metricValues = p.metricValues || {};
               phasesToUpdate.push(existingPhase);
             } else {
-              // New phase
+              // New phase (no ID, invalid ID, or temporary ID)
+              // ⚡ CRITICAL: If phase has an ID but it's not in the map, log a warning
+              // This could indicate a data inconsistency issue
+              if (p.id && normalizedPhaseId) {
+                this.logger.warn(
+                  `[PlanService.update] ⚠️ Phase has valid ID "${normalizedPhaseId}" but not found in existing phases map. This may indicate a data inconsistency. Creating as new phase.`
+                );
+                console.warn(
+                  `[PlanService.update] ⚠️ Phase has valid ID "${normalizedPhaseId}" but not found in existing phases map. Creating as new phase.`
+                );
+              }
+              
               const phase = new PlanPhase(
                 p.name,
                 p.startDate,
@@ -1102,9 +1312,25 @@ export class PlanService {
           }
 
           // Find phases to remove (exist in DB but not in DTO)
+          // ⚡ CRITICAL: Normalize DTO phase IDs for comparison to ensure proper matching
+          const dtoPhaseIds = new Set<string>();
+          dto.phases!.forEach((p) => {
+            if (p.id) {
+              const trimmedId = p.id.trim();
+              // Only include valid UUIDs (not temporary IDs)
+              if (trimmedId && !trimmedId.startsWith("phase-")) {
+                try {
+                  validateId(trimmedId, "Phase");
+                  dtoPhaseIds.add(trimmedId);
+                } catch {
+                  // Invalid ID - skip
+                }
+              }
+            }
+          });
+          
           existingPhasesMap.forEach((phase, id) => {
-            const existsInDto = dto.phases!.some((p) => p.id === id);
-            if (!existsInDto) {
+            if (!dtoPhaseIds.has(id)) {
               phasesToRemove.push(phase);
             }
           });
@@ -1120,27 +1346,135 @@ export class PlanService {
           }
 
           // Create new phases
+          // ⚡ CRITICAL: Do NOT use addPhase() here - it adds to the array and can cause duplicates
+          // Just save the phases directly - TypeORM will handle the relation via planId
           if (phasesToCreate.length > 0) {
-            phasesToCreate.forEach((phase) => {
-              planWithPhases.addPhase(phase);
-            });
+            console.log(
+              `[PlanService.update] Creating ${phasesToCreate.length} new phases for plan ${plan.id}`
+            );
+            this.logger.log(
+              `[PlanService.update] Creating ${phasesToCreate.length} new phases for plan ${plan.id}`
+            );
             await transactionalManager.save(PlanPhase, phasesToCreate);
           }
 
-          // Update plan.phases reference to reflect changes
-          plan.phases = planWithPhases.phases;
+          // ⚡ CRITICAL: Reload plan with phases to get updated phase list
+          // This ensures we have the correct phases array without duplicates
+          const updatedPlan = await transactionalManager.findOne(Plan, {
+            where: { id: plan.id } as any,
+            relations: ["phases"],
+          });
+
+          if (updatedPlan) {
+            plan.phases = updatedPlan.phases;
+            console.log(
+              `[PlanService.update] Plan ${plan.id} now has ${
+                plan.phases?.length || 0
+              } phases after update`
+            );
+            this.logger.log(
+              `[PlanService.update] Plan ${plan.id} now has ${
+                plan.phases?.length || 0
+              } phases after update`
+            );
+          }
 
           this.logger.log(
             `[PlanService.update] Transaction completed successfully for plan ${plan.id}`
           );
         });
 
-        console.log(`[PlanService.update] ✅ Phase update transaction COMMITTED for plan ${plan.id}`);
+        console.log(
+          `[PlanService.update] ✅ Phase update transaction COMMITTED for plan ${plan.id}`
+        );
         this.logger.log(
           `[PlanService.update] ✅ Phase update transaction COMMITTED for plan ${plan.id}`
         );
+
+        // ⚡ CRITICAL: Verify reschedules were actually persisted after transaction commit
+        if (createdRescheduleIds.length > 0) {
+          console.log(
+            `[PlanService.update] 🔍 Verifying ${createdRescheduleIds.length} reschedules were persisted after commit...`
+          );
+          this.logger.log(
+            `[PlanService.update] Verifying ${createdRescheduleIds.length} reschedules were persisted after commit`
+          );
+
+          for (const rescheduleId of createdRescheduleIds) {
+            try {
+              // Use QueryBuilder to avoid relation inference issues
+              const persistedReschedule = await manager
+                .createQueryBuilder(PhaseReschedule, 'reschedule')
+                .leftJoinAndSelect('reschedule.rescheduleType', 'rescheduleType')
+                .leftJoinAndSelect('reschedule.owner', 'owner')
+                .where('reschedule.id = :id', { id: rescheduleId })
+                .getOne();
+
+              if (persistedReschedule) {
+                console.log(
+                  `[PlanService.update] ✅ VERIFIED: Reschedule ${rescheduleId} PERSISTED in database after commit`
+                );
+                console.log(
+                  `[PlanService.update]   - planPhaseId: ${persistedReschedule.planPhaseId}`
+                );
+                console.log(
+                  `[PlanService.update]   - originalStartDate: ${persistedReschedule.originalStartDate}`
+                );
+                console.log(
+                  `[PlanService.update]   - originalEndDate: ${persistedReschedule.originalEndDate}`
+                );
+                console.log(
+                  `[PlanService.update]   - newStartDate: ${persistedReschedule.newStartDate}`
+                );
+                console.log(
+                  `[PlanService.update]   - newEndDate: ${persistedReschedule.newEndDate}`
+                );
+                console.log(
+                  `[PlanService.update]   - rescheduleTypeId: ${persistedReschedule.rescheduleTypeId}`
+                );
+                console.log(
+                  `[PlanService.update]   - ownerId: ${
+                    persistedReschedule.ownerId || "none"
+                  }`
+                );
+                console.log(
+                  `[PlanService.update]   - rescheduledAt: ${persistedReschedule.rescheduledAt}`
+                );
+                this.logger.log(
+                  `[PlanService.update] ✅ VERIFIED: Reschedule ${rescheduleId} PERSISTED in database after commit`
+                );
+              } else {
+                console.error(
+                  `[PlanService.update] ❌ CRITICAL: Reschedule ${rescheduleId} NOT FOUND in database after commit!`
+                );
+                this.logger.error(
+                  `[PlanService.update] ❌ CRITICAL: Reschedule ${rescheduleId} NOT FOUND in database after commit!`
+                );
+              }
+            } catch (verifyError: any) {
+              console.error(
+                `[PlanService.update] ❌ Error verifying reschedule ${rescheduleId}: ${verifyError?.message}`
+              );
+              this.logger.error(
+                `[PlanService.update] Error verifying reschedule ${rescheduleId}: ${verifyError?.message}`,
+                verifyError?.stack
+              );
+            }
+          }
+        } else {
+          console.log(
+            `[PlanService.update] ℹ️ No reschedules were created in this update`
+          );
+          this.logger.log(
+            `[PlanService.update] No reschedules were created in this update`
+          );
+        }
       } catch (transactionError: any) {
-        console.error(`[PlanService.update] ❌ TRANSACTION FAILED for plan ${plan.id}:`, transactionError?.message, transactionError?.stack);
+        console.error(
+          `[PlanService.update] ❌ TRANSACTION FAILED for plan ${plan.id}:`,
+          transactionError?.message,
+          transactionError?.stack
+        );
         this.logger.error(
           `[PlanService.update] ❌ TRANSACTION FAILED for plan ${plan.id}: ${transactionError?.message}`,
           transactionError?.stack
@@ -1935,6 +2269,13 @@ export class PlanService {
   async getPhaseReschedules(planPhaseId: string): Promise<any[]> {
     validateId(planPhaseId, "Plan Phase");
 
+    console.log(
+      `[PlanService.getPhaseReschedules] Fetching reschedules for phase: ${planPhaseId}`
+    );
+    this.logger.log(
+      `[PlanService.getPhaseReschedules] Fetching reschedules for phase: ${planPhaseId}`
+    );
+
     const planRepo = this.repository as any;
     const manager = planRepo.repository?.manager || planRepo.manager;
 
@@ -1942,26 +2283,90 @@ export class PlanService {
       throw new Error("Database manager not available");
     }
 
-    const reschedules = await manager.find(PhaseReschedule, {
-      where: { planPhaseId },
-      order: { rescheduledAt: "DESC" },
-      relations: ["planPhase", "rescheduleType", "owner"],
+    // Load phase separately to get its name, avoiding the planPhase relation error
+    const phase = await manager.findOne(PlanPhase, {
+      where: { id: planPhaseId } as any,
     });
 
-    return reschedules.map((r: PhaseReschedule) => ({
-      id: r.id,
-      planPhaseId: r.planPhaseId,
-      phaseName: (r.planPhase as any)?.name || "Unknown",
-      rescheduledAt: r.rescheduledAt,
-      originalStartDate: r.originalStartDate,
-      originalEndDate: r.originalEndDate,
-      newStartDate: r.newStartDate,
-      newEndDate: r.newEndDate,
-      rescheduleTypeId: r.rescheduleTypeId,
-      rescheduleTypeName: (r.rescheduleType as any)?.name,
-      ownerId: r.ownerId,
-      ownerName: (r.owner as any)?.name,
-    }));
+    // Load reschedules using QueryBuilder to explicitly use table name and avoid relation inference
+    const reschedules = await manager
+      .createQueryBuilder(PhaseReschedule, 'reschedule')
+      .where('reschedule.planPhaseId = :planPhaseId', { planPhaseId })
+      .orderBy('reschedule.rescheduledAt', 'DESC')
+      .getMany();
+
+    console.log(
+      `[PlanService.getPhaseReschedules] Found ${reschedules.length} reschedules for phase ${planPhaseId}`
+    );
+    this.logger.log(
+      `[PlanService.getPhaseReschedules] Found ${reschedules.length} reschedules for phase ${planPhaseId}`
+    );
+
+    // Load reschedule types and owners separately if needed
+    const rescheduleTypeIds = [...new Set(reschedules.map(r => r.rescheduleTypeId).filter(Boolean))];
+    const ownerIds = [...new Set(reschedules.map(r => r.ownerId).filter(Boolean))];
+    
+    const RescheduleType = require('../../reschedule-types/domain/reschedule-type.entity').RescheduleType;
+    const Owner = require('../../owners/domain/owner.entity').Owner;
+    
+    const rescheduleTypesMap = new Map<string, any>();
+    const ownersMap = new Map<string, any>();
+    
+    if (rescheduleTypeIds.length > 0) {
+      const rescheduleTypes = await manager.find(RescheduleType, {
+        where: { id: In(rescheduleTypeIds) } as any,
+      });
+      rescheduleTypes.forEach(rt => {
+        if (rt.id) rescheduleTypesMap.set(rt.id, rt);
+      });
+    }
+    
+    if (ownerIds.length > 0) {
+      const owners = await manager.find(Owner, {
+        where: { id: In(ownerIds) } as any,
+      });
+      owners.forEach(o => {
+        if (o.id) ownersMap.set(o.id, o);
+      });
+    }
+
+    if (reschedules.length > 0) {
+      const rescheduleType = reschedules[0].rescheduleTypeId ? rescheduleTypesMap.get(reschedules[0].rescheduleTypeId) : null;
+      const owner = reschedules[0].ownerId ? ownersMap.get(reschedules[0].ownerId) : null;
+      
+      console.log(`[PlanService.getPhaseReschedules] Sample reschedule:`, {
+        id: reschedules[0].id,
+        planPhaseId: reschedules[0].planPhaseId,
+        phaseName: phase?.name || "Unknown",
+        rescheduledAt: reschedules[0].rescheduledAt,
+        originalStartDate: reschedules[0].originalStartDate,
+        originalEndDate: reschedules[0].originalEndDate,
+        newStartDate: reschedules[0].newStartDate,
+        newEndDate: reschedules[0].newEndDate,
+        rescheduleTypeName: rescheduleType?.name,
+        ownerName: owner?.name,
+      });
+    }
+
+    return reschedules.map((r: PhaseReschedule) => {
+      const rescheduleType = r.rescheduleTypeId ? rescheduleTypesMap.get(r.rescheduleTypeId) : null;
+      const owner = r.ownerId ? ownersMap.get(r.ownerId) : null;
+      
+      return {
+        id: r.id,
+        planPhaseId: r.planPhaseId,
+        phaseName: phase?.name || "Unknown",
+        rescheduledAt: r.rescheduledAt,
+        originalStartDate: r.originalStartDate,
+        originalEndDate: r.originalEndDate,
+        newStartDate: r.newStartDate,
+        newEndDate: r.newEndDate,
+        rescheduleTypeId: r.rescheduleTypeId,
+        rescheduleTypeName: rescheduleType?.name || null,
+        ownerId: r.ownerId,
+        ownerName: owner?.name || null,
+      };
+    });
   }
 
   /**
@@ -1970,11 +2375,14 @@ export class PlanService {
   async getPlanReschedules(planId: string): Promise<any[]> {
     validateId(planId, "Plan");
 
-    const plan = await this.repository.findById(planId);
-    if (!plan) {
-      throw new NotFoundException(`Plan with ID ${planId} not found`);
-    }
+    console.log(
+      `[PlanService.getPlanReschedules] Fetching reschedules for plan: ${planId}`
+    );
+    this.logger.log(
+      `[PlanService.getPlanReschedules] Fetching reschedules for plan: ${planId}`
+    );
 
+    // ⚡ CRITICAL: Load plan with phases relation to get phase IDs
     const planRepo = this.repository as any;
     const manager = planRepo.repository?.manager || planRepo.manager;
 
@@ -1982,33 +2390,229 @@ export class PlanService {
       throw new Error("Database manager not available");
     }
 
-    // Get all phase IDs for this plan
+    // Load plan with phases relation
+    const plan = await manager.findOne(Plan, {
+      where: { id: planId } as any,
+      relations: ["phases"],
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`Plan with ID ${planId} not found`);
+    }
+
+    console.log(
+      `[PlanService.getPlanReschedules] Plan found: ${
+        plan.name
+      }, phases count: ${plan.phases?.length || 0}`
+    );
+    this.logger.log(
+      `[PlanService.getPlanReschedules] Plan found: ${
+        plan.name
+      }, phases count: ${plan.phases?.length || 0}`
+    );
+
+    // Get all phase IDs for this plan and create a map for quick lookup
     const phaseIds = plan.phases?.map((p) => p.id) || [];
+    const phasesMap = new Map<string, any>();
+    plan.phases?.forEach((p) => {
+      if (p.id) {
+        phasesMap.set(p.id, p);
+      }
+    });
+
+    console.log(`[PlanService.getPlanReschedules] Phase IDs:`, phaseIds);
+    this.logger.log(
+      `[PlanService.getPlanReschedules] Phase IDs: ${JSON.stringify(phaseIds)}`
+    );
 
     if (phaseIds.length === 0) {
+      console.log(
+        `[PlanService.getPlanReschedules] No phases found for plan ${planId}, returning empty array`
+      );
+      this.logger.log(
+        `[PlanService.getPlanReschedules] No phases found for plan ${planId}, returning empty array`
+      );
       return [];
     }
 
-    const reschedules = await manager.find(PhaseReschedule, {
-      where: { planPhaseId: In(phaseIds) },
-      order: { rescheduledAt: "DESC" },
-      relations: ["planPhase", "rescheduleType", "owner"],
+    // Load reschedules using QueryBuilder to explicitly use table name and avoid relation inference
+    // We'll load rescheduleType and owner separately if needed
+    const reschedules = await manager
+      .createQueryBuilder(PhaseReschedule, 'reschedule')
+      .where('reschedule.planPhaseId IN (:...phaseIds)', { phaseIds })
+      .orderBy('reschedule.rescheduledAt', 'DESC')
+      .getMany();
+
+    console.log(
+      `[PlanService.getPlanReschedules] Found ${reschedules.length} reschedules for plan ${planId}`
+    );
+    this.logger.log(
+      `[PlanService.getPlanReschedules] Found ${reschedules.length} reschedules for plan ${planId}`
+    );
+
+    if (reschedules.length > 0) {
+      const phase = phasesMap.get(reschedules[0].planPhaseId);
+      console.log(`[PlanService.getPlanReschedules] Sample reschedule:`, {
+        id: reschedules[0].id,
+        planPhaseId: reschedules[0].planPhaseId,
+        phaseName: phase?.name || "Unknown",
+        rescheduledAt: reschedules[0].rescheduledAt,
+      });
+    }
+
+    // Load reschedule types and owners separately if needed
+    const rescheduleTypeIds = [...new Set(reschedules.map(r => r.rescheduleTypeId).filter(Boolean))];
+    const ownerIds = [...new Set(reschedules.map(r => r.ownerId).filter(Boolean))];
+    
+    const RescheduleType = require('../../reschedule-types/domain/reschedule-type.entity').RescheduleType;
+    const Owner = require('../../owners/domain/owner.entity').Owner;
+    
+    const rescheduleTypesMap = new Map<string, any>();
+    const ownersMap = new Map<string, any>();
+    
+    if (rescheduleTypeIds.length > 0) {
+      const rescheduleTypes = await manager.find(RescheduleType, {
+        where: { id: In(rescheduleTypeIds) } as any,
+      });
+      rescheduleTypes.forEach(rt => {
+        if (rt.id) rescheduleTypesMap.set(rt.id, rt);
+      });
+    }
+    
+    if (ownerIds.length > 0) {
+      const owners = await manager.find(Owner, {
+        where: { id: In(ownerIds) } as any,
+      });
+      owners.forEach(o => {
+        if (o.id) ownersMap.set(o.id, o);
+      });
+    }
+
+    return reschedules.map((r: PhaseReschedule) => {
+      const phase = phasesMap.get(r.planPhaseId);
+      const rescheduleType = r.rescheduleTypeId ? rescheduleTypesMap.get(r.rescheduleTypeId) : null;
+      const owner = r.ownerId ? ownersMap.get(r.ownerId) : null;
+      
+      return {
+        id: r.id,
+        planPhaseId: r.planPhaseId,
+        phaseName: phase?.name || "Unknown",
+        rescheduledAt: r.rescheduledAt,
+        originalStartDate: r.originalStartDate,
+        originalEndDate: r.originalEndDate,
+        newStartDate: r.newStartDate,
+        newEndDate: r.newEndDate,
+        rescheduleTypeId: r.rescheduleTypeId,
+        rescheduleTypeName: rescheduleType?.name || null,
+        ownerId: r.ownerId,
+        ownerName: owner?.name || null,
+      };
+    });
+  }
+
+  /**
+   * Update a phase reschedule (only ownerId and rescheduleTypeId can be updated)
+   */
+  async updateReschedule(
+    rescheduleId: string,
+    dto: { rescheduleTypeId?: string; ownerId?: string }
+  ): Promise<any> {
+    validateId(rescheduleId, "Reschedule");
+
+    // Get manager from repository (same pattern as other methods)
+    const planRepo = this.repository as any;
+    const manager = planRepo.repository?.manager || planRepo.manager;
+
+    if (!manager) {
+      throw new Error("Database manager not available");
+    }
+
+    // Find the reschedule
+    const reschedule = await manager.findOne(PhaseReschedule, {
+      where: { id: rescheduleId } as any,
     });
 
-    return reschedules.map((r: PhaseReschedule) => ({
-      id: r.id,
-      planPhaseId: r.planPhaseId,
-      phaseName: (r.planPhase as any)?.name || "Unknown",
-      rescheduledAt: r.rescheduledAt,
-      originalStartDate: r.originalStartDate,
-      originalEndDate: r.originalEndDate,
-      newStartDate: r.newStartDate,
-      newEndDate: r.newEndDate,
-      rescheduleTypeId: r.rescheduleTypeId,
-      rescheduleTypeName: (r.rescheduleType as any)?.name,
-      ownerId: r.ownerId,
-      ownerName: (r.owner as any)?.name,
-    }));
+    if (!reschedule) {
+      throw new Error(`Reschedule with ID ${rescheduleId} not found`);
+    }
+
+    // Validate rescheduleTypeId if provided
+    if (dto.rescheduleTypeId) {
+      validateId(dto.rescheduleTypeId, "Reschedule Type");
+      const rescheduleType = await manager.findOne(
+        require("../../reschedule-types/domain/reschedule-type.entity")
+          .RescheduleType,
+        {
+          where: { id: dto.rescheduleTypeId } as any,
+        }
+      );
+      if (!rescheduleType) {
+        throw new Error(
+          `Reschedule type with ID ${dto.rescheduleTypeId} not found`
+        );
+      }
+    }
+
+    // Validate ownerId if provided
+    if (dto.ownerId) {
+      validateId(dto.ownerId, "Owner");
+      const owner = await manager.findOne(
+        require("../../owners/domain/owner.entity").Owner,
+        {
+          where: { id: dto.ownerId } as any,
+        }
+      );
+      if (!owner) {
+        throw new Error(`Owner with ID ${dto.ownerId} not found`);
+      }
+    }
+
+    // Update only allowed fields
+    if (dto.rescheduleTypeId !== undefined) {
+      reschedule.rescheduleTypeId = dto.rescheduleTypeId;
+    }
+    if (dto.ownerId !== undefined) {
+      reschedule.ownerId = dto.ownerId;
+    }
+
+    // Save the updated reschedule
+    await manager.save(PhaseReschedule, reschedule);
+
+    // Reload with relations to get updated names
+    const updatedReschedule = await manager
+      .createQueryBuilder(PhaseReschedule, "reschedule")
+      .leftJoinAndSelect("reschedule.rescheduleType", "rescheduleType")
+      .leftJoinAndSelect("reschedule.owner", "owner")
+      .where("reschedule.id = :id", { id: rescheduleId })
+      .getOne();
+
+    if (!updatedReschedule) {
+      throw new Error(`Failed to reload reschedule ${rescheduleId}`);
+    }
+
+    // Get phase name
+    const phase = await manager.findOne(
+      require("../domain/plan-phase.entity").PlanPhase,
+      {
+        where: { id: updatedReschedule.planPhaseId } as any,
+      }
+    );
+
+    return {
+      id: updatedReschedule.id,
+      planPhaseId: updatedReschedule.planPhaseId,
+      phaseName: phase?.name || "Unknown",
+      rescheduledAt: updatedReschedule.rescheduledAt,
+      originalStartDate: updatedReschedule.originalStartDate,
+      originalEndDate: updatedReschedule.originalEndDate,
+      newStartDate: updatedReschedule.newStartDate,
+      newEndDate: updatedReschedule.newEndDate,
+      rescheduleTypeId: updatedReschedule.rescheduleTypeId,
+      rescheduleTypeName:
+        (updatedReschedule.rescheduleType as any)?.name || null,
+      ownerId: updatedReschedule.ownerId,
+      ownerName: (updatedReschedule.owner as any)?.name || null,
+    };
   }
 
   /**

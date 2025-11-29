@@ -215,5 +215,9 @@ export const plansService = {
   async getPhaseReschedules(planId: string, phaseId: string): Promise<PhaseReschedule[]> {
     return httpClient.get<PhaseReschedule[]>(`${API_ENDPOINTS.PLANS}/${planId}/phases/${phaseId}/reschedules`);
   },
+
+  async updateReschedule(rescheduleId: string, data: { rescheduleTypeId?: string; ownerId?: string }): Promise<PhaseReschedule> {
+    return httpClient.put<PhaseReschedule>(`${API_ENDPOINTS.PLANS}/reschedules/${rescheduleId}/update`, data);
+  },
 };
 

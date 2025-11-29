@@ -50,6 +50,7 @@ export type PlanCardContentProps = {
     startDate: string,
     endDate: string
   ) => void;
+  readonly handleReorderPhases: (reorderedPhases: PlanPhase[]) => void;
   readonly setPhaseOpen: (open: boolean) => void;
 };
 
@@ -88,6 +89,7 @@ export function PlanCardContent({
   handleSaveTimeline,
   openEditOptimized,
   handlePhaseRangeChangeOptimized,
+  handleReorderPhases,
   setPhaseOpen,
 }: PlanCardContentProps) {
   const [tabValue, setTabValue] = useState(0);
@@ -153,6 +155,7 @@ export function PlanCardContent({
       hasTabChanges={stableHasTabChanges}
       planUpdatedAt={plan.updatedAt}
       plan={plan}
+      originalMetadata={originalMetadata}
       tabValue={tabValue}
       onTabChange={handleTabChange}
     />

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { TodayMarker } from "../GanttChart.styles";
 import GanttLane from "../../Gantt/GanttLane/GanttLane";
 import { laneTop } from "../../Gantt/utils";
@@ -13,8 +14,9 @@ export type GanttGridProps = {
 /**
  * Renders the grid, lanes, and background elements
  * Follows SRP - only handles background visualization
+ * ⚡ OPTIMIZATION: Memoized to prevent unnecessary re-renders
  */
-export function GanttGrid({
+export const GanttGrid = memo(function GanttGrid({
   days,
   phases,
   pxPerDay,
@@ -78,4 +80,16 @@ export function GanttGrid({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // ⚡ OPTIMIZATION: Custom comparison to prevent unnecessary re-renders
+  // Only re-render if relevant props change
+  return (
+    prevProps.phases.length === nextProps.phases.length &&
+    prevProps.days.length === nextProps.days.length &&
+    prevProps.pxPerDay === nextProps.pxPerDay &&
+    prevProps.trackHeight === nextProps.trackHeight &&
+    prevProps.todayIndex === nextProps.todayIndex &&
+    // Check if phase IDs changed (shallow comparison)
+    prevProps.phases.every((p, i) => p.id === nextProps.phases[i]?.id)
+  );
+});

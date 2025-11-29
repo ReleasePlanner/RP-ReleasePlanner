@@ -18,6 +18,7 @@ import {
 import { Person as PersonIcon, CalendarToday as CalendarIcon } from "@mui/icons-material";
 import { formatCompactDate } from "@/features/releasePlans/lib/date";
 import type { Plan, PlanStatus } from "@/features/releasePlans/types";
+import type { StatusChipProps } from "@/features/releasePlans/lib/planStatus";
 
 export type ReleasePlannerDeleteDialogProps = {
   readonly open: boolean;
@@ -28,10 +29,7 @@ export type ReleasePlannerDeleteDialogProps = {
   readonly onClose: () => void;
   readonly onConfirm: () => void;
   readonly onResetError: () => void;
-  readonly getStatusChipProps: (status: PlanStatus) => {
-    label: string;
-    color: "info" | "primary" | "success" | "warning" | "default";
-  };
+  readonly getStatusChipProps: (status: PlanStatus) => StatusChipProps;
 };
 
 /**

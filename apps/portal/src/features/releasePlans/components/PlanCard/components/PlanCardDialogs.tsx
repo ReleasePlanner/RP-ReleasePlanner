@@ -19,6 +19,7 @@ export type PlanCardDialogsProps = {
   setEditOpen: (open: boolean) => void;
   editingPhase: PlanPhase | null;
   metadata: Plan["metadata"];
+  originalMetadata?: Plan["metadata"]; // Metadata original para comparar cambios
   handleAddPhaseOptimized: (phases: PlanPhase[]) => void;
   onPhaseSave: (updatedPhase: PlanPhase) => void;
   handleSaveTimeline: (phasesOverride?: Plan["metadata"]["phases"]) => Promise<void>;
@@ -49,6 +50,7 @@ export function PlanCardDialogs({
   setEditOpen,
   editingPhase,
   metadata,
+  originalMetadata,
   handleAddPhaseOptimized,
   onPhaseSave,
   handleSaveTimeline,
@@ -83,6 +85,11 @@ export function PlanCardDialogs({
         planId={planId}
         planPhases={metadata.phases || []}
         indicatorIds={metadata.indicatorIds || []}
+        originalPhase={
+          editingPhase?.id && originalMetadata?.phases
+            ? originalMetadata.phases.find((p) => p.id === editingPhase.id) || null
+            : null
+        }
         onCancel={() => setEditOpen(false)}
         onSave={onPhaseSave}
         onSaveMetrics={async (phaseId, metricValues) => {

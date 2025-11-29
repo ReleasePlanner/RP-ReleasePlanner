@@ -1,22 +1,22 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { Stack, Chip, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import type { Plan as LocalPlan, PlanStatus } from "../../../../features/releasePlans/types";
 import { formatCompactDate } from "../../../../features/releasePlans/lib/date";
+import type { StatusChipProps } from "../../../../features/releasePlans/lib/planStatus";
 
 export type PlanListItemInfoProps = {
   readonly plan: LocalPlan;
-  readonly getStatusChipProps: (status: PlanStatus) => {
-    label: string;
-    color: "info" | "primary" | "success" | "warning" | "default";
-  };
-  readonly planNameStyles: Record<string, unknown>;
-  readonly infoStackStyles: Record<string, unknown>;
-  readonly statusChipStyles: Record<string, unknown>;
-  readonly infoTextStyles: Record<string, unknown>;
+  readonly getStatusChipProps: (status: PlanStatus) => StatusChipProps;
+  readonly planNameStyles: SxProps<Theme>;
+  readonly infoStackStyles: SxProps<Theme>;
+  readonly statusChipStyles: SxProps<Theme>;
+  readonly infoTextStyles: SxProps<Theme>;
 };
 
 /**
  * Component for displaying plan information (name, status, dates, counts)
+ * Optimized: Removed unnecessary useMemo for simple calculations
  */
 export const PlanListItemInfo = memo(function PlanListItemInfo({
   plan,
@@ -26,15 +26,9 @@ export const PlanListItemInfo = memo(function PlanListItemInfo({
   statusChipStyles,
   infoTextStyles,
 }: PlanListItemInfoProps) {
-  const phasesCount = useMemo(
-    () => plan.metadata.phases?.length ?? 0,
-    [plan.metadata.phases?.length]
-  );
-
-  const tasksCount = useMemo(
-    () => plan.tasks?.length ?? 0,
-    [plan.tasks?.length]
-  );
+  // Simple calculations - useMemo overhead is greater than the calculation itself
+  const phasesCount = plan.metadata.phases?.length ?? 0;
+  const tasksCount = plan.tasks?.length ?? 0;
 
   return (
     <>

@@ -21,6 +21,7 @@ import { CreatePlanDto } from "../application/dto/create-plan.dto";
 import { UpdatePlanDto } from "../application/dto/update-plan.dto";
 import { PlanResponseDto } from "../application/dto/plan-response.dto";
 import { PhaseRescheduleResponseDto } from "../application/dto/phase-reschedule-response.dto";
+import { UpdatePhaseRescheduleDto } from "../application/dto/update-phase-reschedule.dto";
 import {
   PLAN_API_OPERATION_SUMMARIES,
   PLAN_API_RESPONSE_DESCRIPTIONS,
@@ -45,6 +46,32 @@ export class PlanController {
   })
   async findAll(): Promise<PlanResponseDto[]> {
     return this.service.findAll();
+  }
+
+  // ⚡ CRITICAL: This endpoint must be defined BEFORE all routes with :id or :planId to avoid route conflicts
+  // Using a more specific route path to ensure it's matched correctly
+  @Put("reschedules/:rescheduleId/update")
+  @ApiOperation({ summary: "Update a phase reschedule (owner and reschedule type only)" })
+  @ApiParam({
+    name: "rescheduleId",
+    description: "Reschedule ID",
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiBody({ type: UpdatePhaseRescheduleDto })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: "Reschedule updated successfully",
+    type: PhaseRescheduleResponseDto,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
+    description: "Reschedule not found",
+  })
+  async updateReschedule(
+    @Param("rescheduleId") rescheduleId: string,
+    @Body() dto: UpdatePhaseRescheduleDto
+  ): Promise<PhaseRescheduleResponseDto> {
+    return this.service.updateReschedule(rescheduleId, dto);
   }
 
   // Reschedules endpoints must be defined BEFORE :id route to avoid route conflicts

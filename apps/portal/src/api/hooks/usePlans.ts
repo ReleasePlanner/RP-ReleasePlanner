@@ -118,3 +118,18 @@ export function usePhaseReschedules(planId: string, phaseId: string) {
   });
 }
 
+export function useUpdateReschedule(planId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ rescheduleId, data }: { rescheduleId: string; data: { rescheduleTypeId?: string; ownerId?: string } }) =>
+      plansService.updateReschedule(rescheduleId, data),
+    onSuccess: () => {
+      // Invalidate plan reschedules query
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reschedules(planId) });
+      // Invalidate all phase reschedules queries for this plan
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.all, 'reschedules', planId] });
+    },
+  });
+}
+

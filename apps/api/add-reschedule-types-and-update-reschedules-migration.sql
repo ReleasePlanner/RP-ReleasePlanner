@@ -1,5 +1,5 @@
 -- Migration: AddRescheduleTypesAndUpdateReschedules
--- Description: Creates reschedule_types table and adds rescheduleTypeId and ownerId to phase_reschedules
+-- Description: Creates reschedule_types table and adds rescheduleTypeId and ownerId to plan_phase_reschedules
 
 BEGIN;
 
@@ -16,43 +16,43 @@ CREATE TABLE IF NOT EXISTS "reschedule_types" (
 -- Add unique index for name
 CREATE UNIQUE INDEX IF NOT EXISTS "IDX_reschedule_types_name" ON "reschedule_types" ("name");
 
--- Add rescheduleTypeId column to phase_reschedules if it doesn't exist
+-- Add rescheduleTypeId column to plan_phase_reschedules if it doesn't exist
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
-    WHERE table_name = 'phase_reschedules' AND column_name = 'rescheduleTypeId'
+    WHERE table_name = 'plan_phase_reschedules' AND column_name = 'rescheduleTypeId'
   ) THEN
-    ALTER TABLE "phase_reschedules"
+    ALTER TABLE "plan_phase_reschedules"
     ADD COLUMN "rescheduleTypeId" uuid NULL;
     
-    RAISE NOTICE 'Column rescheduleTypeId added to phase_reschedules table';
+    RAISE NOTICE 'Column rescheduleTypeId added to plan_phase_reschedules table';
   ELSE
-    RAISE NOTICE 'Column rescheduleTypeId already exists in phase_reschedules table';
+    RAISE NOTICE 'Column rescheduleTypeId already exists in plan_phase_reschedules table';
   END IF;
 END $$;
 
--- Add ownerId column to phase_reschedules if it doesn't exist
+-- Add ownerId column to plan_phase_reschedules if it doesn't exist
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
-    WHERE table_name = 'phase_reschedules' AND column_name = 'ownerId'
+    WHERE table_name = 'plan_phase_reschedules' AND column_name = 'ownerId'
   ) THEN
-    ALTER TABLE "phase_reschedules"
+    ALTER TABLE "plan_phase_reschedules"
     ADD COLUMN "ownerId" uuid NULL;
     
-    RAISE NOTICE 'Column ownerId added to phase_reschedules table';
+    RAISE NOTICE 'Column ownerId added to plan_phase_reschedules table';
   ELSE
-    RAISE NOTICE 'Column ownerId already exists in phase_reschedules table';
+    RAISE NOTICE 'Column ownerId already exists in plan_phase_reschedules table';
   END IF;
 END $$;
 
 -- Add indexes for rescheduleTypeId and ownerId
-CREATE INDEX IF NOT EXISTS "IDX_phase_reschedules_rescheduleTypeId" ON "phase_reschedules" ("rescheduleTypeId");
-CREATE INDEX IF NOT EXISTS "IDX_phase_reschedules_ownerId" ON "phase_reschedules" ("ownerId");
+CREATE INDEX IF NOT EXISTS "IDX_plan_phase_reschedules_rescheduleTypeId" ON "plan_phase_reschedules" ("rescheduleTypeId");
+CREATE INDEX IF NOT EXISTS "IDX_plan_phase_reschedules_ownerId" ON "plan_phase_reschedules" ("ownerId");
 
 -- Add foreign key constraint to reschedule_types
 DO $$
@@ -60,15 +60,15 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.table_constraints
-    WHERE constraint_name = 'FK_phase_reschedules_reschedule_type'
+    WHERE constraint_name = 'FK_plan_phase_reschedules_reschedule_type'
   ) THEN
-    ALTER TABLE "phase_reschedules"
-    ADD CONSTRAINT "FK_phase_reschedules_reschedule_type"
+    ALTER TABLE "plan_phase_reschedules"
+    ADD CONSTRAINT "FK_plan_phase_reschedules_reschedule_type"
     FOREIGN KEY ("rescheduleTypeId") REFERENCES "reschedule_types"("id") ON DELETE SET NULL;
     
-    RAISE NOTICE 'Foreign key constraint FK_phase_reschedules_reschedule_type added';
+    RAISE NOTICE 'Foreign key constraint FK_plan_phase_reschedules_reschedule_type added';
   ELSE
-    RAISE NOTICE 'Foreign key constraint FK_phase_reschedules_reschedule_type already exists';
+    RAISE NOTICE 'Foreign key constraint FK_plan_phase_reschedules_reschedule_type already exists';
   END IF;
 END $$;
 
@@ -78,15 +78,15 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.table_constraints
-    WHERE constraint_name = 'FK_phase_reschedules_owner'
+    WHERE constraint_name = 'FK_plan_phase_reschedules_owner'
   ) THEN
-    ALTER TABLE "phase_reschedules"
-    ADD CONSTRAINT "FK_phase_reschedules_owner"
+    ALTER TABLE "plan_phase_reschedules"
+    ADD CONSTRAINT "FK_plan_phase_reschedules_owner"
     FOREIGN KEY ("ownerId") REFERENCES "owners"("id") ON DELETE SET NULL;
     
-    RAISE NOTICE 'Foreign key constraint FK_phase_reschedules_owner added';
+    RAISE NOTICE 'Foreign key constraint FK_plan_phase_reschedules_owner added';
   ELSE
-    RAISE NOTICE 'Foreign key constraint FK_phase_reschedules_owner already exists';
+    RAISE NOTICE 'Foreign key constraint FK_plan_phase_reschedules_owner already exists';
   END IF;
 END $$;
 

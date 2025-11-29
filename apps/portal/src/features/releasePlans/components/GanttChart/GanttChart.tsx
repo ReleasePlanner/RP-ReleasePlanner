@@ -24,9 +24,13 @@ import PhasesList from "../Plan/PhasesList/PhasesList";
 import { useGanttDragAndDrop } from "./useGanttDragAndDrop";
 import { TodayMarker } from "./GanttChart.styles";
 import type { CalendarDay } from "../../../../features/calendar/types";
-import { useQueries } from "@tanstack/react-query";
-import { calendarsService } from "../../../../api/services/calendars.service";
-import type { CalendarDay as APICalendarDay } from "../../../../api/services/calendars.service";
+import { useOptimizedCalendars } from "./hooks/useOptimizedCalendars";
+import { useOptimizedCalendarDaysMap } from "./hooks/useOptimizedCalendarDaysMap";
+import { useOptimizedDays, useWeekendIndices } from "./hooks/useOptimizedDays";
+import { useOptimizedScroll } from "./hooks/useOptimizedScroll";
+import { useViewportObserver } from "./hooks/useViewportObserver";
+import { OptimizedWeekendGrid } from "./components/OptimizedWeekendGrid";
+import { OptimizedGridLines } from "./components/OptimizedGridLines";
 import {
   getTimelineColors,
   TIMELINE_DIMENSIONS,
@@ -67,6 +71,7 @@ export type GanttChartProps = {
   readonly onSaveTimeline?: () => void;
   readonly hasTimelineChanges?: boolean;
   readonly isSavingTimeline?: boolean;
+  readonly onReorderPhases?: (reorderedPhases: PlanPhase[]) => void;
 };
 
 export default function GanttChart({
@@ -93,6 +98,7 @@ export default function GanttChart({
   onSaveTimeline,
   hasTimelineChanges = false,
   isSavingTimeline = false,
+  onReorderPhases,
 }: GanttChartProps) {
   const labelWidth = LABEL_WIDTH; // sticky label column width for phase names
 
@@ -129,10 +135,11 @@ export default function GanttChart({
   const trackHeight = TRACK_HEIGHT;
   const width = totalDays * pxPerDay;
 
-  const days = useMemo(
-    () => Array.from({ length: totalDays }, (_, i) => addDays(start, i)),
-    [start, totalDays]
-  );
+  // ⚡ OPTIMIZATION: Use optimized days hook
+  const { days, getDayIndex, getDateKey } = useOptimizedDays(start, end);
+  
+  // ⚡ OPTIMIZATION: Calculate weekend indices once
+  const weekendIndices = useWeekendIndices(start, totalDays);
 
   const showSelectedDayAlert = useCallback((isoDate: string) => {
     if (
@@ -147,40 +154,17 @@ export default function GanttChart({
     }
   }, []);
 
-  // Auto-scroll to today by default - deferred for performance
+  // ⚡ OPTIMIZATION: Use optimized scroll hook with requestAnimationFrame
   const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
-  useEffect(() => {
-    // Defer scroll to avoid blocking initial render
-    const timeoutId = setTimeout(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      let index: number;
-      if (today <= start) {
-        index = 0;
-      } else if (today >= end) {
-        index = Math.max(0, days.length - 1);
-      } else {
-        index = Math.max(
-          0,
-          Math.min(
-            days.length - 1,
-            Math.ceil(
-              (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-            )
-          )
-        );
-      }
-      const visibleWidth = Math.max(0, el.clientWidth);
-      const target = index * pxPerDay - visibleWidth / 2;
-      const left = Math.max(0, target);
-      safeScrollToX(el, left, "auto");
-    }, 100); // Small delay to allow initial render
-
-    return () => clearTimeout(timeoutId);
-  }, [start, end, days.length, labelWidth, pxPerDay]);
+  useOptimizedScroll({
+    containerRef,
+    start,
+    end,
+    pxPerDay,
+    totalDays,
+    enabled: true,
+  });
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -194,122 +178,41 @@ export default function GanttChart({
       contentRef,
     });
 
+  // ⚡ OPTIMIZATION: Memoize todayIndex calculation
   const todayIndex = useMemo(() => {
     const t = new Date();
     t.setHours(0, 0, 0, 0);
     if (t < start || t > end) return undefined;
-    return Math.max(
-      0,
-      Math.min(
-        days.length - 1,
-        Math.floor((t.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      )
-    );
-  }, [start, end, days]);
+    const index = Math.floor((t.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.min(totalDays - 1, index));
+  }, [start, end, totalDays]);
 
-  // Load calendars from API using the calendar IDs
-  const calendarQueries = useQueries({
-    queries: calendarIds.map((id) => ({
-      queryKey: ["calendars", "detail", id],
-      queryFn: () => calendarsService.getById(id),
-      enabled: !!id,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    })),
+  // ⚡ OPTIMIZATION: Use optimized calendar loading hook
+  // Only loads when calendarIds exist, uses aggressive caching
+  const { planCalendars } = useOptimizedCalendars(
+    calendarIds,
+    calendarIds.length > 0
+  );
+
+  // ⚡ OPTIMIZATION: Observe viewport to only process visible days
+  const { viewportRange } = useViewportObserver({
+    containerRef,
+    pxPerDay,
+    startDate: start,
+    totalDays,
+    overscan: 20, // Cargar 20 días extra fuera del viewport para scroll suave
+    // Viewport cambió, se usa automáticamente para optimizar calendarDaysMap
   });
 
-  // Convert API calendars to local format
-  const planCalendars = useMemo(() => {
-    return calendarQueries
-      .filter((query) => query.isSuccess && query.data)
-      .map((query) => {
-        const apiCalendar = query.data;
-        if (!apiCalendar) {
-          return null;
-        }
-        return {
-          id: apiCalendar.id,
-          name: apiCalendar.name,
-          description: apiCalendar.description,
-          days:
-            apiCalendar.days?.map((day: APICalendarDay) => ({
-              id: day.id,
-              name: day.name,
-              date: day.date,
-              type: day.type,
-              description: day.description,
-              recurring: day.recurring,
-              createdAt: day.createdAt,
-              updatedAt: day.updatedAt,
-            })) || [],
-        };
-      })
-      .filter((cal): cal is NonNullable<typeof cal> => cal !== null);
-  }, [calendarQueries]);
-
-  // Create a map of dates (YYYY-MM-DD) to calendar day information
-  const calendarDaysMap = useMemo(() => {
-    const map = new Map<string, { day: CalendarDay; calendarName: string }[]>();
-
-    for (const calendar of planCalendars) {
-      for (const day of calendar.days) {
-        const dateKey = day.date; // Already in YYYY-MM-DD format
-
-        // Handle recurring days - check if date falls within the timeline range
-        if (day.recurring) {
-          const dayDate = new Date(day.date);
-          const dayMonth = dayDate.getMonth();
-          const dayDay = dayDate.getDate();
-
-          // Check all years in the timeline range for recurring days
-          const startYear = start.getFullYear();
-          const endYear = end.getFullYear();
-
-          for (let year = startYear; year <= endYear; year++) {
-            const recurringDate = new Date(year, dayMonth, dayDay);
-
-            if (recurringDate >= start && recurringDate <= end) {
-              const recurringDateKey = recurringDate.toISOString().slice(0, 10);
-              const existing = map.get(recurringDateKey);
-              if (existing) {
-                existing.push({
-                  day,
-                  calendarName: calendar.name,
-                });
-              } else {
-                map.set(recurringDateKey, [
-                  {
-                    day,
-                    calendarName: calendar.name,
-                  },
-                ]);
-              }
-            }
-          }
-        } else {
-          // Non-recurring day - use exact date
-          const dayDate = new Date(day.date);
-          if (dayDate >= start && dayDate <= end) {
-            const existing = map.get(dateKey);
-            if (existing) {
-              existing.push({
-                day,
-                calendarName: calendar.name,
-              });
-            } else {
-              map.set(dateKey, [
-                {
-                  day,
-                  calendarName: calendar.name,
-                },
-              ]);
-            }
-          }
-        }
-      }
-    }
-
-    return map;
-  }, [planCalendars, start, end]);
+  // ⚡ OPTIMIZATION: Use optimized calendar days map hook with viewport
+  // Solo procesa días visibles en el viewport para mejor rendimiento
+  const calendarDaysMap = useOptimizedCalendarDaysMap(
+    planCalendars,
+    start,
+    end,
+    viewportRange?.startIndex,
+    viewportRange?.endIndex
+  );
 
   // Create a map of milestone references by phaseId and date for quick lookup
   // Note: Preview is now handled directly in DOM via useGanttDragAndDrop hook
@@ -553,27 +456,21 @@ export default function GanttChart({
                   backgroundColor: colors.TRACKS_BACKGROUND,
                 }}
               >
-                {/* Weekend shading across tracks */}
+                {/* ⚡ OPTIMIZATION: Use optimized weekend grid */}
+                <OptimizedWeekendGrid
+                  start={start}
+                  totalDays={totalDays}
+                  pxPerDay={pxPerDay}
+                  weekendIndices={weekendIndices}
+                  backgroundColor={colors.WEEKEND_BG}
+                />
+                {/* Calendar days markers */}
                 {days.map((d, i) => {
-                  const dow = d.getDay();
                   const dateKey = d.toISOString().slice(0, 10);
                   const calendarDays = calendarDaysMap.get(dateKey) || [];
-                  const isWeekend = dow === 0 || dow === 6;
                   const isCalendarDay = calendarDays.length > 0;
 
-                  // Weekend background
-                  const weekendBg = isWeekend ? (
-                    <div
-                      key={`wk-${i}`}
-                      className="absolute top-0 pointer-events-none z-0"
-                      style={{
-                        left: i * pxPerDay,
-                        width: pxPerDay,
-                        height: "100%",
-                        backgroundColor: colors.WEEKEND_BG,
-                      }}
-                    />
-                  ) : null;
+                  // Weekend background is now handled by OptimizedWeekendGrid above
 
                   // Calendar day marker (holiday/special day) - Green pastel with transparency
                   const calendarMarker = isCalendarDay ? (
@@ -724,12 +621,7 @@ export default function GanttChart({
                     </Tooltip>
                   ) : null;
 
-                  return (
-                    <div key={`day-container-${i}`}>
-                      {weekendBg}
-                      {calendarMarker}
-                    </div>
-                  );
+                  return calendarMarker;
                 })}
                 {/* Phase lanes */}
                 {phases.map((_, idx) => (
@@ -740,19 +632,13 @@ export default function GanttChart({
                     index={idx}
                   />
                 ))}
-                {/* grid lines */}
-                {days.map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute top-0"
-                    style={{
-                      left: i * pxPerDay,
-                      width: 0,
-                      height: "100%",
-                      borderLeft: `1px solid ${colors.BORDER_LIGHT}`,
-                    }}
-                  />
-                ))}
+                {/* ⚡ OPTIMIZATION: Use optimized grid lines */}
+                <OptimizedGridLines
+                  totalDays={totalDays}
+                  pxPerDay={pxPerDay}
+                  borderColor={colors.BORDER_LIGHT}
+                  interval={1} // Render all lines by default, can be increased for better performance
+                />
                 {/* Today marker across tracks */}
                 {typeof todayIndex === "number" && (
                   <div
@@ -766,42 +652,57 @@ export default function GanttChart({
                     <TodayMarker className="h-full" />
                   </div>
                 )}
-                {/* Individual cells for each phase-day intersection */}
-                {phases.map((ph, phaseIdx) => {
-                  return days.map((day, dayIdx) => {
-                    const dateKey = day.toISOString().slice(0, 10);
-                    // Filter references for this specific cell (day-level with phaseId)
-                    const cellRefs = references.filter(
-                      (ref) =>
-                        ref.phaseId === ph.id &&
-                        (ref.date === dateKey || ref.calendarDayId) &&
-                        ref.type !== "milestone" // Milestones are handled separately
+                {/* ⚡ OPTIMIZATION: Only render cells when there are references */}
+                {/* This prevents rendering thousands of empty cells (phases × days) */}
+                {references.length > 0 &&
+                  phases.map((ph, phaseIdx) => {
+                    // Pre-filter references for this phase to avoid filtering in inner loop
+                    const phaseRefs = references.filter(
+                      (ref) => ref.phaseId === ph.id && ref.type !== "milestone"
                     );
-                    const milestoneKey = `${ph.id}-${dateKey}`;
-                    const milestoneRef =
-                      milestoneReferencesMap.get(milestoneKey);
-                    const top = laneTop(phaseIdx);
-                    const left = dayIdx * pxPerDay;
+                    
+                    if (phaseRefs.length === 0) return null;
+                    
+                    // Only render cells for days that have references
+                    const cellsWithRefs = phaseRefs
+                      .map((ref) => {
+                        if (!ref.date && !ref.calendarDayId) return null;
+                        const dateKey = ref.date || "";
+                        const dayIdx = days.findIndex(
+                          (d) => d.toISOString().slice(0, 10) === dateKey
+                        );
+                        if (dayIdx === -1) return null;
+                        
+                        const cellRefs = phaseRefs.filter(
+                          (r) => r.date === dateKey || r.calendarDayId
+                        );
+                        const milestoneKey = `${ph.id}-${dateKey}`;
+                        const milestoneRef = milestoneReferencesMap.get(milestoneKey);
+                        const top = laneTop(phaseIdx);
+                        const left = dayIdx * pxPerDay;
 
-                    return (
-                      <GanttCell
-                        key={`cell-${ph.id}-${dateKey}`}
-                        phaseId={ph.id}
-                        date={dateKey}
-                        left={left}
-                        top={top}
-                        width={pxPerDay}
-                        height={trackHeight}
-                        cellReferences={cellRefs}
-                        milestoneReference={milestoneRef}
-                        onAddComment={onAddCellComment}
-                        onAddFile={onAddCellFile}
-                        onAddLink={onAddCellLink}
-                        onToggleMilestone={onToggleCellMilestone}
-                      />
-                    );
-                  });
-                })}
+                        return (
+                          <GanttCell
+                            key={`cell-${ph.id}-${dateKey}`}
+                            phaseId={ph.id}
+                            date={dateKey}
+                            left={left}
+                            top={top}
+                            width={pxPerDay}
+                            height={trackHeight}
+                            cellReferences={cellRefs}
+                            milestoneReference={milestoneRef}
+                            onAddComment={onAddCellComment}
+                            onAddFile={onAddCellFile}
+                            onAddLink={onAddCellLink}
+                            onToggleMilestone={onToggleCellMilestone}
+                          />
+                        );
+                      })
+                      .filter(Boolean);
+                    
+                    return cellsWithRefs;
+                  })}
                 {/* phase bars */}
                 {phases.map((ph, idx) => {
                   if (!ph.startDate || !ph.endDate) return null;
@@ -1060,6 +961,7 @@ export default function GanttChart({
             calendarStart={startDate}
             calendarEnd={_endDate}
             onPhaseRangeChange={onPhaseRangeChange}
+            onReorderPhases={onReorderPhases}
           />
         </div>
         {/* Scrollable calendar (right) */}
@@ -1328,42 +1230,56 @@ export default function GanttChart({
               })}
               {/* Preview is now handled directly in DOM via useGanttDragAndDrop hook */}
               {/* No React re-renders during drag for maximum performance */}
-              {/* Individual cells for each phase-day intersection - optimized to skip during drag */}
-              {!(drag || editDrag) &&
+              {/* ⚡ OPTIMIZATION: Only render cells when not dragging AND when there are references */}
+              {/* This prevents rendering thousands of empty cells (phases × days) */}
+              {!(drag || editDrag) && references.length > 0 &&
                 phases.map((ph, phaseIdx) => {
-                  return days.map((day, dayIdx) => {
-                    const dateKey = day.toISOString().slice(0, 10);
-                    // Filter references for this specific cell (day-level with phaseId)
-                    const cellRefs = references.filter(
-                      (ref) =>
-                        ref.phaseId === ph.id &&
-                        (ref.date === dateKey || ref.calendarDayId) &&
-                        ref.type !== "milestone" // Milestones are handled separately
-                    );
-                    const milestoneKey = `${ph.id}-${dateKey}`;
-                    const milestoneRef =
-                      milestoneReferencesMap.get(milestoneKey);
-                    const top = laneTop(phaseIdx);
-                    const left = dayIdx * pxPerDay;
+                  // Pre-filter references for this phase to avoid filtering in inner loop
+                  const phaseRefs = references.filter(
+                    (ref) => ref.phaseId === ph.id && ref.type !== "milestone"
+                  );
+                  
+                  if (phaseRefs.length === 0) return null;
+                  
+                  // Only render cells for days that have references
+                  const cellsWithRefs = phaseRefs
+                    .map((ref) => {
+                      if (!ref.date && !ref.calendarDayId) return null;
+                      const dateKey = ref.date || "";
+                      // ⚡ OPTIMIZATION: Use getDayIndex instead of findIndex (O(1) vs O(n))
+                      const dayDate = new Date(dateKey);
+                      const dayIdx = getDayIndex(dayDate);
+                      if (dayIdx < 0 || dayIdx >= totalDays) return null;
+                      
+                      const cellRefs = phaseRefs.filter(
+                        (r) => r.date === dateKey || r.calendarDayId
+                      );
+                      const milestoneKey = `${ph.id}-${dateKey}`;
+                      const milestoneRef = milestoneReferencesMap.get(milestoneKey);
+                      const top = laneTop(phaseIdx);
+                      const left = dayIdx * pxPerDay;
 
-                    return (
-                      <GanttCell
-                        key={`cell-${ph.id}-${dateKey}`}
-                        phaseId={ph.id}
-                        date={dateKey}
-                        left={left}
-                        top={top}
-                        width={pxPerDay}
-                        height={trackHeight}
-                        cellReferences={cellRefs}
-                        milestoneReference={milestoneRef}
-                        onAddComment={onAddCellComment}
-                        onAddFile={onAddCellFile}
-                        onAddLink={onAddCellLink}
-                        onToggleMilestone={onToggleCellMilestone}
-                      />
-                    );
-                  });
+                      return (
+                        <GanttCell
+                          key={`cell-${ph.id}-${dateKey}`}
+                          phaseId={ph.id}
+                          date={dateKey}
+                          left={left}
+                          top={top}
+                          width={pxPerDay}
+                          height={trackHeight}
+                          cellReferences={cellRefs}
+                          milestoneReference={milestoneRef}
+                          onAddComment={onAddCellComment}
+                          onAddFile={onAddCellFile}
+                          onAddLink={onAddCellLink}
+                          onToggleMilestone={onToggleCellMilestone}
+                        />
+                      );
+                    })
+                    .filter(Boolean);
+                  
+                  return cellsWithRefs;
                 })}
               {/* interactive overlays for phases (span entire lane) - for drag selection */}
               {phases.map((ph, idx) => {

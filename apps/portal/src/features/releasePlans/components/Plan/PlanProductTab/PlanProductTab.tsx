@@ -137,7 +137,7 @@ export function PlanProductTab({
             />
           </Box>
           <Divider />
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, maxHeight: 300, overflow: "auto" }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <FeaturesContent
               isLoadingFeatures={isLoadingFeatures}
               allProductFeatures={allProductFeatures}
@@ -169,7 +169,7 @@ export function PlanProductTab({
             />
           </Box>
           <Divider />
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             {isLoading ? (
               <ComponentsLoadingState />
             ) : planComponentsWithDetails.length === 0 ? (
@@ -179,7 +179,6 @@ export function PlanProductTab({
                 components={planComponentsWithDetails}
                 onEdit={handleEditComponent}
                 onDelete={handleDeleteComponent}
-                styles={styles}
               />
             )}
           </Box>

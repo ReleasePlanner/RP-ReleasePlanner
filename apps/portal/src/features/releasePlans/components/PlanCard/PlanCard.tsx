@@ -1,20 +1,65 @@
-import { useImperativeHandle, forwardRef } from "react";
+import { useImperativeHandle, forwardRef, lazy, Suspense } from "react";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import type { Plan } from "../../types";
 import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
 import { PlanCardContent } from "./components/PlanCardContent";
-import { PlanCardDialogs } from "./components/PlanCardDialogs";
-import PlanRightPanel from "../Plan/PlanRightPanel/PlanRightPanel";
 import { ErrorSnackbar } from "./components/ErrorSnackbar";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { useComponentLogger } from "../../../../utils/logging/simpleLogging";
+
+// ⚡ OPTIMIZATION: Lazy load heavy components
+// PlanRightPanel contains GanttChart which is a heavy component
+const PlanRightPanel = lazy(
+  () =>
+    import(
+      /* webpackChunkName: "plan-right-panel" */
+      /* webpackPrefetch: true */
+      "../Plan/PlanRightPanel"
+    )
+      .then((module) => {
+        console.log("[PlanCard] PlanRightPanel loaded successfully:", module);
+        return module;
+      })
+      .catch((error) => {
+        console.error("[PlanCard] Failed to load PlanRightPanel:", error);
+        // Return a fallback component that shows an error message
+        return {
+          default: () => (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                p: 3,
+                color: "error.main",
+              }}
+            >
+              Error loading timeline. Please refresh the page.
+            </Box>
+          ),
+        };
+      })
+);
+
+// PlanCardDialogs contains multiple dialog components - lazy load them
+// Note: PlanCardDialogs uses named export, so we wrap it
+const PlanCardDialogs = lazy(
+  () =>
+    import(
+      /* webpackChunkName: "plan-card-dialogs" */
+      /* webpackPrefetch: true */
+      "./components/PlanCardDialogs"
+    ).then((module) => ({ default: module.PlanCardDialogs }))
+);
 import {
   useUpdatePlan,
-  useFeatures,
   useUpdateFeature,
   useProducts,
   useUpdateProduct,
 } from "../../../../api/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 
 // New hooks for SoC
 import { usePlanCardState } from "./hooks/usePlanCardState";
@@ -48,8 +93,14 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
   const updateFeatureMutation = useUpdateFeature();
   const updateProductMutation = useUpdateProduct();
 
-  // Get products to access components for version updates
+  const { metadata: originalMetadata, tasks } = plan;
+  const queryClient = useQueryClient();
+
+  // ⚡ OPTIMIZATION: Only fetch products when productId exists and we need them
+  // This prevents unnecessary API calls on mount
   const { data: products = [] } = useProducts();
+  // Note: useProducts doesn't support enabled flag, but we can rely on React Query cache
+  // Products are likely already cached from other parts of the app
 
   // State management hook
   const {
@@ -80,12 +131,19 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
     setEditOpen,
   } = usePlanCard(plan, updatePlanMutation, localMetadata);
 
-  const { metadata: originalMetadata, tasks } = plan;
-
-  // Get all features for the product to update their status
-  const { data: allProductFeatures = [] } = useFeatures(
-    originalMetadata?.productId
-  );
+  // ⚡ OPTIMIZATION: Don't fetch features eagerly - they're loaded by PlanProductTab when needed
+  // Get features from cache if available, otherwise empty array
+  // This prevents unnecessary API calls on mount
+  // Features will be fetched when user navigates to Product tab (PlanProductTab)
+  // When saving, if features are not in cache, they'll be fetched on-demand
+  const allProductFeatures =
+    (originalMetadata?.productId
+      ? queryClient.getQueryData<Array<{ id: string }>>([
+          "features",
+          "list",
+          originalMetadata.productId,
+        ])
+      : null) || [];
 
   // Handlers hook
   const {
@@ -93,6 +151,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
     handleLeftPercentChangeOptimized,
     handleAddPhaseOptimized,
     handlePhaseRangeChangeOptimized,
+    handleReorderPhases,
     openEditOptimized,
     handleNameChange,
     handleProductChange,
@@ -287,60 +346,87 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             handleSaveTimeline={handleSaveTimeline}
             openEditOptimized={openEditOptimized}
             handlePhaseRangeChangeOptimized={handlePhaseRangeChangeOptimized}
+            handleReorderPhases={handleReorderPhases}
             setPhaseOpen={setPhaseOpen}
           />
         }
         right={
-          <PlanRightPanel
-            startDate={metadata.startDate}
-            endDate={metadata.endDate}
-            tasks={tasks}
-            phases={metadata.phases}
-            calendarIds={metadata.calendarIds}
-            milestones={metadata.milestones}
-            references={metadata.references}
-            onMilestoneAdd={handleMilestoneAdd}
-            onMilestoneUpdate={handleMilestoneUpdate}
-            onAddPhase={() => setPhaseOpen(true)}
-            onEditPhase={openEditOptimized}
-            onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-            onAddCellComment={handleAddCellComment}
-            onAddCellFile={handleAddCellFile}
-            onAddCellLink={handleAddCellLink}
-            onToggleCellMilestone={handleToggleCellMilestone}
-            onScrollToDateReady={setScrollToDateFn}
-            onSaveTimeline={handleSaveTimeline}
-            hasTimelineChanges={hasTimelineChanges}
-            isSavingTimeline={updatePlanMutation.isPending}
-          />
+          <Suspense
+            fallback={
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  minHeight: 400,
+                  gap: 2,
+                }}
+              >
+                <CircularProgress size={32} />
+                <Typography variant="body2" color="text.secondary">
+                  Cargando timeline...
+                </Typography>
+              </Box>
+            }
+          >
+            <PlanRightPanel
+              startDate={metadata.startDate}
+              endDate={metadata.endDate}
+              tasks={tasks}
+              phases={metadata.phases}
+              calendarIds={metadata.calendarIds}
+              milestones={metadata.milestones}
+              references={metadata.references}
+              onMilestoneAdd={handleMilestoneAdd}
+              onMilestoneUpdate={handleMilestoneUpdate}
+              onAddPhase={() => setPhaseOpen(true)}
+              onEditPhase={openEditOptimized}
+              onPhaseRangeChange={handlePhaseRangeChangeOptimized}
+              onReorderPhases={handleReorderPhases}
+              onAddCellComment={handleAddCellComment}
+              onAddCellFile={handleAddCellFile}
+              onAddCellLink={handleAddCellLink}
+              onToggleCellMilestone={handleToggleCellMilestone}
+              onScrollToDateReady={setScrollToDateFn}
+              onSaveTimeline={handleSaveTimeline}
+              hasTimelineChanges={hasTimelineChanges}
+              isSavingTimeline={updatePlanMutation.isPending}
+            />
+          </Suspense>
         }
       />
 
-      <PlanCardDialogs
-        planId={plan.id}
-        phaseOpen={phaseOpen}
-        setPhaseOpen={setPhaseOpen}
-        editOpen={editOpen}
-        editingPhase={editingPhase}
-        setEditOpen={setEditOpen}
-        handleAddPhaseOptimized={handleAddPhaseOptimized}
-        onPhaseSave={handlePhaseSave}
-        handleSaveTimeline={handleSaveTimeline}
-        setLocalMetadata={setLocalMetadata}
-        isEditingRef={isEditingRef}
-        metadata={metadata}
-        milestoneDialogOpen={milestoneDialogOpen}
-        selectedMilestoneDate={selectedMilestoneDate}
-        editingMilestone={editingMilestone}
-        handleMilestoneSave={handleMilestoneSave}
-        handleMilestoneDelete={handleMilestoneDelete}
-        handleMilestoneDialogClose={handleMilestoneDialogClose}
-        referenceDialogOpen={referenceDialogOpen}
-        referenceForDialog={referenceForDialog}
-        isCreatingReference={isCreatingReference}
-        handleSaveReference={handleSaveReference}
-        handleReferenceDialogClose={handleReferenceDialogClose}
-      />
+      {/* ⚡ OPTIMIZATION: Lazy load dialogs - only load when needed */}
+      <Suspense fallback={null}>
+        <PlanCardDialogs
+          planId={plan.id}
+          phaseOpen={phaseOpen}
+          setPhaseOpen={setPhaseOpen}
+          editOpen={editOpen}
+          editingPhase={editingPhase}
+          setEditOpen={setEditOpen}
+          handleAddPhaseOptimized={handleAddPhaseOptimized}
+          onPhaseSave={handlePhaseSave}
+          handleSaveTimeline={handleSaveTimeline}
+          setLocalMetadata={setLocalMetadata}
+          isEditingRef={isEditingRef}
+          metadata={metadata}
+          originalMetadata={originalMetadata}
+          milestoneDialogOpen={milestoneDialogOpen}
+          selectedMilestoneDate={selectedMilestoneDate}
+          editingMilestone={editingMilestone}
+          handleMilestoneSave={handleMilestoneSave}
+          handleMilestoneDelete={handleMilestoneDelete}
+          handleMilestoneDialogClose={handleMilestoneDialogClose}
+          referenceDialogOpen={referenceDialogOpen}
+          referenceForDialog={referenceForDialog}
+          isCreatingReference={isCreatingReference}
+          handleSaveReference={handleSaveReference}
+          handleReferenceDialogClose={handleReferenceDialogClose}
+        />
+      </Suspense>
 
       <ErrorSnackbar
         open={errorSnackbar.open}

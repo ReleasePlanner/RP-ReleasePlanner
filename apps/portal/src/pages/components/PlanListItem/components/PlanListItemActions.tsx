@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Stack, Tooltip, IconButton, CircularProgress } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import {
   InfoOutlined as InfoIcon,
   Delete as DeleteIcon,
@@ -13,10 +14,10 @@ export type PlanListItemActionsProps = {
   readonly onSave: (e: React.MouseEvent) => void;
   readonly onCopyId: (e: React.MouseEvent) => void;
   readonly onDelete: (e: React.MouseEvent) => void;
-  readonly actionsStackStyles: Record<string, unknown>;
-  readonly getSaveButtonStyles: (hasPendingChanges: boolean) => Record<string, unknown>;
-  readonly copyButtonStyles: Record<string, unknown>;
-  readonly deleteButtonStyles: Record<string, unknown>;
+  readonly actionsStackStyles: SxProps<Theme>;
+  readonly getSaveButtonStyles: (hasPendingChanges: boolean) => SxProps<Theme>;
+  readonly copyButtonStyles: SxProps<Theme>;
+  readonly deleteButtonStyles: SxProps<Theme>;
 };
 
 /**

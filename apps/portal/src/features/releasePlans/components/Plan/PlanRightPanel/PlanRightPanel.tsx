@@ -32,6 +32,7 @@ export type PlanRightPanelProps = {
   readonly onSaveTimeline?: () => Promise<void>;
   readonly hasTimelineChanges?: boolean;
   readonly isSavingTimeline?: boolean;
+  readonly onReorderPhases?: (reorderedPhases: PlanPhase[]) => void;
 };
 
 export function PlanRightPanel({
@@ -55,6 +56,7 @@ export function PlanRightPanel({
   onSaveTimeline,
   hasTimelineChanges = false,
   isSavingTimeline = false,
+  onReorderPhases,
 }: PlanRightPanelProps) {
   return (
     <Box
@@ -93,6 +95,7 @@ export function PlanRightPanel({
         onSaveTimeline={onSaveTimeline}
         hasTimelineChanges={hasTimelineChanges}
         isSavingTimeline={isSavingTimeline}
+        onReorderPhases={onReorderPhases}
       />
     </Box>
   );

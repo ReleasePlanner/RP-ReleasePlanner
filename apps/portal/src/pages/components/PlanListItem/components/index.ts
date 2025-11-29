@@ -6,4 +6,6 @@ export { PlanListItemActions } from "./PlanListItemActions";
 export type { PlanListItemActionsProps } from "./PlanListItemActions";
 export { PlanListItemExpandedContent } from "./PlanListItemExpandedContent";
 export type { PlanListItemExpandedContentProps } from "./PlanListItemExpandedContent";
+export { PlanCardLoadingFallback } from "./PlanCardLoadingFallback";
+export type { PlanCardLoadingFallbackProps } from "./PlanCardLoadingFallback";
 

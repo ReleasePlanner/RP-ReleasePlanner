@@ -16,6 +16,10 @@ export function useProducts() {
   return useQuery({
     queryKey: QUERY_KEYS.list(),
     queryFn: () => productsService.getAll(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Use cached data if available, refetch in background
   });
 }
 

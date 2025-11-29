@@ -1,17 +1,8 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  useTheme,
-  alpha,
-  Box,
-} from "@mui/material";
+import { Box } from "@mui/material";
 import type { PlanComponent } from "../../../../../types";
 import { CurrentVersionDisplay, VersionTextField } from "./components";
 import { useVersionForm } from "./hooks";
+import { BaseEditDialog } from "../../../../../../components/BaseEditDialog";
 
 export type ComponentVersionEditDialogProps = {
   readonly open: boolean;
@@ -28,7 +19,6 @@ export function ComponentVersionEditDialog({
   onClose,
   onSave,
 }: ComponentVersionEditDialogProps) {
-  const theme = useTheme();
   const { finalVersion, versionError, handleVersionChange, validateForm } = useVersionForm(
     open,
     component,
@@ -50,59 +40,30 @@ export function ComponentVersionEditDialog({
 
   if (!component) return null;
 
+  const isFormValid = !!finalVersion && !versionError;
+
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={true}
+      title="Edit New Version"
+      subtitle="Update the final version for this component"
       maxWidth="sm"
-      fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: 2,
-          },
-        },
-      }}
+      fullWidth={true}
+      onSave={handleSave}
+      saveButtonText="Save"
+      cancelButtonText="Cancel"
+      isFormValid={isFormValid}
+      saveButtonDisabled={!isFormValid}
+      showDefaultActions={true}
     >
-      <DialogTitle
-        sx={{
-          pb: 1.5,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.125rem" }}>
-          Edit New Version
-        </Typography>
-      </DialogTitle>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {currentVersion && <CurrentVersionDisplay currentVersion={currentVersion} />}
 
-      <DialogContent sx={{ pt: 3 }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {currentVersion && <CurrentVersionDisplay currentVersion={currentVersion} />}
-
-          <VersionTextField value={finalVersion} error={versionError} onChange={handleVersionChange} />
-        </Box>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        }}
-      >
-        <Button onClick={onClose} sx={{ textTransform: "none" }}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={!finalVersion || !!versionError}
-          sx={{ textTransform: "none", fontWeight: 600 }}
-        >
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <VersionTextField value={finalVersion} error={versionError} onChange={handleVersionChange} />
+      </Box>
+    </BaseEditDialog>
   );
 }
 

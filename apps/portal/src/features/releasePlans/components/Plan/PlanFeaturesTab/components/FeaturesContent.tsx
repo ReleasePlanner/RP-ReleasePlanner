@@ -1,7 +1,7 @@
-import { Box } from "@mui/material";
-import { FeaturesTable } from "@/features/feature/components";
+import { Box, Stack } from "@mui/material";
 import { FeaturesLoadingState } from "./FeaturesLoadingState";
 import { FeaturesEmptyState } from "./FeaturesEmptyState";
+import { FeatureCard } from "./FeatureCard";
 import type { Feature } from "../../../../feature/types";
 
 export type FeaturesContentProps = {
@@ -31,18 +31,24 @@ export function FeaturesContent({
     <Box
       sx={{
         flex: 1,
-        overflow: "hidden",
+        overflow: "auto",
         minHeight: 0,
         display: "flex",
         flexDirection: "column",
         width: "100%",
+        p: { xs: 1.5, sm: 2 },
       }}
     >
-      <FeaturesTable
-        features={planFeatures}
-        onDeleteFeature={onDeleteFeature}
-        isRemoving={isRemoving}
-      />
+      <Stack spacing={2}>
+        {planFeatures.map((feature) => (
+          <FeatureCard
+            key={feature.id}
+            feature={feature}
+            isRemoving={isRemoving === feature.id}
+            onDelete={onDeleteFeature}
+          />
+        ))}
+      </Stack>
     </Box>
   );
 }

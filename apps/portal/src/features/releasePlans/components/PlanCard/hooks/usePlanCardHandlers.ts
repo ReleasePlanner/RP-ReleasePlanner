@@ -221,6 +221,16 @@ export function usePlanCardHandlers({
     [setLocalMetadata]
   );
 
+  const handleReorderPhases = useCallback(
+    (reorderedPhases: PlanPhase[]) => {
+      setLocalMetadata((prev) => ({
+        ...prev,
+        phases: reorderedPhases,
+      }));
+    },
+    [setLocalMetadata]
+  );
+
   const handleCalendarIdsChange = useCallback(
     (newCalendarIds: string[]) => {
       setLocalMetadata((prev) => ({
@@ -297,6 +307,7 @@ export function usePlanCardHandlers({
     handleEndDateChange,
     openEditOptimized,
     handlePhaseRangeChangeOptimized,
+    handleReorderPhases,
     handleFeatureIdsChange,
     handleComponentsChange,
     handleCalendarIdsChange,
