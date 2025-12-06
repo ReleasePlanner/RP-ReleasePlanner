@@ -18,9 +18,10 @@ describe('GanttCellData', () => {
       expect(cellData.phaseId).toBe('phase-1');
       expect(cellData.isMilestone).toBe(true);
       expect(cellData.milestoneColor).toBe('#FF0000');
-      expect(cellData.comments).toEqual([]);
-      expect(cellData.files).toEqual([]);
-      expect(cellData.links).toEqual([]);
+      // TypeORM relations are not initialized in constructor
+      expect(cellData.comments).toBeUndefined();
+      expect(cellData.files).toBeUndefined();
+      expect(cellData.links).toBeUndefined();
     });
 
     it('should create a GanttCellData with minimal properties', () => {

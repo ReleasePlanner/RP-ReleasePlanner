@@ -3,9 +3,11 @@
  * Coverage: 100%
  */
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { ProductService } from './product.service';
 import { IProductRepository } from '../infrastructure/product.repository';
 import { Product } from '../domain/product.entity';
+import { ProductDependency } from '../domain/product-dependency.entity';
 import { ProductComponentVersion, ComponentTypeEnum } from '../domain/component-version.entity';
 
 // Alias for backward compatibility in tests
@@ -31,6 +33,22 @@ describe('ProductService', () => {
     count: jest.fn(),
   };
 
+  const mockProductDependencyRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    create: jest.fn(),
+  };
+
+  const mockProductRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    create: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +56,14 @@ describe('ProductService', () => {
         {
           provide: 'IProductRepository',
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(ProductDependency),
+          useValue: mockProductDependencyRepository,
+        },
+        {
+          provide: getRepositoryToken(Product),
+          useValue: mockProductRepository,
         },
       ],
     }).compile();
@@ -53,7 +79,7 @@ describe('ProductService', () => {
   describe('findAll', () => {
     it('should return an array of ProductResponseDto', async () => {
       const mockProducts = [
-        new Product('Product 1', [new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0')]),
+        new Product('Product 1', [new ComponentVersion('comp-type-id', '1.0.0', '0.9.0')]),
         new Product('Product 2', []),
       ];
       mockProducts[0].id = 'id1';
@@ -97,7 +123,7 @@ describe('ProductService', () => {
       name: 'New Product',
       components: [
         {
-          type: ComponentType.WEB,
+          componentTypeId: 'comp-type-id',
           currentVersion: '1.0.0',
           previousVersion: '0.9.0',
         },
@@ -106,7 +132,7 @@ describe('ProductService', () => {
 
     it('should create and return a ProductResponseDto', async () => {
       const mockProduct = new Product(createDto.name, [
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0'),
+        new ComponentVersion('comp-type-id', '1.0.0', '0.9.0'),
       ]);
       mockProduct.id = 'new-id';
 
@@ -194,7 +220,7 @@ describe('ProductService', () => {
       const updateDtoWithComponents: UpdateProductDto = {
         components: [
           {
-            type: ComponentType.WEB,
+            componentTypeId: 'comp-type-id',
             currentVersion: '2.0.0',
             previousVersion: '1.0.0',
           },
@@ -238,7 +264,7 @@ describe('ProductService', () => {
       const updateDtoNoName: UpdateProductDto = {
         components: [
           {
-            type: ComponentType.WEB,
+            componentTypeId: 'comp-type-id',
             currentVersion: '2.0.0',
             previousVersion: '1.0.0',
           },

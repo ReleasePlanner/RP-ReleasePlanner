@@ -1,15 +1,37 @@
 /**
- * Component Version Entity Unit Tests
+ * Product Component Version Entity Unit Tests
  * Coverage: 100%
  */
-import { ComponentVersion, ComponentType } from './component-version.entity';
+import { ProductComponentVersion, ComponentTypeEnum } from './component-version.entity';
+import { ProductComponent } from '../../component-types/domain/component-type.entity';
 
-describe('ComponentVersion', () => {
+describe('ProductComponentVersion', () => {
   describe('constructor', () => {
-    it('should create a ComponentVersion with all properties', () => {
-      const component = new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
+    it('should create a ProductComponentVersion with all properties', () => {
+      const componentType = new ProductComponent();
+      componentType.id = 'comp-type-id';
+      componentType.code = ComponentTypeEnum.WEB;
+      
+      const component = new ProductComponentVersion(componentType, '1.0.0', '0.9.0');
 
-      expect(component.type).toBe(ComponentType.WEB);
+      expect(component.componentType).toBe(componentType);
+      expect(component.componentTypeId).toBe('comp-type-id');
+      expect(component.currentVersion).toBe('1.0.0');
+      expect(component.previousVersion).toBe('0.9.0');
+    });
+
+    it('should create a ProductComponentVersion with componentTypeId string', () => {
+      const component = new ProductComponentVersion('comp-type-id', '1.0.0', '0.9.0');
+
+      expect(component.componentTypeId).toBe('comp-type-id');
+      expect(component.currentVersion).toBe('1.0.0');
+      expect(component.previousVersion).toBe('0.9.0');
+    });
+
+    it('should create a ProductComponentVersion with name', () => {
+      const component = new ProductComponentVersion('comp-type-id', '1.0.0', '0.9.0', 'Component Name');
+
+      expect(component.name).toBe('Component Name');
       expect(component.currentVersion).toBe('1.0.0');
       expect(component.previousVersion).toBe('0.9.0');
     });
@@ -18,50 +40,49 @@ describe('ComponentVersion', () => {
   describe('validate', () => {
     it('should pass validation with valid data', () => {
       expect(() => {
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
+        new ProductComponentVersion('comp-type-id', '1.0.0', '0.9.0');
       }).not.toThrow();
-    });
-
-    it('should throw error when type is invalid', () => {
-      expect(() => {
-        new ComponentVersion('invalid' as ComponentType, '1.0.0', '0.9.0');
-      }).toThrow('Invalid component type: invalid');
     });
 
     it('should throw error when currentVersion is empty', () => {
       expect(() => {
-        new ComponentVersion(ComponentType.WEB, '', '0.9.0');
+        new ProductComponentVersion('comp-type-id', '', '0.9.0');
       }).toThrow('Current version is required');
     });
 
     it('should throw error when previousVersion is empty', () => {
       expect(() => {
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '');
+        new ProductComponentVersion('comp-type-id', '1.0.0', '');
       }).toThrow('Previous version is required');
     });
 
     it('should throw error when currentVersion is whitespace only', () => {
       expect(() => {
-        new ComponentVersion(ComponentType.WEB, '   ', '0.9.0');
+        new ProductComponentVersion('comp-type-id', '   ', '0.9.0');
       }).toThrow('Current version is required');
     });
 
     it('should throw error when previousVersion is whitespace only', () => {
       expect(() => {
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '   ');
+        new ProductComponentVersion('comp-type-id', '1.0.0', '   ');
       }).toThrow('Previous version is required');
     });
+  });
 
-    it('should accept all valid component types', () => {
-      expect(() => {
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
-      }).not.toThrow();
-      expect(() => {
-        new ComponentVersion(ComponentType.SERVICES, '1.0.0', '0.9.0');
-      }).not.toThrow();
-      expect(() => {
-        new ComponentVersion(ComponentType.MOBILE, '1.0.0', '0.9.0');
-      }).not.toThrow();
+  describe('getTypeCode', () => {
+    it('should return component type code when componentType is set', () => {
+      const componentType = new ProductComponent();
+      componentType.code = ComponentTypeEnum.WEB;
+      
+      const component = new ProductComponentVersion(componentType, '1.0.0', '0.9.0');
+
+      expect(component.getTypeCode()).toBe(ComponentTypeEnum.WEB);
+    });
+
+    it('should return empty string when componentType is not set', () => {
+      const component = new ProductComponentVersion('comp-type-id', '1.0.0', '0.9.0');
+
+      expect(component.getTypeCode()).toBe('');
     });
   });
 });

@@ -52,6 +52,7 @@ describe('CalendarRepository', () => {
 
       expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { name: 'Calendar One' },
+        relations: ['country'],
       });
       expect(result).toEqual(calendar);
     });
@@ -76,7 +77,7 @@ describe('CalendarRepository', () => {
 
       expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'test-id' },
-        relations: ['days'],
+        relations: ['days', 'country'],
       });
       expect(result).toEqual(calendar);
     });
@@ -101,7 +102,7 @@ describe('CalendarRepository', () => {
 
       expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'test-id' },
-        relations: ['days'],
+        relations: ['days', 'country'],
       });
       expect(result).toEqual(calendar);
     });
@@ -146,6 +147,7 @@ describe('CalendarRepository', () => {
 
       expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'test-id' },
+        relations: ['days', 'country'],
       });
       expect(mockTypeOrmRepository.save).toHaveBeenCalled();
       expect(result.name).toBe('New Name');

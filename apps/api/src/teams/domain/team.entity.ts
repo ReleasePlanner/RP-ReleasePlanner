@@ -1,6 +1,5 @@
 import { Entity, Column, OneToMany, Index } from "typeorm";
 import { BaseEntity } from "../../common/database/base.entity";
-import { TeamTalentAssignment } from "./team-talent-assignment.entity";
 
 export enum TeamType {
   INTERNAL = "internal",
@@ -9,8 +8,7 @@ export enum TeamType {
 }
 
 @Entity("teams")
-@Index(["name"], { unique: true })
-@Index(["type"])
+@Index("IDX_team_name", ["name"], { unique: true })
 export class Team extends BaseEntity {
   @Column({ type: "varchar", length: 255 })
   name: string;
@@ -26,11 +24,15 @@ export class Team extends BaseEntity {
   })
   type: TeamType;
 
-  @OneToMany(() => TeamTalentAssignment, (assignment) => assignment.team, {
-    cascade: true,
-    eager: false,
-  })
-  talentAssignments?: TeamTalentAssignment[];
+  @OneToMany(
+    () => require("./team-talent-assignment.entity").TeamTalentAssignment,
+    (assignment: any) => assignment.team,
+    {
+      cascade: true,
+      eager: false,
+    }
+  )
+  talentAssignments?: any[];
 
   constructor(name?: string, description?: string, type?: TeamType) {
     super();

@@ -19,6 +19,19 @@ describe('CalendarService', () => {
     findAll: jest.fn(),
     findById: jest.fn(),
     findByName: jest.fn(),
+    findByCountryId: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    exists: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    findWithDays: jest.fn(),
+  };
+
+  const mockCountryRepository = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -34,6 +47,10 @@ describe('CalendarService', () => {
         {
           provide: 'ICalendarRepository',
           useValue: mockRepository,
+        },
+        {
+          provide: 'ICountryRepository',
+          useValue: mockCountryRepository,
         },
       ],
     }).compile();
