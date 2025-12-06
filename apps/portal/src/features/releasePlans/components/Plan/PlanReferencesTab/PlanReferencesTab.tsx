@@ -47,16 +47,16 @@ export function PlanReferencesTab({
   return (
     <Box
       sx={{
-        height: "100%",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
         p: { xs: 1.5, sm: 2 },
-        overflow: "hidden",
+        minHeight: "fit-content",
       }}
     >
       <Stack
         spacing={1}
-        sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+        sx={{ width: "100%", display: "flex", flexDirection: "column" }}
       >
         <ReferencesHeader count={references.length} onAdd={handleAdd} />
 

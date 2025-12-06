@@ -133,10 +133,6 @@ export class ProductRepository
             if (!c) {
               throw new Error(`Component is null or undefined`);
             }
-            // Validate that componentTypeId is provided
-            if (!c.componentTypeId) {
-              throw new Error(`Component type is missing: 'componentTypeId' must be provided`);
-            }
             // Validate currentVersion
             if (!c.currentVersion || (typeof c.currentVersion === 'string' && c.currentVersion.trim() === '')) {
               throw new Error(`Component currentVersion is missing or empty: ${JSON.stringify(c)}`);
@@ -150,26 +146,50 @@ export class ProductRepository
               ? c.previousVersion 
               : c.currentVersion;
             
-            // Handle componentTypeId (required)
-            let componentType: ProductComponent | undefined;
-            try {
-              componentType = await this.componentTypeRepository.findOne({
-                where: { id: c.componentTypeId } as any,
-              });
-              if (!componentType) {
-                console.error(`ProductRepository.update - Component Type with id "${c.componentTypeId}" not found`);
-                throw new Error(`Component Type with id "${c.componentTypeId}" not found`);
-              }
-              console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
-            } catch (error) {
-              console.error(`ProductRepository.update - Error finding ProductComponent by ID "${c.componentTypeId}":`, error);
-              throw error;
-            }
+            // Determine componentTypeId
+            let componentTypeId: string | undefined = c.componentTypeId;
             
-            // If component has an id and exists in the entity, update it
+            // If component has an id and exists in the entity, try to get componentTypeId from existing component
             if (c.id && existingComponentIds.has(c.id)) {
               const existingComponent = entity.components.find((comp: any) => comp.id === c.id);
               if (existingComponent) {
+                // If componentTypeId is not provided in DTO, use the one from existing component
+                if (!componentTypeId && existingComponent.componentTypeId) {
+                  componentTypeId = existingComponent.componentTypeId;
+                  console.log(`ProductRepository.update - Using componentTypeId from existing component: ${componentTypeId}`);
+                }
+                
+                // Handle componentTypeId (required for update)
+                let componentType: ProductComponent | undefined;
+                if (componentTypeId) {
+                  try {
+                    componentType = await this.componentTypeRepository.findOne({
+                      where: { id: componentTypeId } as any,
+                    });
+                    if (!componentType) {
+                      console.error(`ProductRepository.update - Component Type with id "${componentTypeId}" not found`);
+                      throw new Error(`Component Type with id "${componentTypeId}" not found`);
+                    }
+                    console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
+                  } catch (error) {
+                    console.error(`ProductRepository.update - Error finding ProductComponent by ID "${componentTypeId}":`, error);
+                    throw error;
+                  }
+                } else {
+                  // If existing component doesn't have componentTypeId, use the one from the relation if available
+                  if (existingComponent.componentType?.id) {
+                    componentTypeId = existingComponent.componentType.id;
+                    componentType = existingComponent.componentType;
+                    console.log(`ProductRepository.update - Using componentTypeId from existing component relation: ${componentTypeId}`);
+                  } else {
+                    // Component exists but has no componentTypeId - this is a legacy component
+                    // For updates, we'll keep the component as-is without changing its type
+                    // Only update the version fields and name
+                    console.log(`ProductRepository.update - Component "${c.id}" has no componentTypeId - updating without changing type`);
+                    componentType = undefined; // Don't change the component type
+                  }
+                }
+                
                 // Update existing component properties
                 // Ensure productId is set (defensive)
                 if (!existingComponent.productId) {
@@ -179,14 +199,15 @@ export class ProductRepository
                 if (c.name !== undefined) {
                   existingComponent.name = c.name;
                 }
-                // Update componentType if it's different to avoid unnecessary updates
-                if (!existingComponent.componentTypeId || existingComponent.componentTypeId !== componentType.id) {
+                // Update componentType only if a new one is provided and it's different
+                if (componentType && (!existingComponent.componentTypeId || existingComponent.componentTypeId !== componentType.id)) {
                   // For ManyToOne relations, TypeORM prefers updating the foreign key directly
                   // Clear the relation object first to avoid conflicts with eager loading
                   delete (existingComponent as any).componentType;
                   // Update the foreign key - TypeORM will handle the relation on save
                   existingComponent.componentTypeId = componentType.id;
                 }
+                // If componentType is undefined, we're not changing the type (legacy component)
                 existingComponent.currentVersion = c.currentVersion;
                 existingComponent.previousVersion = previousVersion;
                 components.push(existingComponent);
@@ -197,9 +218,44 @@ export class ProductRepository
             // Otherwise, create a new component
             // Note: If c.id exists but component doesn't exist in entity, we ignore the id
             // and create a new component (the id might be invalid or from another product)
-            if (!componentType) {
+            // For new components, componentTypeId is required
+            if (!componentTypeId) {
+              // Check if type is provided as fallback (legacy support)
+              if (c.type && ['web', 'services', 'mobile'].includes(c.type)) {
+                // Try to find component type by code matching the type enum
+                const componentTypeByCode = await this.componentTypeRepository.findOne({
+                  where: { code: c.type.toUpperCase() } as any,
+                });
+                if (componentTypeByCode) {
+                  componentTypeId = componentTypeByCode.id;
+                  console.log(`ProductRepository.update - Found ProductComponent by code "${c.type}": ${componentTypeId}`);
+                } else {
+                  throw new Error(`Component type is required: 'componentTypeId' must be provided for new components. Legacy type "${c.type}" does not match any component type code.`);
+                }
+              } else {
+                throw new Error(`Component type is required: 'componentTypeId' must be provided for new components`);
+              }
+            }
+            
+            if (!componentTypeId) {
               throw new Error('Component type is required (componentTypeId must be provided)');
             }
+            
+            let componentType: ProductComponent | undefined;
+            try {
+              componentType = await this.componentTypeRepository.findOne({
+                where: { id: componentTypeId } as any,
+              });
+              if (!componentType) {
+                console.error(`ProductRepository.update - Component Type with id "${componentTypeId}" not found`);
+                throw new Error(`Component Type with id "${componentTypeId}" not found`);
+              }
+              console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
+            } catch (error) {
+              console.error(`ProductRepository.update - Error finding ProductComponent by ID "${componentTypeId}":`, error);
+              throw error;
+            }
+            
             const newComponent = new ProductComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
             (newComponent as any).productId = id;
             // Explicitly set the product relation to ensure TypeORM cascade works correctly
@@ -217,10 +273,8 @@ export class ProductRepository
             if (!(comp as any).product) {
               (comp as any).product = entity;
             }
-            // Ensure componentTypeId is set
-            if (!comp.componentTypeId) {
-              throw new Error('Component componentTypeId is missing');
-            }
+            // Note: componentTypeId is optional for existing components (legacy support)
+            // New components must have componentTypeId (validated earlier)
           }
           
           // Find components that need to be removed (orphans)

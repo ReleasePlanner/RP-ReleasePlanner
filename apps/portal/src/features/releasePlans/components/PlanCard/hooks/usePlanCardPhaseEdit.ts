@@ -11,17 +11,11 @@ export function usePlanCardPhaseEdit(
     (updatedPhase: PlanPhase) => {
       isEditingRef.current = true;
 
-      console.log("[PlanCard] Saving edited phase:", {
+      console.log("[PlanCard] Saving edited phase to memory:", {
         updatedPhaseId: updatedPhase.id,
         updatedPhaseName: updatedPhase.name,
         updatedPhaseStartDate: updatedPhase.startDate,
         updatedPhaseEndDate: updatedPhase.endDate,
-        existingPhases: (metadata.phases || []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          startDate: p.startDate,
-          endDate: p.endDate,
-        })),
       });
 
       if (
@@ -44,38 +38,42 @@ export function usePlanCardPhaseEdit(
         return;
       }
 
-      const existingPhaseIndex = (metadata.phases || []).findIndex(
-        (p) => p.id === updatedPhase.id
-      );
+      // ⚡ DISCONNECTED OBJECTS PATTERN: Update only in memory
+      // Use functional update to access current localMetadata state
+      setLocalMetadata((prev) => {
+        const currentPhases = prev.phases || [];
+        const existingPhaseIndex = currentPhases.findIndex(
+          (p) => p.id === updatedPhase.id
+        );
 
-      if (existingPhaseIndex < 0) {
-        console.error("[PlanCard] Phase not found for update:", {
+        if (existingPhaseIndex < 0) {
+          console.error("[PlanCard] Phase not found for update:", {
+            phaseId: updatedPhase.id,
+            phaseName: updatedPhase.name,
+            existingPhases: currentPhases.map((p) => ({
+              id: p.id,
+              name: p.name,
+            })),
+          });
+          isEditingRef.current = false;
+          return prev; // Return unchanged state
+        }
+
+        const updatedPhases = [...currentPhases];
+        updatedPhases[existingPhaseIndex] = updatedPhase;
+
+        console.log("[PlanCard] Phase updated in memory:", {
           phaseId: updatedPhase.id,
           phaseName: updatedPhase.name,
-          existingPhases: (metadata.phases || []).map((p) => ({
-            id: p.id,
-            name: p.name,
-          })),
+          index: existingPhaseIndex,
+          totalPhases: updatedPhases.length,
         });
-        isEditingRef.current = false;
-        return;
-      }
 
-      const updatedPhases = [...(metadata.phases || [])];
-      updatedPhases[existingPhaseIndex] = updatedPhase;
-
-      console.log("[PlanCard] Phase updated successfully:", {
-        phaseId: updatedPhase.id,
-        phaseName: updatedPhase.name,
-        index: existingPhaseIndex,
-        totalPhases: updatedPhases.length,
-      });
-
-      setLocalMetadata((prev) => {
         const newMetadata = {
           ...prev,
           phases: updatedPhases,
         };
+        
         console.log("[PlanCard] Updated localMetadata with phases:", {
           phaseCount: newMetadata.phases?.length || 0,
           phases: newMetadata.phases?.map((p) => ({
@@ -85,6 +83,7 @@ export function usePlanCardPhaseEdit(
             endDate: p.endDate,
           })),
         });
+        
         return newMetadata;
       });
 
@@ -94,7 +93,7 @@ export function usePlanCardPhaseEdit(
         isEditingRef.current = false;
       }, 100);
     },
-    [metadata.phases, setLocalMetadata, setEditOpen, isEditingRef]
+    [setLocalMetadata, setEditOpen, isEditingRef]
   );
 
   return { handlePhaseSave };

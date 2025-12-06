@@ -1,19 +1,21 @@
 /**
  * Base Phase Repository
- * 
+ *
  * Infrastructure layer - Data access using TypeORM
  */
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { BaseRepository } from '../../common/database/base.repository';
-import { Phase } from '../domain/base-phase.entity';
-import { IRepository } from '../../common/interfaces/repository.interface';
-import { validateString } from '@rp-release-planner/rp-shared';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { BaseRepository } from "../../common/database/base.repository";
+import { Phase } from "../domain/base-phase.entity";
+import { IRepository } from "../../common/interfaces/repository.interface";
+import { validateString } from "@rp-release-planner/rp-shared";
 
 export interface IBasePhaseRepository extends IRepository<Phase> {
   findByName(name: string): Promise<Phase | null>;
   findByColor(color: string): Promise<Phase | null>;
+  findAllOrderedBySequence(): Promise<Phase[]>;
+  getMaxSequence(): Promise<number>;
 }
 
 @Injectable()
@@ -23,32 +25,59 @@ export class BasePhaseRepository
 {
   constructor(
     @InjectRepository(Phase)
-    repository: Repository<Phase>,
+    repository: Repository<Phase>
   ) {
     super(repository);
   }
 
   async findByName(name: string): Promise<Phase | null> {
     // Defensive: Validate name before query
-    validateString(name, 'Phase name');
-    
+    validateString(name, "Phase name");
+
     return this.handleDatabaseOperation(
-      () => this.repository.findOne({
-        where: { name: name.toLowerCase() } as any,
-      }),
-      `findByName(${name})`,
+      () =>
+        this.repository.findOne({
+          where: { name: name.toLowerCase() } as any,
+        }),
+      `findByName(${name})`
     );
   }
 
   async findByColor(color: string): Promise<Phase | null> {
     // Defensive: Validate color before query
-    validateString(color, 'Phase color');
-    
+    validateString(color, "Phase color");
+
     return this.handleDatabaseOperation(
-      () => this.repository.findOne({
-        where: { color: color.toLowerCase() } as any,
-      }),
-      `findByColor(${color})`,
+      () =>
+        this.repository.findOne({
+          where: { color: color.toLowerCase() } as any,
+        }),
+      `findByColor(${color})`
     );
+  }
+
+  async findAllOrderedBySequence(): Promise<Phase[]> {
+    return this.handleDatabaseOperation(
+      () =>
+        this.repository.find({
+          order: {
+            sequence: "ASC",
+            createdAt: "ASC", // Fallback ordering if sequence is null
+          },
+        }),
+      "findAllOrderedBySequence()"
+    );
+  }
+
+  async getMaxSequence(): Promise<number> {
+    const result = await this.handleDatabaseOperation(
+      () =>
+        this.repository
+          .createQueryBuilder("phase")
+          .select("MAX(phase.sequence)", "max")
+          .getRawOne(),
+      "getMaxSequence()"
+    );
+    return result?.max ? Number.parseInt(result.max, 10) : 0;
   }
 }

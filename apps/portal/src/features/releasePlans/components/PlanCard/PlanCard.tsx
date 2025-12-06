@@ -1,67 +1,19 @@
-import { useImperativeHandle, forwardRef, lazy, Suspense } from "react";
+import { useImperativeHandle, forwardRef, lazy, Suspense, useEffect } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Plan } from "../../types";
 import { usePlanCard } from "../../hooks";
-import { PlanCardLayout } from "./components/PlanCardLayout";
-import { PlanCardContent } from "./components/PlanCardContent";
-import { ErrorSnackbar } from "./components/ErrorSnackbar";
-import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
-import { useComponentLogger } from "../../../../utils/logging/simpleLogging";
-
-// ⚡ OPTIMIZATION: Lazy load heavy components
-// PlanRightPanel contains GanttChart which is a heavy component
-const PlanRightPanel = lazy(
-  () =>
-    import(
-      /* webpackChunkName: "plan-right-panel" */
-      /* webpackPrefetch: true */
-      "../Plan/PlanRightPanel"
-    )
-      .then((module) => {
-        console.log("[PlanCard] PlanRightPanel loaded successfully:", module);
-        return module;
-      })
-      .catch((error) => {
-        console.error("[PlanCard] Failed to load PlanRightPanel:", error);
-        // Return a fallback component that shows an error message
-        return {
-          default: () => (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                p: 3,
-                color: "error.main",
-              }}
-            >
-              Error loading timeline. Please refresh the page.
-            </Box>
-          ),
-        };
-      })
-);
-
-// PlanCardDialogs contains multiple dialog components - lazy load them
-// Note: PlanCardDialogs uses named export, so we wrap it
-const PlanCardDialogs = lazy(
-  () =>
-    import(
-      /* webpackChunkName: "plan-card-dialogs" */
-      /* webpackPrefetch: true */
-      "./components/PlanCardDialogs"
-    ).then((module) => ({ default: module.PlanCardDialogs }))
-);
 import {
   useUpdatePlan,
   useUpdateFeature,
   useProducts,
   useUpdateProduct,
 } from "../../../../api/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-
-// New hooks for SoC
+import { PlanCardLayout } from "./components/PlanCardLayout";
+import { PlanCardContent } from "./components/PlanCardContent";
+import { ErrorSnackbar } from "./components/ErrorSnackbar";
+import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
+import { useComponentLogger } from "../../../../utils/logging/simpleLogging";
 import { usePlanCardState } from "./hooks/usePlanCardState";
 import { usePlanCardHandlers } from "./hooks/usePlanCardHandlers";
 import { usePlanCardChanges } from "./hooks/usePlanCardChanges";
@@ -72,6 +24,50 @@ import { usePlanCardSave } from "./hooks/usePlanCardSave";
 import { usePlanCardLifecycle } from "./hooks/usePlanCardLifecycle";
 import { usePlanCardPhaseEdit } from "./hooks/usePlanCardPhaseEdit";
 import { usePlanCardReferenceSave } from "./hooks/usePlanCardReferenceSave";
+
+// ⚡ OPTIMIZATION: Lazy load heavy components
+// PlanRightPanel contains GanttChart which is a heavy component
+const PlanRightPanel = lazy(() =>
+  import(
+    /* webpackChunkName: "plan-right-panel" */
+    /* webpackPrefetch: true */
+    "../Plan/PlanRightPanel"
+  )
+    .then((module) => {
+      console.log("[PlanCard] PlanRightPanel loaded successfully:", module);
+      return module;
+    })
+    .catch((error) => {
+      console.error("[PlanCard] Failed to load PlanRightPanel:", error);
+      // Return a fallback component that shows an error message
+      return {
+        default: () => (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              p: 3,
+              color: "error.main",
+            }}
+          >
+            Error loading timeline. Please refresh the page.
+          </Box>
+        ),
+      };
+    })
+);
+
+// PlanCardDialogs contains multiple dialog components - lazy load them
+// Note: PlanCardDialogs uses named export, so we wrap it
+const PlanCardDialogs = lazy(() =>
+  import(
+    /* webpackChunkName: "plan-card-dialogs" */
+    /* webpackPrefetch: true */
+    "./components/PlanCardDialogs"
+  ).then((module) => ({ default: module.PlanCardDialogs }))
+);
 
 export type PlanCardProps = {
   readonly plan: Plan;
@@ -115,6 +111,16 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
 
   const metadata = localMetadata;
 
+  // ⚡ DEBUG: Log phase order changes to verify synchronization
+  useEffect(() => {
+    const phaseOrder = localMetadata.phases?.map((p, idx) => `${idx}: ${p.name} (id: ${p.id})`).join(", ") || "none";
+    console.log("[PlanCard] localMetadata.phases updated:", {
+      phaseCount: localMetadata.phases?.length || 0,
+      phaseOrder,
+      phasesArray: localMetadata.phases,
+    });
+  }, [localMetadata.phases]);
+
   // ⭐ Clean Architecture - Business logic separated in custom hook
   const {
     leftPercent,
@@ -151,12 +157,12 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
     handleLeftPercentChangeOptimized,
     handleAddPhaseOptimized,
     handlePhaseRangeChangeOptimized,
-    handleReorderPhases,
     openEditOptimized,
     handleNameChange,
     handleProductChange,
     handleDescriptionChange,
     handleStatusChange,
+    handleReleaseStatusChange,
     handleITOwnerChange,
     handleStartDateChange,
     handleEndDateChange,
@@ -325,6 +331,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             handleProductChange={handleProductChange}
             handleDescriptionChange={handleDescriptionChange}
             handleStatusChange={handleStatusChange}
+            handleReleaseStatusChange={handleReleaseStatusChange}
             handleITOwnerChange={handleITOwnerChange}
             handleStartDateChange={handleStartDateChange}
             handleEndDateChange={handleEndDateChange}
@@ -346,7 +353,6 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             handleSaveTimeline={handleSaveTimeline}
             openEditOptimized={openEditOptimized}
             handlePhaseRangeChangeOptimized={handlePhaseRangeChangeOptimized}
-            handleReorderPhases={handleReorderPhases}
             setPhaseOpen={setPhaseOpen}
           />
         }
@@ -372,19 +378,18 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard(
             }
           >
             <PlanRightPanel
-              startDate={metadata.startDate}
-              endDate={metadata.endDate}
+              startDate={localMetadata.startDate}
+              endDate={localMetadata.endDate}
               tasks={tasks}
-              phases={metadata.phases}
-              calendarIds={metadata.calendarIds}
-              milestones={metadata.milestones}
-              references={metadata.references}
+              phases={localMetadata.phases}
+              calendarIds={localMetadata.calendarIds}
+              milestones={localMetadata.milestones}
+              references={localMetadata.references}
               onMilestoneAdd={handleMilestoneAdd}
               onMilestoneUpdate={handleMilestoneUpdate}
               onAddPhase={() => setPhaseOpen(true)}
               onEditPhase={openEditOptimized}
               onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-              onReorderPhases={handleReorderPhases}
               onAddCellComment={handleAddCellComment}
               onAddCellFile={handleAddCellFile}
               onAddCellLink={handleAddCellLink}

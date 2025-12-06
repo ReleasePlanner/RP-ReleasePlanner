@@ -1,15 +1,23 @@
 /**
  * Products React Query Hooks
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productsService, CreateProductDto, UpdateProductDto } from '../services/products.service';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  productsService,
+  CreateProductDto,
+  UpdateProductDto,
+  CreateProductDependencyDto,
+  UpdateProductDependencyDto,
+} from "../services/products.service";
 
 const QUERY_KEYS = {
-  all: ['products'] as const,
-  lists: () => [...QUERY_KEYS.all, 'list'] as const,
+  all: ["products"] as const,
+  lists: () => [...QUERY_KEYS.all, "list"] as const,
   list: () => [...QUERY_KEYS.lists()] as const,
-  details: () => [...QUERY_KEYS.all, 'detail'] as const,
+  details: () => [...QUERY_KEYS.all, "detail"] as const,
   detail: (id: string) => [...QUERY_KEYS.details(), id] as const,
+  dependencies: (productId: string) =>
+    [...QUERY_KEYS.all, "dependencies", productId] as const,
 };
 
 export function useProducts() {
@@ -50,7 +58,9 @@ export function useUpdateProduct() {
       productsService.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.detail(variables.id),
+      });
     },
   });
 }
@@ -66,3 +76,61 @@ export function useDeleteProduct() {
   });
 }
 
+// Product Dependencies Hooks
+export function useProductDependencies(productId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.dependencies(productId),
+    queryFn: () => productsService.getProductDependencies(productId),
+    enabled: !!productId,
+  });
+}
+
+export function useAddProductDependency(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateProductDependencyDto) =>
+      productsService.addProductDependency(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.dependencies(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(productId) });
+    },
+  });
+}
+
+export function useUpdateProductDependency(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      dependencyId,
+      data,
+    }: {
+      dependencyId: string;
+      data: UpdateProductDependencyDto;
+    }) => productsService.updateProductDependency(dependencyId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.dependencies(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(productId) });
+    },
+  });
+}
+
+export function useDeleteProductDependency(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dependencyId: string) =>
+      productsService.deleteProductDependency(dependencyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.dependencies(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(productId) });
+    },
+  });
+}

@@ -59,7 +59,7 @@ export function ResizeHandle({
         border: "none",
         padding: 0,
       }}
-      onMouseDown={(e) => onMouseDown(e, onStartResize)}
+      onMouseDown={(e) => onMouseDown(e, onStartResize, true)} // true = immediate execution for resize
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       title={title}

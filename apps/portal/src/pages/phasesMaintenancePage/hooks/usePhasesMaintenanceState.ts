@@ -16,6 +16,7 @@ export function usePhasesMaintenanceState() {
   const [formData, setFormData] = useState<Partial<BasePhase>>({
     name: "",
     color: "#1976D2",
+    isDefault: false,
   });
 
   return {

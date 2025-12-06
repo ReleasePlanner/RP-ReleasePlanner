@@ -8,3 +8,5 @@ export { ProductCard } from "./ProductCard";
 export { ComponentsTable } from "./ComponentsTable";
 export { ComponentEditDialog } from "./ComponentEditDialog";
 export { ProductToolbar, type ViewMode, type SortBy } from "./ProductToolbar";
+export { ProductDependencyDialog } from "./ProductDependencyDialog";
+export { ProductDependenciesSection } from "./ProductDependenciesSection";

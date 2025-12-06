@@ -8,6 +8,8 @@ export type PhasesMaintenanceListProps = {
   readonly onEdit: (phase: BasePhase) => void;
   readonly onDelete: (phase: BasePhase) => void;
   readonly onDuplicate: (phase: BasePhase) => void;
+  readonly onMoveUp?: (phase: BasePhase) => void;
+  readonly onMoveDown?: (phase: BasePhase) => void;
 };
 
 /**
@@ -18,6 +20,8 @@ export const PhasesMaintenanceList = memo(function PhasesMaintenanceList({
   onEdit,
   onDelete,
   onDuplicate,
+  onMoveUp,
+  onMoveDown,
 }: PhasesMaintenanceListProps) {
   const theme = useTheme();
 
@@ -35,12 +39,14 @@ export const PhasesMaintenanceList = memo(function PhasesMaintenanceList({
           key={phase.id}
           phase={phase}
           isLast={index === phases.length - 1}
+          isFirst={index === 0}
           onEdit={onEdit}
           onDelete={onDelete}
           onDuplicate={onDuplicate}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
         />
       ))}
     </Paper>
   );
 });
-

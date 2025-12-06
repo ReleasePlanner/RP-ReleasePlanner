@@ -1,8 +1,8 @@
 /**
  * Release Plans API Service
  */
-import { httpClient } from '../httpClient';
-import { API_ENDPOINTS } from '../config';
+import { httpClient } from "../httpClient";
+import { API_ENDPOINTS } from "../config";
 
 export interface PlanPhase {
   id: string;
@@ -11,6 +11,7 @@ export interface PlanPhase {
   endDate?: string;
   color?: string;
   metricValues?: Record<string, string>;
+  sequence?: number; // Sequential order of phases (1, 2, 3, etc.)
   createdAt: string;
   updatedAt: string;
 }
@@ -61,12 +62,12 @@ export interface PlanReferenceFile {
 
 export interface PlanReference {
   id: string;
-  type: 'link' | 'document' | 'note' | 'milestone'; // Content type
+  type: "link" | "document" | "note" | "milestone"; // Content type
   title: string;
   url?: string;
   description?: string;
   planReferenceTypeId?: string; // Reference level: plan, period, day
-  planReferenceType?: { id: string; name: 'plan' | 'period' | 'day' };
+  planReferenceType?: { id: string; name: "plan" | "period" | "day" };
   periodDay?: string; // For 'period' type: specific day within the period
   calendarDayId?: string; // For 'day' type: specific calendar day
   calendarDay?: { id: string; name: string; date: string; type: string };
@@ -87,16 +88,22 @@ export interface Plan {
   owner: string;
   startDate: string;
   endDate: string;
-  status: 'planned' | 'in_progress' | 'done' | 'paused';
+  status: "planned" | "in_progress" | "done" | "paused";
+  releaseStatus?: "To Be Defined" | "Success" | "Rollback" | "Partial RollBack";
   description?: string;
   phases?: PlanPhase[];
   productId?: string;
   itOwner?: string;
   leadId?: string;
   featureIds: string[];
-  components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
+  components: Array<{
+    componentId: string;
+    currentVersion: string;
+    finalVersion: string;
+  }>;
   calendarIds: string[];
   indicatorIds: string[]; // IDs of indicators/KPIs associated with this plan
+  teamIds?: string[]; // IDs of teams associated with this plan
   milestones?: PlanMilestone[];
   references?: PlanReference[];
   tasks?: PlanTask[];
@@ -110,6 +117,7 @@ export interface CreatePlanPhaseDto {
   endDate?: string;
   color?: string;
   metricValues?: Record<string, string>;
+  sequence?: number; // Sequential order of phases (1, 2, 3, etc.)
 }
 
 export interface CreatePlanDto {
@@ -117,7 +125,7 @@ export interface CreatePlanDto {
   // Removed: owner field - use itOwner field instead and join with owners table
   startDate: string;
   endDate: string;
-  status?: 'planned' | 'in_progress' | 'done' | 'paused';
+  status?: "planned" | "in_progress" | "done" | "paused";
   description?: string;
   phases?: CreatePlanPhaseDto[];
   productId: string; // Required
@@ -133,6 +141,7 @@ export interface UpdatePlanPhaseDto {
   endDate?: string;
   color?: string;
   metricValues?: Record<string, string>;
+  sequence?: number; // Sequential order of phases (1, 2, 3, etc.)
 }
 
 export interface UpdatePlanTaskDto {
@@ -152,7 +161,7 @@ export interface UpdatePlanMilestoneDto {
 // References (comments, files, links) are now handled via plan_references table
 
 export interface UpdatePlanReferenceDto {
-  type?: 'link' | 'document' | 'note' | 'milestone'; // Content type
+  type?: "link" | "document" | "note" | "milestone"; // Content type
   title?: string;
   url?: string;
   description?: string;
@@ -170,7 +179,8 @@ export interface UpdatePlanDto {
   // Removed: owner field - use itOwner field instead and join with owners table
   startDate?: string;
   endDate?: string;
-  status?: 'planned' | 'in_progress' | 'done' | 'paused';
+  status?: "planned" | "in_progress" | "done" | "paused";
+  releaseStatus?: "To Be Defined" | "Success" | "Rollback" | "Partial RollBack";
   description?: string;
   phases?: UpdatePlanPhaseDto[];
   tasks?: UpdatePlanTaskDto[];
@@ -183,7 +193,12 @@ export interface UpdatePlanDto {
   featureIds?: string[];
   calendarIds?: string[];
   indicatorIds?: string[]; // IDs of indicators/KPIs associated with this plan
-  components?: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
+  teamIds?: string[]; // IDs of teams associated with this plan
+  components?: Array<{
+    componentId: string;
+    currentVersion: string;
+    finalVersion: string;
+  }>;
   updatedAt?: string; // For optimistic locking
 }
 
@@ -209,15 +224,27 @@ export const plansService = {
   },
 
   async getPlanReschedules(planId: string): Promise<PhaseReschedule[]> {
-    return httpClient.get<PhaseReschedule[]>(`${API_ENDPOINTS.PLANS}/${planId}/reschedules`);
+    return httpClient.get<PhaseReschedule[]>(
+      `${API_ENDPOINTS.PLANS}/${planId}/reschedules`
+    );
   },
 
-  async getPhaseReschedules(planId: string, phaseId: string): Promise<PhaseReschedule[]> {
-    return httpClient.get<PhaseReschedule[]>(`${API_ENDPOINTS.PLANS}/${planId}/phases/${phaseId}/reschedules`);
+  async getPhaseReschedules(
+    planId: string,
+    phaseId: string
+  ): Promise<PhaseReschedule[]> {
+    return httpClient.get<PhaseReschedule[]>(
+      `${API_ENDPOINTS.PLANS}/${planId}/phases/${phaseId}/reschedules`
+    );
   },
 
-  async updateReschedule(rescheduleId: string, data: { rescheduleTypeId?: string; ownerId?: string }): Promise<PhaseReschedule> {
-    return httpClient.put<PhaseReschedule>(`${API_ENDPOINTS.PLANS}/reschedules/${rescheduleId}/update`, data);
+  async updateReschedule(
+    rescheduleId: string,
+    data: { rescheduleTypeId?: string; ownerId?: string }
+  ): Promise<PhaseReschedule> {
+    return httpClient.put<PhaseReschedule>(
+      `${API_ENDPOINTS.PLANS}/reschedules/${rescheduleId}/update`,
+      data
+    );
   },
 };
-

@@ -1,11 +1,11 @@
 /**
  * Update Base Phase DTO
  */
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateBasePhaseDto } from './create-base-phase.dto';
-import { IsString, Matches, IsOptional } from 'class-validator';
-import { BASE_PHASE_VALIDATION_MESSAGES } from '../../constants';
-import { VALIDATION_RULES } from '../../../common/constants';
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateBasePhaseDto } from "./create-base-phase.dto";
+import { IsString, Matches, IsOptional, IsInt, Min } from "class-validator";
+import { BASE_PHASE_VALIDATION_MESSAGES } from "../../constants";
+import { VALIDATION_RULES } from "../../../common/constants";
 
 export class UpdateBasePhaseDto extends PartialType(CreateBasePhaseDto) {
   @IsString()
@@ -14,5 +14,12 @@ export class UpdateBasePhaseDto extends PartialType(CreateBasePhaseDto) {
     message: BASE_PHASE_VALIDATION_MESSAGES.PHASE_COLOR_INVALID,
   })
   override color?: string;
-}
 
+  @IsOptional()
+  isDefault?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  sequence?: number;
+}

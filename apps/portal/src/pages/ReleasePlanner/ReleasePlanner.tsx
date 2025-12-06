@@ -87,10 +87,10 @@ export default function ReleasePlanner() {
     setDebouncedSearchQuery,
     statusFilter,
     setStatusFilter,
-    showFilters,
-    setShowFilters,
-    localExpandedStates,
-    setLocalExpandedStates,
+    startDateFilter,
+    setStartDateFilter,
+    endDateFilter,
+    setEndDateFilter,
   } = useReleasePlannerState();
 
   // Convert API plans to local format
@@ -110,14 +110,13 @@ export default function ReleasePlanner() {
     plans,
     debouncedSearchQuery,
     statusFilter,
+    startDateFilter,
+    endDateFilter,
     sortBy,
   });
 
-  // Sync expanded states with Redux
-  const expandedStates = useReleasePlannerExpandedStates({
-    localExpandedStates,
-    setLocalExpandedStates,
-  });
+  // Get expanded states from Redux (source of truth)
+  const expandedStates = useReleasePlannerExpandedStates();
 
   // Event handlers
   const {
@@ -146,8 +145,6 @@ export default function ReleasePlanner() {
     sortBy,
     searchQuery,
     statusFilter,
-    showFilters,
-    localExpandedStates,
     setDialogOpen,
     setDeleteDialogOpen,
     setPlanToDelete,
@@ -158,8 +155,6 @@ export default function ReleasePlanner() {
     setSortBy,
     setSearchQuery,
     setStatusFilter,
-    setShowFilters,
-    setLocalExpandedStates,
     plans,
     deleteMutation,
     createMutation,
@@ -202,22 +197,24 @@ export default function ReleasePlanner() {
       title="Release Planner"
       description="Manage and visualize your release plans"
       toolbar={
-        <ReleasePlannerToolbar
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          onExpandAll={handleExpandAll}
-          onCollapseAll={handleCollapseAll}
-          onAddPlan={handleAddButtonClick}
-          sortOptions={SORT_OPTIONS}
-        />
+          <ReleasePlannerToolbar
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            startDateFilter={startDateFilter}
+            onStartDateFilterChange={setStartDateFilter}
+            endDateFilter={endDateFilter}
+            onEndDateFilterChange={setEndDateFilter}
+            onExpandAll={handleExpandAll}
+            onCollapseAll={handleCollapseAll}
+            onAddPlan={handleAddButtonClick}
+            sortOptions={SORT_OPTIONS}
+          />
       }
     >
       {/* Results count */}
@@ -242,7 +239,6 @@ export default function ReleasePlanner() {
           return (
             <ReleasePlannerPlansList
               plans={filteredAndSortedPlans}
-              localExpandedStates={localExpandedStates}
               expandedStates={expandedStates}
               onToggle={handlePlanToggle}
               onDelete={handleDeleteClick}

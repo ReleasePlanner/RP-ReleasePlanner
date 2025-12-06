@@ -1,30 +1,29 @@
-import { 
-  Box, 
-  Typography, 
-  CircularProgress, 
-  Alert, 
-  useTheme, 
-  Chip, 
-  Card, 
-  CardContent, 
-  IconButton, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  useTheme,
+  Chip,
+  Card,
+  CardContent,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
   Stack,
   Divider,
   Tooltip,
-  Grid,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
-  TextField
+  TextField,
 } from "@mui/material";
-import { 
-  InfoOutlined, 
+import {
+  InfoOutlined,
   Close as CloseIcon,
   CalendarToday,
   Person,
@@ -33,7 +32,7 @@ import {
   ArrowForward,
   Edit as EditIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { useState } from "react";
 import { usePlanReschedulesWithMemory } from "./hooks/usePlanReschedulesWithMemory";
@@ -55,27 +54,26 @@ export function PlanReschedulesTab({
   currentPhases,
 }: PlanReschedulesTabProps) {
   const theme = useTheme();
-  const { 
-    reschedules, 
-    isLoading, 
-    error, 
-    hasPendingReschedules,
-    pendingCount 
-  } = usePlanReschedulesWithMemory({
+  const { reschedules, isLoading, error, hasPendingReschedules, pendingCount } =
+    usePlanReschedulesWithMemory({
+      planId,
+      originalPhases,
+      currentPhases,
+    });
+
+  // Debug logging
+  console.log("[PlanReschedulesTab] Props:", {
     planId,
     originalPhases,
     currentPhases,
   });
-
-  // Debug logging
-  console.log('[PlanReschedulesTab] Props:', { planId, originalPhases, currentPhases });
-  console.log('[PlanReschedulesTab] Hook result:', { 
-    reschedules, 
-    isLoading, 
-    error, 
+  console.log("[PlanReschedulesTab] Hook result:", {
+    reschedules,
+    isLoading,
+    error,
     reschedulesLength: reschedules.length,
     hasPendingReschedules,
-    pendingCount 
+    pendingCount,
   });
 
   if (isLoading) {
@@ -96,7 +94,8 @@ export function PlanReschedulesTab({
   if (error) {
     return (
       <Alert severity="error" sx={{ mt: 2 }}>
-        Error loading reschedules: {error instanceof Error ? error.message : "Unknown error"}
+        Error loading reschedules:{" "}
+        {error instanceof Error ? error.message : "Unknown error"}
       </Alert>
     );
   }
@@ -112,7 +111,9 @@ export function PlanReschedulesTab({
           color: theme.palette.text.secondary,
         }}
       >
-        <Typography variant="body1">No reschedules recorded for this plan</Typography>
+        <Typography variant="body1">
+          No reschedules recorded for this plan
+        </Typography>
       </Box>
     );
   }
@@ -120,7 +121,17 @@ export function PlanReschedulesTab({
   return (
     <Box sx={{ width: "100%", p: { xs: 1.5, sm: 2 } }}>
       {hasPendingReschedules && (
-        <Box sx={{ mb: 2, p: 1.5, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box
+          sx={{
+            mb: 2,
+            p: 1.5,
+            bgcolor: "warning.light",
+            borderRadius: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           <Chip
             label={`${pendingCount} Pending`}
             size="small"
@@ -128,16 +139,17 @@ export function PlanReschedulesTab({
             sx={{ fontWeight: 600 }}
           />
           <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
-            {pendingCount} reschedule{pendingCount !== 1 ? 's' : ''} pending to be saved
+            {pendingCount} reschedule{pendingCount !== 1 ? "s" : ""} pending to
+            be saved
           </Typography>
         </Box>
       )}
-      
+
       <Stack spacing={2}>
         {reschedules.map((reschedule) => (
-          <RescheduleCard 
-            key={reschedule.id} 
-            reschedule={reschedule} 
+          <RescheduleCard
+            key={reschedule.id}
+            reschedule={reschedule}
             theme={theme}
             planId={planId}
           />
@@ -179,35 +191,44 @@ function formatDateTime(dateStr: string): string {
 }
 
 // Componente de tarjeta compacta para cada reschedule
-function RescheduleCard({ 
-  reschedule, 
+function RescheduleCard({
+  reschedule,
   theme,
-  planId
-}: { 
-  reschedule: CombinedReschedule; 
+  planId,
+}: {
+  reschedule: CombinedReschedule;
   theme: any;
   planId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRescheduleTypeId, setEditedRescheduleTypeId] = useState<string | undefined>(reschedule.rescheduleTypeId);
-  const [editedOwnerId, setEditedOwnerId] = useState<string | undefined>(reschedule.ownerId);
-  
+  const [editedRescheduleTypeId, setEditedRescheduleTypeId] = useState<
+    string | undefined
+  >(reschedule.rescheduleTypeId);
+  const [editedOwnerId, setEditedOwnerId] = useState<string | undefined>(
+    reschedule.ownerId
+  );
+
   // Cargar reschedule types desde la lista de mantenimiento
-  const { data: rescheduleTypes = [], isLoading: isLoadingRescheduleTypes } = useRescheduleTypes();
+  const { data: rescheduleTypes = [], isLoading: isLoadingRescheduleTypes } =
+    useRescheduleTypes();
   const { data: owners = [], isLoading: isLoadingOwners } = useITOwners();
   const updateRescheduleMutation = useUpdateReschedule(planId);
-  
-  const hasStartChange = reschedule.originalStartDate !== reschedule.newStartDate;
+
+  const hasStartChange =
+    reschedule.originalStartDate !== reschedule.newStartDate;
   const hasEndChange = reschedule.originalEndDate !== reschedule.newEndDate;
   const hasAnyChange = hasStartChange || hasEndChange;
-  
+
   // Solo permitir edición si no es pending (los pending aún no están guardados)
-  const canEdit = !reschedule.isPending && reschedule.id && !reschedule.id.startsWith('pending-');
-  
+  const canEdit =
+    !reschedule.isPending &&
+    reschedule.id &&
+    !reschedule.id.startsWith("pending-");
+
   const handleSave = async () => {
     if (!canEdit || !reschedule.id) return;
-    
+
     try {
       await updateRescheduleMutation.mutateAsync({
         rescheduleId: reschedule.id,
@@ -219,10 +240,10 @@ function RescheduleCard({
       setIsEditing(false);
       setOpen(false);
     } catch (error) {
-      console.error('Error updating reschedule:', error);
+      console.error("Error updating reschedule:", error);
     }
   };
-  
+
   const handleCancel = () => {
     setEditedRescheduleTypeId(reschedule.rescheduleTypeId);
     setEditedOwnerId(reschedule.ownerId);
@@ -239,17 +260,32 @@ function RescheduleCard({
             boxShadow: theme.shadows[4],
             transform: "translateY(-2px)",
           },
-          borderLeft: reschedule.isPending 
-            ? `4px solid ${theme.palette.warning.main}` 
+          borderLeft: reschedule.isPending
+            ? `4px solid ${theme.palette.warning.main}`
             : `4px solid ${theme.palette.primary.main}`,
           opacity: reschedule.isPending ? 0.9 : 1,
         }}
       >
         <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 2,
+            }}
+          >
             {/* Información principal */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5, flexWrap: "wrap" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 1.5,
+                  flexWrap: "wrap",
+                }}
+              >
                 <Chip
                   label={reschedule.phaseName}
                   size="small"
@@ -284,30 +320,41 @@ function RescheduleCard({
 
               {/* Fechas compactas */}
               {hasAnyChange && (
-                <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{ flexWrap: "wrap", gap: 1 }}
+                >
                   {hasStartChange && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                      >
                         Start:
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          textDecoration: "line-through", 
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          textDecoration: "line-through",
                           color: "text.secondary",
                           fontSize: "0.75rem",
-                          mr: 0.5
+                          mr: 0.5,
                         }}
                       >
                         {formatDateCompact(reschedule.originalStartDate)}
                       </Typography>
-                      <ArrowForward sx={{ fontSize: 12, color: "text.secondary" }} />
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          color: theme.palette.primary.main, 
+                      <ArrowForward
+                        sx={{ fontSize: 12, color: "text.secondary" }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: theme.palette.primary.main,
                           fontWeight: 600,
-                          fontSize: "0.75rem"
+                          fontSize: "0.75rem",
                         }}
                       >
                         {formatDateCompact(reschedule.newStartDate)}
@@ -315,28 +362,35 @@ function RescheduleCard({
                     </Box>
                   )}
                   {hasEndChange && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                      >
                         End:
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          textDecoration: "line-through", 
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          textDecoration: "line-through",
                           color: "text.secondary",
                           fontSize: "0.75rem",
-                          mr: 0.5
+                          mr: 0.5,
                         }}
                       >
                         {formatDateCompact(reschedule.originalEndDate)}
                       </Typography>
-                      <ArrowForward sx={{ fontSize: 12, color: "text.secondary" }} />
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          color: theme.palette.primary.main, 
+                      <ArrowForward
+                        sx={{ fontSize: 12, color: "text.secondary" }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: theme.palette.primary.main,
                           fontWeight: 600,
-                          fontSize: "0.75rem"
+                          fontSize: "0.75rem",
                         }}
                       >
                         {formatDateCompact(reschedule.newEndDate)}
@@ -347,12 +401,26 @@ function RescheduleCard({
               )}
 
               {/* Información secundaria */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1, flexWrap: "wrap" }}>
-                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  mt: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                >
                   {formatDateTime(reschedule.rescheduledAt)}
                 </Typography>
                 {reschedule.ownerName && (
-                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                  >
                     {reschedule.ownerName}
                   </Typography>
                 )}
@@ -379,8 +447,8 @@ function RescheduleCard({
       </Card>
 
       {/* Dialog con detalles completos */}
-      <Dialog 
-        open={open} 
+      <Dialog
+        open={open}
         onClose={() => {
           handleCancel();
           setOpen(false);
@@ -388,7 +456,13 @@ function RescheduleCard({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           Reschedule Details
           <IconButton
             size="small"
@@ -405,7 +479,9 @@ function RescheduleCard({
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             {/* Phase */}
             <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}
+              >
                 <Category fontSize="small" sx={{ color: "text.secondary" }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   Phase
@@ -418,7 +494,9 @@ function RescheduleCard({
 
             {/* Date & Time */}
             <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}
+              >
                 <Schedule fontSize="small" sx={{ color: "text.secondary" }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   Rescheduled At
@@ -431,87 +509,142 @@ function RescheduleCard({
 
             {/* Dates Comparison */}
             <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                <CalendarToday fontSize="small" sx={{ color: "text.secondary" }} />
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}
+              >
+                <CalendarToday
+                  fontSize="small"
+                  sx={{ color: "text.secondary" }}
+                />
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   Date Changes
                 </Typography>
               </Box>
-              <Grid container spacing={2}>
-                {(hasStartChange || reschedule.originalStartDate || reschedule.newStartDate) && (
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                {(hasStartChange ||
+                  reschedule.originalStartDate ||
+                  reschedule.newStartDate) && (
+                  <Box sx={{ flex: 1, minWidth: { xs: "100%", sm: "50%" } }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                    >
                       Start Date
                     </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          textDecoration: hasStartChange ? "line-through" : "none",
-                          color: hasStartChange ? "text.secondary" : "text.primary"
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mt: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          textDecoration: hasStartChange
+                            ? "line-through"
+                            : "none",
+                          color: hasStartChange
+                            ? "text.secondary"
+                            : "text.primary",
                         }}
                       >
-                        {formatDateCompact(reschedule.originalStartDate) || "Not set"}
+                        {formatDateCompact(reschedule.originalStartDate) ||
+                          "Not set"}
                       </Typography>
                       {hasStartChange && (
                         <>
-                          <ArrowForward sx={{ fontSize: 16, color: "text.secondary" }} />
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: theme.palette.primary.main, 
-                              fontWeight: 600 
+                          <ArrowForward
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: theme.palette.primary.main,
+                              fontWeight: 600,
                             }}
                           >
-                            {formatDateCompact(reschedule.newStartDate) || "Not set"}
+                            {formatDateCompact(reschedule.newStartDate) ||
+                              "Not set"}
                           </Typography>
                         </>
                       )}
                     </Box>
-                  </Grid>
+                  </Box>
                 )}
-                {(hasEndChange || reschedule.originalEndDate || reschedule.newEndDate) && (
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+                {(hasEndChange ||
+                  reschedule.originalEndDate ||
+                  reschedule.newEndDate) && (
+                  <Box sx={{ flex: 1, minWidth: { xs: "100%", sm: "50%" } }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", fontSize: "0.7rem" }}
+                    >
                       End Date
                     </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          textDecoration: hasEndChange ? "line-through" : "none",
-                          color: hasEndChange ? "text.secondary" : "text.primary"
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mt: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          textDecoration: hasEndChange
+                            ? "line-through"
+                            : "none",
+                          color: hasEndChange
+                            ? "text.secondary"
+                            : "text.primary",
                         }}
                       >
-                        {formatDateCompact(reschedule.originalEndDate) || "Not set"}
+                        {formatDateCompact(reschedule.originalEndDate) ||
+                          "Not set"}
                       </Typography>
                       {hasEndChange && (
                         <>
-                          <ArrowForward sx={{ fontSize: 16, color: "text.secondary" }} />
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: theme.palette.primary.main, 
-                              fontWeight: 600 
+                          <ArrowForward
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: theme.palette.primary.main,
+                              fontWeight: 600,
                             }}
                           >
-                            {formatDateCompact(reschedule.newEndDate) || "Not set"}
+                            {formatDateCompact(reschedule.newEndDate) ||
+                              "Not set"}
                           </Typography>
                         </>
                       )}
                     </Box>
-                  </Grid>
+                  </Box>
                 )}
-              </Grid>
+              </Stack>
             </Box>
 
             {/* Reschedule Type - Editable */}
             <>
               <Divider />
               <Box>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 1,
+                  }}
+                >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Category fontSize="small" sx={{ color: "text.secondary" }} />
+                    <Category
+                      fontSize="small"
+                      sx={{ color: "text.secondary" }}
+                    />
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                       Reschedule Type
                     </Typography>
@@ -527,14 +660,20 @@ function RescheduleCard({
                   )}
                 </Box>
                 {isEditing ? (
-                  <FormControl fullWidth size="small" disabled={isLoadingRescheduleTypes}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    disabled={isLoadingRescheduleTypes}
+                  >
                     <InputLabel id={`reschedule-type-label-${reschedule.id}`}>
                       Reschedule Type
                     </InputLabel>
                     <Select
                       labelId={`reschedule-type-label-${reschedule.id}`}
                       value={editedRescheduleTypeId || ""}
-                      onChange={(e) => setEditedRescheduleTypeId(e.target.value || undefined)}
+                      onChange={(e) =>
+                        setEditedRescheduleTypeId(e.target.value || undefined)
+                      }
                       displayEmpty
                       label="Reschedule Type"
                     >
@@ -548,23 +687,27 @@ function RescheduleCard({
                       ))}
                     </Select>
                     {isLoadingRescheduleTypes && (
-                      <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary", mt: 0.5 }}
+                      >
                         Loading reschedule types...
                       </Typography>
                     )}
                   </FormControl>
+                ) : reschedule.rescheduleTypeName ? (
+                  <Chip
+                    label={reschedule.rescheduleTypeName}
+                    size="small"
+                    color="secondary"
+                  />
                 ) : (
-                  reschedule.rescheduleTypeName ? (
-                    <Chip 
-                      label={reschedule.rescheduleTypeName} 
-                      size="small" 
-                      color="secondary"
-                    />
-                  ) : (
-                    <Typography variant="body2" sx={{ color: "text.secondary", fontStyle: "italic" }}>
-                      Not set
-                    </Typography>
-                  )
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "text.secondary", fontStyle: "italic" }}
+                  >
+                    Not set
+                  </Typography>
                 )}
               </Box>
             </>
@@ -573,7 +716,14 @@ function RescheduleCard({
             <>
               <Divider />
               <Box>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 1,
+                  }}
+                >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Person fontSize="small" sx={{ color: "text.secondary" }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -582,14 +732,20 @@ function RescheduleCard({
                   </Box>
                 </Box>
                 {isEditing ? (
-                  <FormControl fullWidth size="small" disabled={isLoadingOwners}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    disabled={isLoadingOwners}
+                  >
                     <InputLabel id={`owner-label-${reschedule.id}`}>
                       Owner
                     </InputLabel>
                     <Select
                       labelId={`owner-label-${reschedule.id}`}
                       value={editedOwnerId || ""}
-                      onChange={(e) => setEditedOwnerId(e.target.value || undefined)}
+                      onChange={(e) =>
+                        setEditedOwnerId(e.target.value || undefined)
+                      }
                       displayEmpty
                       label="Owner"
                     >
@@ -603,21 +759,25 @@ function RescheduleCard({
                       ))}
                     </Select>
                     {isLoadingOwners && (
-                      <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary", mt: 0.5 }}
+                      >
                         Loading owners...
                       </Typography>
                     )}
                   </FormControl>
+                ) : reschedule.ownerName ? (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {reschedule.ownerName}
+                  </Typography>
                 ) : (
-                  reschedule.ownerName ? (
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                      {reschedule.ownerName}
-                    </Typography>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: "text.secondary", fontStyle: "italic" }}>
-                      Not set
-                    </Typography>
-                  )
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "text.secondary", fontStyle: "italic" }}
+                  >
+                    Not set
+                  </Typography>
                 )}
               </Box>
             </>
@@ -641,14 +801,14 @@ function RescheduleCard({
         <DialogActions>
           {isEditing ? (
             <>
-              <Button 
+              <Button
                 onClick={handleCancel}
                 disabled={updateRescheduleMutation.isPending}
                 startIcon={<CancelIcon />}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleSave}
                 variant="contained"
                 disabled={updateRescheduleMutation.isPending}
@@ -665,4 +825,3 @@ function RescheduleCard({
     </>
   );
 }
-

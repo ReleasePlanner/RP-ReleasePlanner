@@ -11,13 +11,17 @@ interface UsePhasesMaintenanceHandlersProps {
   setDeleteDialogOpen: (open: boolean) => void;
   setPhaseToDelete: (phase: BasePhase | null) => void;
   createMutation: {
-    mutateAsync: (data: { name: string; color: string }) => Promise<unknown>;
+    mutateAsync: (data: {
+      name: string;
+      color: string;
+      isDefault?: boolean;
+    }) => Promise<unknown>;
     isPending: boolean;
   };
   updateMutation: {
     mutateAsync: (params: {
       id: string;
-      data: { name: string; color: string };
+      data: { name: string; color: string; isDefault?: boolean };
     }) => Promise<unknown>;
     isPending: boolean;
   };
@@ -25,6 +29,11 @@ interface UsePhasesMaintenanceHandlersProps {
     mutateAsync: (id: string) => Promise<unknown>;
     isPending: boolean;
   };
+  reorderMutation: {
+    mutateAsync: (phaseIds: string[]) => Promise<unknown>;
+    isPending: boolean;
+  };
+  phases: BasePhase[];
 }
 
 /**
@@ -42,6 +51,8 @@ export function usePhasesMaintenanceHandlers({
   createMutation,
   updateMutation,
   deleteMutation,
+  reorderMutation,
+  phases,
 }: UsePhasesMaintenanceHandlersProps) {
   const handleOpenDialog = useCallback(
     (phase?: BasePhase) => {
@@ -50,12 +61,14 @@ export function usePhasesMaintenanceHandlers({
         setFormData({
           name: phase.name,
           color: phase.color,
+          isDefault: phase.isDefault || false,
         });
       } else {
         setEditingPhase(null);
         setFormData({
           name: "",
           color: "#1976D2",
+          isDefault: false,
         });
       }
       setDialogOpen(true);
@@ -69,6 +82,7 @@ export function usePhasesMaintenanceHandlers({
     setFormData({
       name: "",
       color: "#1976D2",
+      isDefault: false,
     });
   }, [setDialogOpen, setEditingPhase, setFormData]);
 
@@ -82,12 +96,14 @@ export function usePhasesMaintenanceHandlers({
           data: {
             name: formData.name.trim(),
             color: formData.color || "#1976D2",
+            isDefault: formData.isDefault || false,
           },
         });
       } else {
         await createMutation.mutateAsync({
           name: formData.name.trim(),
           color: formData.color || "#1976D2",
+          isDefault: formData.isDefault || false,
         });
       }
       handleCloseDialog();
@@ -129,6 +145,7 @@ export function usePhasesMaintenanceHandlers({
       setFormData({
         name: `${phase.name} (Copia)`,
         color: phase.color,
+        isDefault: false, // Duplicated phases are not default by default
       });
       setEditingPhase(null);
       setDialogOpen(true);
@@ -141,6 +158,48 @@ export function usePhasesMaintenanceHandlers({
     setPhaseToDelete(null);
   }, [setDeleteDialogOpen, setPhaseToDelete]);
 
+  const handleMoveUp = useCallback(
+    async (phase: BasePhase) => {
+      const currentIndex = phases.findIndex((p) => p.id === phase.id);
+      if (currentIndex <= 0) return;
+
+      const newOrder = [...phases];
+      [newOrder[currentIndex - 1], newOrder[currentIndex]] = [
+        newOrder[currentIndex],
+        newOrder[currentIndex - 1],
+      ];
+
+      try {
+        await reorderMutation.mutateAsync(newOrder.map((p) => p.id));
+      } catch (error: unknown) {
+        console.error("Error reordering phases:", error);
+        // Error handling is done by React Query
+      }
+    },
+    [phases, reorderMutation]
+  );
+
+  const handleMoveDown = useCallback(
+    async (phase: BasePhase) => {
+      const currentIndex = phases.findIndex((p) => p.id === phase.id);
+      if (currentIndex < 0 || currentIndex >= phases.length - 1) return;
+
+      const newOrder = [...phases];
+      [newOrder[currentIndex], newOrder[currentIndex + 1]] = [
+        newOrder[currentIndex + 1],
+        newOrder[currentIndex],
+      ];
+
+      try {
+        await reorderMutation.mutateAsync(newOrder.map((p) => p.id));
+      } catch (error: unknown) {
+        console.error("Error reordering phases:", error);
+        // Error handling is done by React Query
+      }
+    },
+    [phases, reorderMutation]
+  );
+
   return {
     handleOpenDialog,
     handleCloseDialog,
@@ -149,5 +208,7 @@ export function usePhasesMaintenanceHandlers({
     handleDeleteConfirm,
     handleDuplicate,
     handleCloseDeleteDialog,
+    handleMoveUp,
+    handleMoveDown,
   };
 }

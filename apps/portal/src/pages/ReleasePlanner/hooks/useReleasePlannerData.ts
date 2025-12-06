@@ -6,6 +6,8 @@ interface UseReleasePlannerDataProps {
   plans: Plan[];
   debouncedSearchQuery: string;
   statusFilter: FilterStatus;
+  startDateFilter: string;
+  endDateFilter: string;
   sortBy: SortOption;
 }
 
@@ -16,6 +18,8 @@ export function useReleasePlannerData({
   plans,
   debouncedSearchQuery,
   statusFilter,
+  startDateFilter,
+  endDateFilter,
   sortBy,
 }: UseReleasePlannerDataProps) {
   const filteredAndSortedPlans = useMemo(() => {
@@ -35,6 +39,23 @@ export function useReleasePlannerData({
     // Status filter
     if (statusFilter !== "all") {
       result = result.filter((p) => p.metadata.status === statusFilter);
+    }
+
+    // Date filters
+    if (startDateFilter) {
+      result = result.filter((p) => {
+        const planStartDate = new Date(p.metadata.startDate);
+        const filterDate = new Date(startDateFilter);
+        return planStartDate >= filterDate;
+      });
+    }
+
+    if (endDateFilter) {
+      result = result.filter((p) => {
+        const planEndDate = new Date(p.metadata.endDate);
+        const filterDate = new Date(endDateFilter);
+        return planEndDate <= filterDate;
+      });
     }
 
     // Sort
@@ -63,7 +84,7 @@ export function useReleasePlannerData({
     }
 
     return result;
-  }, [plans, debouncedSearchQuery, statusFilter, sortBy]);
+  }, [plans, debouncedSearchQuery, statusFilter, startDateFilter, endDateFilter, sortBy]);
 
   return {
     filteredAndSortedPlans,

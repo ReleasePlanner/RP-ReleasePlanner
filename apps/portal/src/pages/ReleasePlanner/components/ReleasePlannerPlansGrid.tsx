@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Box } from "@mui/material";
 import type { Plan } from "@/features/releasePlans/types";
-import PlanCard from "@/features/releasePlans/components/PlanCard/PlanCard";
+import { PlanGridCard } from "./PlanGridCard";
 
 export type ReleasePlannerPlansGridProps = {
   readonly plans: Plan[];
@@ -9,6 +9,7 @@ export type ReleasePlannerPlansGridProps = {
 
 /**
  * Component for displaying plans in grid view
+ * Uses compact cards showing key information about each plan
  */
 export const ReleasePlannerPlansGrid = memo(function ReleasePlannerPlansGrid({
   plans,
@@ -19,26 +20,17 @@ export const ReleasePlannerPlansGrid = memo(function ReleasePlannerPlansGrid({
         display: "grid",
         gridTemplateColumns: {
           xs: "1fr",
-          sm: "repeat(auto-fill, minmax(min(100%, 350px), 1fr))",
-          md: "repeat(auto-fill, minmax(min(100%, 400px), 1fr))",
-          lg: "repeat(auto-fill, minmax(min(100%, 450px), 1fr))",
-          xl: "repeat(auto-fill, minmax(min(100%, 500px), 1fr))",
+          sm: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
+          md: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))",
+          lg: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
+          xl: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))",
         },
         gap: { xs: 1.5, sm: 2 },
         width: "100%",
       }}
     >
       {plans.map((p) => (
-        <Box
-          key={p.id}
-          sx={{
-            width: "100%",
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <PlanCard plan={p} />
-        </Box>
+        <PlanGridCard key={p.id} plan={p} />
       ))}
     </Box>
   );

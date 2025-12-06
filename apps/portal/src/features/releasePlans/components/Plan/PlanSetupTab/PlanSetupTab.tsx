@@ -26,13 +26,13 @@ export function PlanSetupTab({
     <Box
       sx={{
         p: { xs: 1.5, sm: 2 },
-        height: "100%",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden",
+        minHeight: "fit-content",
       }}
     >
-      <Stack spacing={2} sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <Stack spacing={2} sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
         {/* Calendars Section */}
         <Box
           sx={{

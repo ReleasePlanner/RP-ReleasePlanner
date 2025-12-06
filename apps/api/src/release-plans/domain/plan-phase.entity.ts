@@ -1,32 +1,46 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '../../common/database/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
+import { BaseEntity } from "../../common/database/base.entity";
 
-@Entity('plan_phases')
-@Index(['planId'])
+@Entity("plan_phases")
+@Index(["planId"])
 export class PlanPhase extends BaseEntity {
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   name: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   startDate?: string; // ISO date (YYYY-MM-DD)
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   endDate?: string; // ISO date (YYYY-MM-DD)
 
-  @Column({ type: 'varchar', length: 7, nullable: true })
+  @Column({ type: "varchar", length: 7, nullable: true })
   color?: string;
 
-  @Column({ type: 'jsonb', default: '{}' })
+  @Column({ type: "jsonb", default: "{}" })
   metricValues: Record<string, string>; // indicatorId -> value
 
-  @Column({ type: 'uuid' })
+  @Column({ type: "int", nullable: true })
+  sequence?: number; // Sequential order of phases (1, 2, 3, etc.)
+
+  @Column({ type: "uuid" })
   planId: string;
 
-  @ManyToOne(() => require('../../release-plans/domain/plan.entity').Plan, (plan: any) => plan.phases, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'planId' })
+  @ManyToOne(
+    () => require("../../release-plans/domain/plan.entity").Plan,
+    (plan: any) => plan.phases,
+    { onDelete: "CASCADE" }
+  )
+  @JoinColumn({ name: "planId" })
   plan: any;
 
-  constructor(name?: string, startDate?: string, endDate?: string, color?: string, metricValues?: Record<string, string>) {
+  constructor(
+    name?: string,
+    startDate?: string,
+    endDate?: string,
+    color?: string,
+    metricValues?: Record<string, string>,
+    sequence?: number
+  ) {
     super();
     if (name !== undefined) {
       this.name = name;
@@ -45,6 +59,9 @@ export class PlanPhase extends BaseEntity {
     } else {
       this.metricValues = {};
     }
+    if (sequence !== undefined) {
+      this.sequence = sequence;
+    }
     if (name !== undefined) {
       this.validate();
     }
@@ -52,15 +69,15 @@ export class PlanPhase extends BaseEntity {
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
-      throw new Error('Phase name is required');
+      throw new Error("Phase name is required");
     }
     if (this.startDate && this.endDate) {
       if (new Date(this.startDate) > new Date(this.endDate)) {
-        throw new Error('Start date must be before or equal to end date');
+        throw new Error("Start date must be before or equal to end date");
       }
     }
     if (this.color && !this.isValidColor(this.color)) {
-      throw new Error('Invalid color format. Must be a valid hex color');
+      throw new Error("Invalid color format. Must be a valid hex color");
     }
   }
 

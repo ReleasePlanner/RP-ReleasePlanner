@@ -125,6 +125,11 @@ export function PlanTabs({
           {...a11yProps(4)}
           disabled={!productSelected}
         />
+        <Tab 
+          label="RCA" 
+          {...a11yProps(5)}
+          disabled={!productSelected}
+        />
       </Tabs>
     </Box>
   );

@@ -44,9 +44,23 @@ export function useCalendarWorker({
     return totalDays > 100 || calendars.length > 3;
   }, [calendars, enabled]);
 
+  // ⚡ OPTIMIZATION: Memoize calendars to prevent infinite loops
+  // Use a stable key based on calendar IDs and day counts
+  const calendarsKey = useMemo(() => {
+    if (calendars.length === 0) return "";
+    return calendars
+      .map((cal) => `${cal.id}-${cal.days.length}`)
+      .sort()
+      .join(",");
+  }, [calendars]);
+
   useEffect(() => {
     if (!enabled || calendars.length === 0) {
-      setCalendarDaysMap(new Map());
+      setCalendarDaysMap((prev) => {
+        // Only update if map is not empty to prevent unnecessary re-renders
+        if (prev.size === 0) return prev;
+        return new Map();
+      });
       setIsProcessing(false);
       return;
     }
@@ -175,7 +189,7 @@ export function useCalendarWorker({
       // Solo se termina cuando el componente se desmonta completamente
     };
   }, [
-    calendars,
+    calendarsKey,
     startDate,
     endDate,
     viewportStart,

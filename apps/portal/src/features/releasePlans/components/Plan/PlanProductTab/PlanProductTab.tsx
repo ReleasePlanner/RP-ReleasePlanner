@@ -12,27 +12,47 @@ import {
   ComponentsHeader,
   ComponentsTable,
 } from "../PlanComponentsTab/components";
+import { ProductField } from "../PlanLeftPane/components/CommonDataTab/fields/ProductField";
+import { ITOwnerField } from "../PlanLeftPane/components/CommonDataTab/fields/ITOwnerField";
+import { LeadField } from "../PlanLeftPane/components/CommonDataTab/fields/LeadField";
+import { useLocalState, useFieldValidation } from "../PlanLeftPane/hooks";
+import { useITOwners, useProducts } from "@/api/hooks";
+import { usePlanTalents } from "../PlanLeftPane/components/CommonDataTab/hooks/usePlanTalents";
 import type { Plan, PlanComponent } from "../../../types";
 import type { ComponentWithDetails } from "../PlanComponentsTab/hooks";
 
 export type PlanProductTabProps = {
   readonly productId?: string;
+  readonly originalProductId?: string;
+  readonly itOwner?: string;
+  readonly leadId?: string;
+  readonly teamIds?: string[];
   readonly featureIds?: string[];
   readonly components?: PlanComponent[];
   readonly planId?: string;
   readonly planUpdatedAt?: string | Date;
   readonly plan?: Plan;
+  readonly onProductChange?: (productId: string) => void;
+  readonly onITOwnerChange?: (itOwnerId: string) => void;
+  readonly onLeadIdChange?: (leadId: string) => void;
   readonly onFeatureIdsChange?: (featureIds: string[]) => void;
   readonly onComponentsChange?: (components: PlanComponent[]) => void;
 };
 
 export function PlanProductTab({
   productId,
+  originalProductId,
+  itOwner,
+  leadId,
+  teamIds = [],
   featureIds = [],
   components = [],
   planId,
   planUpdatedAt,
   plan,
+  onProductChange,
+  onITOwnerChange,
+  onLeadIdChange,
   onFeatureIdsChange,
   onComponentsChange,
 }: PlanProductTabProps) {
@@ -41,6 +61,46 @@ export function PlanProductTab({
   const [selectComponentsDialogOpen, setSelectComponentsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<PlanComponent | null>(null);
+
+  // Local state for Product, IT Owner, and Lead fields
+  const {
+    localProductId,
+    setLocalProductId,
+    localItOwner,
+    setLocalItOwner,
+    localLeadId,
+    setLocalLeadId,
+  } = useLocalState(
+    "", // name - not used here
+    "", // description - not used here
+    "planned", // status - not used here
+    "", // startDate - not used here
+    "", // endDate - not used here
+    productId,
+    itOwner,
+    leadId
+  );
+
+  // Data hooks
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts();
+  const { data: itOwners = [], isLoading: isLoadingITOwners } = useITOwners();
+  const { talents, isLoading: isLoadingTalents } = usePlanTalents(teamIds);
+
+  // Validation hook
+  const { validProductId, validItOwner, validLeadId } = useFieldValidation(
+    localProductId,
+    localItOwner,
+    localLeadId,
+    products,
+    itOwners,
+    talents,
+    isLoadingProducts,
+    isLoadingITOwners,
+    isLoadingTalents,
+    onProductChange || (() => {}),
+    onITOwnerChange || (() => {}),
+    onLeadIdChange || (() => {})
+  );
 
   // Features hooks
   const { allProductFeatures, planFeatures: rawPlanFeatures, isLoadingFeatures } =
@@ -104,22 +164,75 @@ export function PlanProductTab({
     }
   };
 
-  if (!productId) {
-    return <NoProductState />;
-  }
-
   return (
     <Box
       sx={{
         p: { xs: 1.5, sm: 2 },
-        height: "100%",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden",
+        minHeight: "fit-content",
       }}
     >
-      <Stack spacing={2} sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        {/* Features Section */}
+      <Stack spacing={2} sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
+        {/* Product, Product Owner, and Lead Fields Section */}
+        <Box
+          sx={{
+            flex: "0 0 auto",
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+            p: { xs: 1.5, sm: 2 },
+            bgcolor: alpha(theme.palette.background.paper, 0.5),
+          }}
+        >
+          <Stack spacing={1.5}>
+            <ProductField
+              originalProductId={originalProductId}
+              products={products}
+              validProductId={validProductId}
+              localProductId={localProductId}
+              onProductChange={(newValue) => {
+                setLocalProductId(newValue || undefined);
+                if (onProductChange && newValue !== productId) {
+                  onProductChange(newValue);
+                }
+              }}
+            />
+
+            <ITOwnerField
+              itOwners={itOwners}
+              validItOwner={validItOwner}
+              localItOwner={localItOwner}
+              isLoadingITOwners={isLoadingITOwners}
+              onITOwnerChange={(newValue) => {
+                setLocalItOwner(newValue || undefined);
+                if (onITOwnerChange && newValue !== itOwner) {
+                  onITOwnerChange(newValue);
+                }
+              }}
+            />
+
+            <LeadField
+              talents={talents}
+              validLeadId={validLeadId}
+              localLeadId={localLeadId}
+              isLoadingTalents={isLoadingTalents}
+              onLeadIdChange={(newValue) => {
+                setLocalLeadId(newValue || undefined);
+                if (onLeadIdChange && newValue !== leadId) {
+                  onLeadIdChange(newValue);
+                }
+              }}
+            />
+          </Stack>
+        </Box>
+
+        {/* Features Section - Only show if product is selected */}
+        {!productId ? (
+          <NoProductState />
+        ) : (
+          <>
+            {/* Features Section */}
         <Box
           sx={{
             flex: "0 0 auto",
@@ -183,6 +296,8 @@ export function PlanProductTab({
             )}
           </Box>
         </Box>
+          </>
+        )}
       </Stack>
 
       {/* Dialogs */}

@@ -1,6 +1,6 @@
 /**
  * Base Phase Controller
- * 
+ *
  * Presentation layer - HTTP endpoints
  */
 import {
@@ -14,38 +14,43 @@ import {
   HttpCode,
   HttpStatus,
   UseInterceptors,
-} from '@nestjs/common';
+  Patch,
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
-} from '@nestjs/swagger';
+} from "@nestjs/swagger";
 import {
   BASE_PHASE_API_OPERATION_SUMMARIES,
   BASE_PHASE_API_RESPONSE_DESCRIPTIONS,
   BASE_PHASE_HTTP_STATUS_CODES,
   BASE_PHASE_API_PARAM_DESCRIPTIONS,
-} from '../constants';
-import { API_TAGS } from '../../common/constants';
-import { BasePhaseService } from '../application/base-phase.service';
-import { CreateBasePhaseDto } from '../application/dto/create-base-phase.dto';
-import { UpdateBasePhaseDto } from '../application/dto/update-base-phase.dto';
-import { BasePhaseResponseDto } from '../application/dto/base-phase-response.dto';
-import { CacheResult, InvalidateCache } from '../../common/decorators/cache.decorator';
-import { CacheInvalidateInterceptor } from '../../common/interceptors/cache-invalidate.interceptor';
-import { Public } from '../../auth/decorators/public.decorator';
+} from "../constants";
+import { API_TAGS } from "../../common/constants";
+import { BasePhaseService } from "../application/base-phase.service";
+import { CreateBasePhaseDto } from "../application/dto/create-base-phase.dto";
+import { UpdateBasePhaseDto } from "../application/dto/update-base-phase.dto";
+import { BasePhaseResponseDto } from "../application/dto/base-phase-response.dto";
+import { ReorderPhasesDto } from "../application/dto/reorder-phases.dto";
+import {
+  CacheResult,
+  InvalidateCache,
+} from "../../common/decorators/cache.decorator";
+import { CacheInvalidateInterceptor } from "../../common/interceptors/cache-invalidate.interceptor";
+import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags(API_TAGS.BASE_PHASES)
-@Controller('base-phases')
+@Controller("base-phases")
 @Public() // TODO: Remove this in production - temporary for development
 @UseInterceptors(CacheInvalidateInterceptor)
 export class BasePhaseController {
   constructor(private readonly service: BasePhaseService) {}
 
   @Get()
-  @CacheResult(300, 'base-phases') // Cache for 5 minutes
+  @CacheResult(300, "base-phases") // Cache for 5 minutes
   @ApiOperation({ summary: BASE_PHASE_API_OPERATION_SUMMARIES.GET_ALL })
   @ApiResponse({
     status: BASE_PHASE_HTTP_STATUS_CODES.OK,
@@ -56,11 +61,35 @@ export class BasePhaseController {
     return this.service.findAll();
   }
 
-  @Get(':id')
-  @CacheResult(300, 'base-phase') // Cache for 5 minutes
+  // ⚡ CRITICAL: This endpoint must be defined BEFORE all routes with :id to avoid route conflicts
+  @Patch("reorder")
+  @InvalidateCache("base-phases:*", "base-phase:*") // Invalidate cache
+  @ApiOperation({ summary: "Reorder phases by updating their sequence values" })
+  @ApiBody({ type: ReorderPhasesDto })
+  @ApiResponse({
+    status: BASE_PHASE_HTTP_STATUS_CODES.OK,
+    description: "Phases reordered successfully",
+    type: [BasePhaseResponseDto],
+  })
+  @ApiResponse({
+    status: BASE_PHASE_HTTP_STATUS_CODES.BAD_REQUEST,
+    description: "Invalid phase IDs array",
+  })
+  @ApiResponse({
+    status: BASE_PHASE_HTTP_STATUS_CODES.NOT_FOUND,
+    description: "One or more phases not found",
+  })
+  async reorderPhases(
+    @Body() dto: ReorderPhasesDto
+  ): Promise<BasePhaseResponseDto[]> {
+    return this.service.reorderPhases(dto.phaseIds);
+  }
+
+  @Get(":id")
+  @CacheResult(300, "base-phase") // Cache for 5 minutes
   @ApiOperation({ summary: BASE_PHASE_API_OPERATION_SUMMARIES.GET_BY_ID })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: BASE_PHASE_API_PARAM_DESCRIPTIONS.ID,
     example: BASE_PHASE_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -73,13 +102,13 @@ export class BasePhaseController {
     status: BASE_PHASE_HTTP_STATUS_CODES.NOT_FOUND,
     description: BASE_PHASE_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async findById(@Param('id') id: string): Promise<BasePhaseResponseDto> {
+  async findById(@Param("id") id: string): Promise<BasePhaseResponseDto> {
     return this.service.findById(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @InvalidateCache('base-phases:*') // Invalidate all base-phases cache
+  @InvalidateCache("base-phases:*") // Invalidate all base-phases cache
   @ApiOperation({ summary: BASE_PHASE_API_OPERATION_SUMMARIES.CREATE })
   @ApiBody({ type: CreateBasePhaseDto })
   @ApiResponse({
@@ -99,11 +128,11 @@ export class BasePhaseController {
     return this.service.create(dto);
   }
 
-  @Put(':id')
-  @InvalidateCache('base-phases:*', 'base-phase:*') // Invalidate cache
+  @Put(":id")
+  @InvalidateCache("base-phases:*", "base-phase:*") // Invalidate cache
   @ApiOperation({ summary: BASE_PHASE_API_OPERATION_SUMMARIES.UPDATE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: BASE_PHASE_API_PARAM_DESCRIPTIONS.ID,
     example: BASE_PHASE_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -122,18 +151,18 @@ export class BasePhaseController {
     description: BASE_PHASE_API_RESPONSE_DESCRIPTIONS.CONFLICT,
   })
   async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateBasePhaseDto,
+    @Param("id") id: string,
+    @Body() dto: UpdateBasePhaseDto
   ): Promise<BasePhaseResponseDto> {
     return this.service.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @InvalidateCache('base-phases:*', 'base-phase:*') // Invalidate cache
+  @InvalidateCache("base-phases:*", "base-phase:*") // Invalidate cache
   @ApiOperation({ summary: BASE_PHASE_API_OPERATION_SUMMARIES.DELETE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: BASE_PHASE_API_PARAM_DESCRIPTIONS.ID,
     example: BASE_PHASE_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -145,8 +174,7 @@ export class BasePhaseController {
     status: BASE_PHASE_HTTP_STATUS_CODES.NOT_FOUND,
     description: BASE_PHASE_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(@Param("id") id: string): Promise<void> {
     return this.service.delete(id);
   }
 }
-

@@ -93,21 +93,21 @@ export function PlanCardDialogs({
         onCancel={() => setEditOpen(false)}
         onSave={onPhaseSave}
         onSaveMetrics={async (phaseId, metricValues) => {
-          console.log("[PlanCardDialogs] Saving metrics for phase:", {
+          console.log("[PlanCardDialogs] Saving metrics for phase to memory:", {
             phaseId,
             metricValues,
           });
 
-          // Update the phase in local metadata with new metricValues and get updated phases
-          let updatedPhases: PlanPhase[] = [];
+          // ⚡ DISCONNECTED OBJECTS PATTERN: Only update in memory, don't persist
+          // The main SAVE button will persist all changes atomically
           setLocalMetadata((prev) => {
             // Ensure prev.phases is always an array
             const prevPhases = Array.isArray(prev.phases) ? prev.phases : [];
-            updatedPhases = prevPhases.map((p) =>
+            const updatedPhases = prevPhases.map((p) =>
               p.id === phaseId ? { ...p, metricValues } : p
             );
             
-            console.log("[PlanCardDialogs] Updated phases with metricValues:", {
+            console.log("[PlanCardDialogs] Updated phases with metricValues in memory:", {
               phaseId,
               prevPhasesType: typeof prev.phases,
               prevPhasesIsArray: Array.isArray(prev.phases),
@@ -126,15 +126,6 @@ export function PlanCardDialogs({
               phases: updatedPhases,
             };
           });
-
-          // Save all phases to backend (includes the updated metricValues)
-          // Pass updatedPhases directly to handleSaveTimeline to avoid closure issues
-          // Ensure updatedPhases is always an array before passing
-          if (!Array.isArray(updatedPhases)) {
-            console.error("[PlanCardDialogs] updatedPhases is not an array:", updatedPhases);
-            updatedPhases = [];
-          }
-          await handleSaveTimeline(updatedPhases);
         }}
       />
 

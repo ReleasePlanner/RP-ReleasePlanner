@@ -72,14 +72,17 @@ export function usePlanCard<TData = Plan, TContext = unknown>(
   );
 
   const handleAddPhase = useCallback(
-    (
+    async (
       phasesToAdd: PlanPhase[],
       onPhasesChange?: (phases: PlanPhase[]) => void
     ) => {
       if (phasesToAdd.length === 0) return;
 
       const updatedPhases = [...(plan.metadata.phases || []), ...phasesToAdd];
-      // Only update local state - save via save button
+      
+      // ⚡ DISCONNECTED OBJECTS PATTERN: Update local state immediately
+      // New phases will be persisted immediately when handleSaveTimeline is called
+      // This allows users to continue working without blocking
       if (onPhasesChange) {
         onPhasesChange(updatedPhases);
       }
@@ -95,15 +98,25 @@ export function usePlanCard<TData = Plan, TContext = unknown>(
       endDate: string,
       onPhasesChange?: (phases: PlanPhase[]) => void
     ) => {
-      const updatedPhases = (plan.metadata.phases || []).map((p) =>
-        p.id === phaseId ? { ...p, startDate, endDate } : p
+      if (!onPhasesChange) return;
+      
+      // ⚡ CRITICAL: Use localMetadata.phases if available to preserve all changes
+      // Otherwise fall back to plan.metadata.phases
+      // The dependency array ensures this uses the latest value
+      const currentPhases = localMetadata?.phases ?? plan.metadata.phases ?? [];
+      
+      // ⚡ CRITICAL: Create a new array with new objects to ensure React detects the change
+      // This ensures the GanttChart re-renders immediately with the updated phase positions
+      const updatedPhases = currentPhases.map((p) =>
+        p.id === phaseId 
+          ? { ...p, startDate, endDate } // Create new object for updated phase
+          : { ...p } // Create new object for unchanged phases too
       );
-      // Only update local state - save via save button
-      if (onPhasesChange) {
-        onPhasesChange(updatedPhases);
-      }
+      
+      // ⚡ DISCONNECTED OBJECTS PATTERN: Only update local state - save via main SAVE button
+      onPhasesChange(updatedPhases);
     },
-    [plan.metadata.phases]
+    [plan.metadata.phases, localMetadata?.phases]
   );
 
   return {

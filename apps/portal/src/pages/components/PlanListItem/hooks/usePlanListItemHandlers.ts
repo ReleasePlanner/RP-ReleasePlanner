@@ -1,7 +1,9 @@
 import { useCallback } from "react";
-import type { Plan as LocalPlan } from "../../../../features/releasePlans/types";
+import type { Plan as LocalPlan, ReleaseStatus } from "../../../../features/releasePlans/types";
 import type { PlanCardHandle } from "../../../../features/releasePlans/components/PlanCard/PlanCard";
 import { getUserErrorMessage } from "../../../../api/resilience/ErrorHandler";
+import { useUpdatePlan } from "../../../../api/hooks/usePlans";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UsePlanListItemHandlersProps {
   plan: LocalPlan;
@@ -25,6 +27,9 @@ export function usePlanListItemHandlers({
   onCopyId,
   onContextMenu,
 }: UsePlanListItemHandlersProps) {
+  const updatePlanMutation = useUpdatePlan();
+  const queryClient = useQueryClient();
+
   const handleToggle = useCallback(() => {
     onToggle(plan.id);
   }, [plan.id, onToggle]);
@@ -73,12 +78,45 @@ export function usePlanListItemHandlers({
     [planCardRef, setIsSaving]
   );
 
+  const handleReleaseStatusChange = useCallback(
+    async (releaseStatus: ReleaseStatus) => {
+      // Default to "To Be Defined" if not provided
+      const statusToSave = releaseStatus || "To Be Defined";
+      
+      // Don't update if the value hasn't changed
+      if (statusToSave === (plan.metadata.releaseStatus || "To Be Defined")) {
+        return;
+      }
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: {
+            releaseStatus: statusToSave,
+            updatedAt: plan.updatedAt,
+          },
+        });
+        // Invalidate queries to refresh the plan data - only invalidate specific plan
+        queryClient.invalidateQueries({ queryKey: ["plans", plan.id] });
+        queryClient.invalidateQueries({ queryKey: ["plans"] });
+      } catch (error: unknown) {
+        console.error("Error updating release status:", error);
+        const userMessage = getUserErrorMessage(error);
+        if (globalThis.window?.alert) {
+          globalThis.window.alert(userMessage);
+        }
+      }
+    },
+    [plan.id, plan.metadata.releaseStatus, plan.updatedAt, updatePlanMutation, queryClient]
+  );
+
   return {
     handleToggle,
     handleDelete,
     handleCopyId,
     handleContextMenu,
     handleSave,
+    handleReleaseStatusChange,
   };
 }
 

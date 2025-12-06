@@ -21,7 +21,6 @@ import {
   Search as SearchIcon,
   ViewModule as GridViewIcon,
   ViewList as ListViewIcon,
-  FilterList as FilterIcon,
 } from "@mui/icons-material";
 import type { ViewMode, SortOption, FilterStatus } from "../hooks/useReleasePlannerState";
 
@@ -34,8 +33,10 @@ export type ReleasePlannerToolbarProps = {
   readonly onSearchChange: (query: string) => void;
   readonly statusFilter: FilterStatus;
   readonly onStatusFilterChange: (filter: FilterStatus) => void;
-  readonly showFilters: boolean;
-  readonly onToggleFilters: () => void;
+  readonly startDateFilter: string;
+  readonly onStartDateFilterChange: (date: string) => void;
+  readonly endDateFilter: string;
+  readonly onEndDateFilterChange: (date: string) => void;
   readonly onExpandAll: () => void;
   readonly onCollapseAll: () => void;
   readonly onAddPlan: () => void;
@@ -54,14 +55,21 @@ export const ReleasePlannerToolbar = memo(function ReleasePlannerToolbar({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
-  showFilters,
-  onToggleFilters,
+  startDateFilter,
+  onStartDateFilterChange,
+  endDateFilter,
+  onEndDateFilterChange,
   onExpandAll,
   onCollapseAll,
   onAddPlan,
   sortOptions,
 }: ReleasePlannerToolbarProps) {
   const theme = useTheme();
+  
+  // Determine which filter controls to show based on sortBy
+  // Filters are always shown when they're relevant to the current sort option
+  const showDateFilters = sortBy === "startDate" || sortBy === "endDate";
+  const showStatusFilter = sortBy === "status";
 
   return (
     <Box
@@ -185,8 +193,72 @@ export const ReleasePlannerToolbar = memo(function ReleasePlannerToolbar({
         </Select>
       </FormControl>
 
-      {/* Status Filter - Inline when visible */}
-      {showFilters && (
+      {/* Date Filters - Show when sorting by dates */}
+      {showDateFilters && (
+        <>
+          <TextField
+            type="date"
+            label={sortBy === "startDate" ? "From Start Date" : "From End Date"}
+            value={startDateFilter}
+            onChange={(e) => onStartDateFilterChange(e.target.value)}
+            size="small"
+            InputLabelProps={{
+              shrink: true,
+            }}
+            sx={{
+              width: 180,
+              flexShrink: 0,
+              "& .MuiOutlinedInput-root": {
+                height: 32,
+                fontSize: "0.8125rem",
+                backgroundColor: theme.palette.background.paper,
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: alpha(theme.palette.divider, 0.2),
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 1.5,
+              },
+            }}
+          />
+          <TextField
+            type="date"
+            label={sortBy === "startDate" ? "To Start Date" : "To End Date"}
+            value={endDateFilter}
+            onChange={(e) => onEndDateFilterChange(e.target.value)}
+            size="small"
+            InputLabelProps={{
+              shrink: true,
+            }}
+            sx={{
+              width: 180,
+              flexShrink: 0,
+              "& .MuiOutlinedInput-root": {
+                height: 32,
+                fontSize: "0.8125rem",
+                backgroundColor: theme.palette.background.paper,
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: alpha(theme.palette.divider, 0.2),
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 1.5,
+              },
+            }}
+          />
+        </>
+      )}
+
+      {/* Status Filter - Show when sorting by status */}
+      {showStatusFilter && (
         <FormControl size="small" sx={{ minWidth: 140, flexShrink: 0 }}>
           <Select
             value={statusFilter}
@@ -229,28 +301,6 @@ export const ReleasePlannerToolbar = memo(function ReleasePlannerToolbar({
           ml: { xs: 0, md: "auto" },
         }}
       >
-        <Tooltip title="Show/Hide filters" arrow placement="top">
-          <IconButton
-            size="small"
-            onClick={onToggleFilters}
-            color={showFilters ? "primary" : "default"}
-            sx={{
-              width: 32,
-              height: 32,
-              p: 0.75,
-              bgcolor: showFilters
-                ? alpha(theme.palette.primary.main, 0.1)
-                : "transparent",
-              "&:hover": {
-                bgcolor: showFilters
-                  ? alpha(theme.palette.primary.main, 0.15)
-                  : alpha(theme.palette.action.hover, 0.08),
-              },
-            }}
-          >
-            <FilterIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
         <Tooltip title="Expand all" arrow placement="top">
           <IconButton
             size="small"

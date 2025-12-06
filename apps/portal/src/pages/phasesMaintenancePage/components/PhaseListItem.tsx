@@ -13,15 +13,21 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   ContentCopy as DuplicateIcon,
+  Star as StarIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon,
 } from "@mui/icons-material";
 import type { BasePhase } from "@/api/services/basePhases.service";
 
 export type PhaseListItemProps = {
   readonly phase: BasePhase;
   readonly isLast: boolean;
+  readonly isFirst: boolean;
   readonly onEdit: (phase: BasePhase) => void;
   readonly onDelete: (phase: BasePhase) => void;
   readonly onDuplicate: (phase: BasePhase) => void;
+  readonly onMoveUp?: (phase: BasePhase) => void;
+  readonly onMoveDown?: (phase: BasePhase) => void;
 };
 
 /**
@@ -30,9 +36,12 @@ export type PhaseListItemProps = {
 export const PhaseListItem = memo(function PhaseListItem({
   phase,
   isLast,
+  isFirst,
   onEdit,
   onDelete,
   onDuplicate,
+  onMoveUp,
+  onMoveDown,
 }: PhaseListItemProps) {
   const theme = useTheme();
 
@@ -67,24 +76,89 @@ export const PhaseListItem = memo(function PhaseListItem({
 
         {/* Phase Name */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: "0.8125rem",
-              fontWeight: 500,
-              color: theme.palette.text.primary,
-              lineHeight: 1.5,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {phase.name}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                color: theme.palette.text.primary,
+                lineHeight: 1.5,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {phase.name}
+            </Typography>
+            {phase.isDefault && (
+              <Tooltip
+                title="Default phase - automatically added to new plans"
+                arrow
+              >
+                <StarIcon
+                  sx={{
+                    fontSize: 16,
+                    color: theme.palette.warning.main,
+                    flexShrink: 0,
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Stack>
         </Box>
 
         {/* Actions */}
         <Stack direction="row" spacing={0.25}>
+          {/* Move Up/Down Buttons */}
+          {onMoveUp && onMoveDown && (
+            <>
+              <Tooltip title="Move up" arrow>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => onMoveUp(phase)}
+                    disabled={isFirst}
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      p: 0.75,
+                      "&:hover:not(:disabled)": {
+                        bgcolor: alpha(theme.palette.action.active, 0.1),
+                        color: theme.palette.action.active,
+                      },
+                      "&:disabled": {
+                        opacity: 0.3,
+                      },
+                    }}
+                  >
+                    <ArrowUpIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Move down" arrow>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => onMoveDown(phase)}
+                    disabled={isLast}
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      p: 0.75,
+                      "&:hover:not(:disabled)": {
+                        bgcolor: alpha(theme.palette.action.active, 0.1),
+                        color: theme.palette.action.active,
+                      },
+                      "&:disabled": {
+                        opacity: 0.3,
+                      },
+                    }}
+                  >
+                    <ArrowDownIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </>
+          )}
           <Tooltip title="Duplicate" arrow>
             <IconButton
               size="small"
@@ -141,4 +215,3 @@ export const PhaseListItem = memo(function PhaseListItem({
     </Box>
   );
 });
-

@@ -35,62 +35,48 @@ export function PlanCardLayout({
   // Show progress bar while heavy components mount
   // Initialize based on expanded state to avoid rendering issues
   const [isContentReady, setIsContentReady] = useState(expanded);
-  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isContentReadyRef = useRef(isContentReady);
+  
+  // Update ref when state changes
+  useEffect(() => {
+    isContentReadyRef.current = isContentReady;
+  }, [isContentReady]);
   
   // Handle expanded state changes - render content immediately
+  // ⚡ CRITICAL: Only depend on 'expanded' to prevent infinite loops
+  // Use ref to check current state without adding it to dependencies
   useEffect(() => {
     if (expanded) {
-      // Clear any pending timeouts
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
-        renderTimeoutRef.current = null;
-      }
-      
-      // If not ready yet, render immediately
-      if (!isContentReady) {
-        // Use requestAnimationFrame to avoid blocking but render ASAP
-        if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
-          requestAnimationFrame(() => {
-            setIsContentReady(true);
-          });
-        } else {
-          setIsContentReady(true);
-        }
+      // Only update if not already ready to avoid unnecessary re-renders
+      if (!isContentReadyRef.current) {
+        setIsContentReady(true);
       }
     } else {
       // When collapsing, reset state immediately
       setIsContentReady(false);
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
-        renderTimeoutRef.current = null;
-      }
     }
-  }, [expanded, isContentReady]);
+    // ⚡ CRITICAL: Only depend on 'expanded' to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
   
   // Handle Collapse callbacks - ensure content renders ASAP
+  // ⚡ CRITICAL: Use ref to check state without causing re-render loops
   const handleCollapseEnter = () => {
-    // Render immediately when animation starts
-    setIsContentReady(true);
+    if (!isContentReadyRef.current) {
+      setIsContentReady(true);
+    }
   };
   
   const handleCollapseEntered = () => {
-    // Ensure content is definitely rendered (safety net)
-    setIsContentReady(true);
+    if (!isContentReadyRef.current) {
+      setIsContentReady(true);
+    }
   };
   
   const handleCollapseExit = () => {
     // Reset state when collapsing
     setIsContentReady(false);
   };
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
-      }
-    };
-  }, []);
   
   return (
     <Card

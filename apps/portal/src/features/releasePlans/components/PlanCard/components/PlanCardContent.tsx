@@ -22,6 +22,7 @@ export type PlanCardContentProps = {
   readonly handleProductChange: (productId: string) => void;
   readonly handleDescriptionChange: (description: string) => void;
   readonly handleStatusChange: (status: Plan["metadata"]["status"]) => void;
+  readonly handleReleaseStatusChange: (releaseStatus: Plan["metadata"]["releaseStatus"]) => void;
   readonly handleITOwnerChange: (itOwnerId: string) => void;
   readonly handleLeadIdChange: (leadId: string) => void;
   readonly handleStartDateChange: (date: string) => void;
@@ -50,7 +51,6 @@ export type PlanCardContentProps = {
     startDate: string,
     endDate: string
   ) => void;
-  readonly handleReorderPhases: (reorderedPhases: PlanPhase[]) => void;
   readonly setPhaseOpen: (open: boolean) => void;
 };
 
@@ -68,6 +68,7 @@ export function PlanCardContent({
   handleProductChange,
   handleDescriptionChange,
   handleStatusChange,
+  handleReleaseStatusChange,
   handleITOwnerChange,
   handleLeadIdChange,
   handleStartDateChange,
@@ -88,9 +89,8 @@ export function PlanCardContent({
   setScrollToDateFn,
   handleSaveTimeline,
   openEditOptimized,
-  handlePhaseRangeChangeOptimized,
-  handleReorderPhases,
-  setPhaseOpen,
+    handlePhaseRangeChangeOptimized,
+    setPhaseOpen,
 }: PlanCardContentProps) {
   const [tabValue, setTabValue] = useState(0);
 
@@ -108,6 +108,7 @@ export function PlanCardContent({
       startDate={metadata.startDate}
       endDate={metadata.endDate}
       id={metadata.id}
+      localMetadata={metadata}
       description={metadata.description}
       status={metadata.status}
       productId={metadata.productId}

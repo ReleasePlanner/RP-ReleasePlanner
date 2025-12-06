@@ -231,22 +231,58 @@ export function useProductMaintenanceHandlers({
             id: product.id,
             data: {
               name: product.name,
-              components: product.components?.map((c: ComponentVersion) => ({
-                ...(c.id && isValidUUID(c.id) && { id: c.id }),
-                type: c.type,
-                currentVersion: c.currentVersion,
-                previousVersion: c.previousVersion,
-              })),
+              components: product.components?.map((c: ComponentVersion) => {
+                const componentData: any = {
+                  ...(c.id && isValidUUID(c.id) && { id: c.id }),
+                  currentVersion: c.currentVersion,
+                  previousVersion: c.previousVersion,
+                };
+                
+                // Prefer componentTypeId over type (legacy)
+                if (c.componentTypeId) {
+                  componentData.componentTypeId = c.componentTypeId;
+                } else if (c.componentType?.id) {
+                  componentData.componentTypeId = c.componentType.id;
+                } else if (c.type && ['web', 'services', 'mobile'].includes(c.type)) {
+                  // Only send type if it's a valid enum value (for backward compatibility)
+                  componentData.type = c.type;
+                }
+                
+                // Include name if present
+                if (c.name) {
+                  componentData.name = c.name;
+                }
+                
+                return componentData;
+              }),
             },
           });
         } else {
           await createMutation.mutateAsync({
             name: product.name,
-            components: product.components?.map((c: ComponentVersion) => ({
-              type: c.type,
-              currentVersion: c.currentVersion,
-              previousVersion: c.previousVersion,
-            })),
+            components: product.components?.map((c: ComponentVersion) => {
+              const componentData: any = {
+                currentVersion: c.currentVersion,
+                previousVersion: c.previousVersion,
+              };
+              
+              // Prefer componentTypeId over type (legacy)
+              if (c.componentTypeId) {
+                componentData.componentTypeId = c.componentTypeId;
+              } else if (c.componentType?.id) {
+                componentData.componentTypeId = c.componentType.id;
+              } else if (c.type && ['web', 'services', 'mobile'].includes(c.type)) {
+                // Only send type if it's a valid enum value (for backward compatibility)
+                componentData.type = c.type;
+              }
+              
+              // Include name if present
+              if (c.name) {
+                componentData.name = c.name;
+              }
+              
+              return componentData;
+            }),
           });
         }
         setOpenProductDialog(false);

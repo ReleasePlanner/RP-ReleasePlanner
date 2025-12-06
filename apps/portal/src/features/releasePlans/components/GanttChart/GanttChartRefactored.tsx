@@ -80,7 +80,7 @@ export function GanttChartRefactored({
               onAutoGenerate={onAutoGenerate}
               headerOffsetTopPx={28 + 24 + 24 + 1 + LANE_GAP}
               calendarStart={start.toISOString().slice(0, 10)}
-              calendarEnd={start.toISOString().slice(0, 10)} // Fixed: should be end
+              calendarEnd={endDate ? new Date(endDate).toISOString().slice(0, 10) : start.toISOString().slice(0, 10)}
             />
           </div>
 

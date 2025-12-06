@@ -1,10 +1,21 @@
 /**
  * Create Base Phase DTO
  */
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
-import { BASE_PHASE_VALIDATION_MESSAGES, BASE_PHASE_API_PROPERTY_DESCRIPTIONS, BASE_PHASE_API_PROPERTY_EXAMPLES } from '../../constants';
-import { VALIDATION_RULES } from '../../../common/constants';
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+  IsInt,
+  Min,
+} from "class-validator";
+import {
+  BASE_PHASE_VALIDATION_MESSAGES,
+  BASE_PHASE_API_PROPERTY_DESCRIPTIONS,
+  BASE_PHASE_API_PROPERTY_EXAMPLES,
+} from "../../constants";
+import { VALIDATION_RULES } from "../../../common/constants";
 
 export class CreateBasePhaseDto {
   @ApiProperty({
@@ -19,7 +30,7 @@ export class CreateBasePhaseDto {
   @ApiProperty({
     description: BASE_PHASE_API_PROPERTY_DESCRIPTIONS.COLOR,
     example: BASE_PHASE_API_PROPERTY_EXAMPLES.COLOR,
-    pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$',
+    pattern: "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
   })
   @IsString()
   @IsNotEmpty({ message: BASE_PHASE_VALIDATION_MESSAGES.PHASE_COLOR_REQUIRED })
@@ -27,5 +38,24 @@ export class CreateBasePhaseDto {
     message: BASE_PHASE_VALIDATION_MESSAGES.PHASE_COLOR_INVALID,
   })
   color: string;
-}
 
+  @ApiProperty({
+    description:
+      "Indicates if this phase should be included by default when creating a new plan",
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  isDefault?: boolean;
+
+  @ApiProperty({
+    description:
+      "Sequential order for displaying phases in maintenance (1, 2, 3, etc.)",
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  sequence?: number;
+}

@@ -1,4 +1,4 @@
-import { Plan, PlanStatus } from '../../domain/plan.entity';
+import { Plan, PlanStatus, ReleaseStatus } from '../../domain/plan.entity';
 import { PlanPhase } from '../../domain/plan-phase.entity';
 import { PlanTask } from '../../domain/plan-task.entity';
 import { PlanMilestone } from '../../domain/plan-milestone.entity';
@@ -117,6 +117,7 @@ export class PlanResponseDto {
   startDate: string;
   endDate: string;
   status: PlanStatus;
+  releaseStatus?: ReleaseStatus;
   description?: string;
   phases: PlanPhaseResponseDto[];
   productId?: string;
@@ -141,6 +142,7 @@ export class PlanResponseDto {
     this.startDate = entity.startDate;
     this.endDate = entity.endDate;
     this.status = entity.status;
+    this.releaseStatus = entity.releaseStatus;
     this.description = entity.description;
     // Defensive: Handle undefined/null relations
     this.phases = (entity.phases && Array.isArray(entity.phases)) 

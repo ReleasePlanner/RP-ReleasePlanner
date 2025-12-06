@@ -15,7 +15,8 @@ export function usePhaseBarDrag(
 
   const handleMouseDown = (
     e: React.MouseEvent<HTMLElement>,
-    handler?: (e: React.MouseEvent<HTMLElement>) => void
+    handler?: (e: React.MouseEvent<HTMLElement>) => void,
+    immediate?: boolean // If true, execute handler immediately without delay
   ) => {
     e.stopPropagation();
 
@@ -62,7 +63,17 @@ export function usePhaseBarDrag(
       }
     }, DOUBLE_CLICK_THRESHOLD);
 
-    // Start drag after a short delay (reduced for better responsiveness)
+    // ⚡ CRITICAL: For resize operations, execute immediately without delay
+    // This ensures the drag state is set up before the user moves the mouse
+    if (handler && immediate) {
+      e.preventDefault(); // Prevent text selection
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      handler(e);
+      return;
+    }
+
+    // Start drag after a short delay (for move operations)
     if (handler) {
       dragStartTimeoutRef.current = setTimeout(() => {
         // Only start drag if still a single click (not cancelled by double click)

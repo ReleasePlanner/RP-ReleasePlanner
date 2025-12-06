@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { Plan } from "../../../types";
 
 export function usePlanCardState(plan: Plan) {
@@ -10,6 +10,18 @@ export function usePlanCardState(plan: Plan) {
   // Use ref to track the last synced updatedAt to prevent overwriting local edits
   const lastSyncedUpdatedAtRef = useRef<string | undefined>(plan.updatedAt);
   const isEditingRef = useRef(false);
+
+  // ⚡ OPTIMIZATION: Create stable keys for comparison to avoid infinite loops
+  // Use a ref to track the previous key and only update if it actually changed
+  const previousPhasesKeyRef = useRef<string>("");
+  const originalPhasesKey = useMemo(() => {
+    const newKey = originalMetadata.phases?.map((p) => p.id).join(",") || "";
+    // Only update if the key actually changed (prevents unnecessary recalculations)
+    if (newKey !== previousPhasesKeyRef.current) {
+      previousPhasesKeyRef.current = newKey;
+    }
+    return previousPhasesKeyRef.current;
+  }, [originalMetadata.phases]);
 
   // Store scrollToDate function from GanttChart
   const [scrollToDateFn, setScrollToDateFn] = useState<
@@ -73,11 +85,15 @@ export function usePlanCardState(plan: Plan) {
       setLocalMetadata(originalMetadata);
       lastSyncedUpdatedAtRef.current = plan.updatedAt;
     }
+    // ⚡ CRITICAL: Only depend on plan.id and plan.updatedAt to prevent infinite loops
+    // originalMetadata is included but we use originalPhasesKey for stable comparison
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     plan.id,
     plan.updatedAt,
-    originalMetadata,
-    localMetadata?.phases?.length,
+    originalPhasesKey,
+    // ⚡ CRITICAL: Removed localMetadata from dependencies to prevent infinite loops
+    // The sync should only happen when plan.updatedAt changes, not when localMetadata changes
   ]);
 
   return {
@@ -92,4 +108,3 @@ export function usePlanCardState(plan: Plan) {
     setErrorSnackbar,
   };
 }
-

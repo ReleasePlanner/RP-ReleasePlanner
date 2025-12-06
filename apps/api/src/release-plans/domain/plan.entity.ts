@@ -13,6 +13,13 @@ export enum PlanStatus {
   PAUSED = 'paused',
 }
 
+export enum ReleaseStatus {
+  TO_BE_DEFINED = 'To Be Defined',
+  SUCCESS = 'Success',
+  ROLLBACK = 'Rollback',
+  PARTIAL_ROLLBACK = 'Partial RollBack',
+}
+
 @Entity('plans')
 @Index(['name'])
 @Index(['productId'])
@@ -33,6 +40,9 @@ export class Plan extends BaseEntity {
 
   @Column({ type: 'enum', enum: PlanStatus, default: PlanStatus.PLANNED })
   status: PlanStatus;
+
+  @Column({ type: 'enum', enum: ReleaseStatus, default: ReleaseStatus.TO_BE_DEFINED })
+  releaseStatus: ReleaseStatus;
 
   @Column({ type: 'text', nullable: true })
   description?: string;
@@ -93,12 +103,19 @@ export class Plan extends BaseEntity {
   })
   componentVersions?: PlanComponentVersion[];
 
+  @OneToMany(() => require('./plan-rca.entity').PlanRca, (rca) => rca.plan, {
+    cascade: true,
+    eager: false,
+  })
+  rcas?: any[];
+
   constructor(
     name?: string,
     startDate?: string,
     endDate?: string,
     status?: PlanStatus,
     description?: string,
+    releaseStatus?: ReleaseStatus,
   ) {
     super();
     if (name !== undefined) {
@@ -118,6 +135,12 @@ export class Plan extends BaseEntity {
     }
     if (description !== undefined) {
       this.description = description;
+    }
+    if (releaseStatus !== undefined) {
+      this.releaseStatus = releaseStatus;
+    } else {
+      // Default to "To Be Defined" if not provided
+      this.releaseStatus = ReleaseStatus.TO_BE_DEFINED;
     }
     // Don't initialize TypeORM relations - TypeORM will handle them
     // Only initialize JSON column arrays (not relations)

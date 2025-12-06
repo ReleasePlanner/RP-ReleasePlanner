@@ -2,7 +2,6 @@ import {
   IconButton,
   Box,
   Tooltip,
-  Typography,
   useTheme,
   alpha,
 } from "@mui/material";
@@ -51,8 +50,7 @@ export function PlanHeader({
         ),
       }}
     >
-
-      {/* Expand/Collapse Button - Right Side */}
+      {/* Right Side - Expand/Collapse Button */}
       <Tooltip
         title={expanded ? "Colapsar plan" : "Expandir plan"}
         placement="top"

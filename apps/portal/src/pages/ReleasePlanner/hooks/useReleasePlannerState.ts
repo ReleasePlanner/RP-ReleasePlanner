@@ -35,10 +35,8 @@ export function useReleasePlannerState() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
-  const [showFilters, setShowFilters] = useState(true);
-
-  // Optimistic UI updates for expanded states
-  const [localExpandedStates, setLocalExpandedStates] = useState<Record<string, boolean>>({});
+  const [startDateFilter, setStartDateFilter] = useState<string>("");
+  const [endDateFilter, setEndDateFilter] = useState<string>("");
 
   return {
     dialogOpen,
@@ -63,10 +61,10 @@ export function useReleasePlannerState() {
     setDebouncedSearchQuery,
     statusFilter,
     setStatusFilter,
-    showFilters,
-    setShowFilters,
-    localExpandedStates,
-    setLocalExpandedStates,
+    startDateFilter,
+    setStartDateFilter,
+    endDateFilter,
+    setEndDateFilter,
   };
 }
 

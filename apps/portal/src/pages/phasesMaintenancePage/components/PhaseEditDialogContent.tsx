@@ -7,6 +7,9 @@ import {
   Tooltip,
   useTheme,
   alpha,
+  FormControlLabel,
+  Checkbox,
+  Typography,
 } from "@mui/material";
 import { Tune as TuneIcon } from "@mui/icons-material";
 import type { BasePhase } from "@/api/services/basePhases.service";
@@ -156,17 +159,14 @@ export const PhaseEditDialogContent = memo(function PhaseEditDialogContent({
                   borderRadius: 1.5,
                   bgcolor: formData.color || "#1976D2",
                   cursor: "pointer",
-                  border:
-                    !PREDEFINED_COLORS.includes(formData.color || "")
-                      ? `3px solid ${theme.palette.common.white}`
-                      : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
-                  boxShadow:
-                    !PREDEFINED_COLORS.includes(formData.color || "")
-                      ? `0 0 0 2px ${formData.color || "#1976D2"}, 0 2px 8px ${alpha(
-                          theme.palette.common.black,
-                          0.2
-                        )}`
-                      : "none",
+                  border: !PREDEFINED_COLORS.includes(formData.color || "")
+                    ? `3px solid ${theme.palette.common.white}`
+                    : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                  boxShadow: !PREDEFINED_COLORS.includes(formData.color || "")
+                    ? `0 0 0 2px ${
+                        formData.color || "#1976D2"
+                      }, 0 2px 8px ${alpha(theme.palette.common.black, 0.2)}`
+                    : "none",
                   transition: "all 0.2s ease",
                   display: "flex",
                   alignItems: "center",
@@ -207,7 +207,53 @@ export const PhaseEditDialogContent = memo(function PhaseEditDialogContent({
           </Grid>
         </Grid>
       </Box>
+
+      {/* Is Default Checkbox */}
+      <Box sx={{ width: "100%" }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.isDefault || false}
+              onChange={(e) =>
+                onFormDataChange({ ...formData, isDefault: e.target.checked })
+              }
+              size="small"
+            />
+          }
+          label={
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "0.6875rem",
+                  fontWeight: 500,
+                  color: theme.palette.text.primary,
+                }}
+              >
+                Use as default phase
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.625rem",
+                  color: theme.palette.text.secondary,
+                  display: "block",
+                  mt: 0.25,
+                }}
+              >
+                This phase will be automatically added to new release plans
+              </Typography>
+            </Box>
+          }
+          sx={{
+            alignItems: "flex-start",
+            m: 0,
+            "& .MuiFormControlLabel-label": {
+              ml: 1,
+            },
+          }}
+        />
+      </Box>
     </Stack>
   );
 });
-

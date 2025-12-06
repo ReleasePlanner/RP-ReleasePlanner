@@ -11,7 +11,10 @@ import {
   validatePhases,
   validatePhaseData,
 } from "./index";
-import { createFullUpdateDto, createPartialUpdateDto } from "../../../lib/planConverters";
+import {
+  createFullUpdateDto,
+  createPartialUpdateDto,
+} from "../../../lib/planConverters";
 import { categorizeError } from "../../../../../api/resilience/ErrorHandler";
 
 interface UsePlanCardSaveProps {
@@ -25,7 +28,10 @@ interface UsePlanCardSaveProps {
     isPending: boolean;
   };
   updateFeatureMutation: {
-    mutateAsync: (params: { id: string; data: { status: "assigned" } }) => Promise<unknown>;
+    mutateAsync: (params: {
+      id: string;
+      data: { status: "assigned" };
+    }) => Promise<unknown>;
   };
   updateProductMutation: {
     mutateAsync: (params: {
@@ -65,19 +71,20 @@ export function usePlanCardSave({
   setErrorSnackbar,
 }: UsePlanCardSaveProps) {
   const queryClient = useQueryClient();
-  
+
   // ⚡ OPTIMIZATION: Only fetch features when productId exists
   // Features are already loaded by PlanProductTab when user navigates to that tab
   // This ensures we have features when saving even if they weren't loaded yet
   const { data: allProductFeaturesFromQuery = [] } = useFeatures(
     originalMetadata?.productId
   );
-  
+
   // Use features from props (cache) if available, otherwise from query
   // This prioritizes cached data but falls back to query if needed
-  const allProductFeatures = allProductFeaturesFromProps.length > 0 
-    ? allProductFeaturesFromProps 
-    : allProductFeaturesFromQuery;
+  const allProductFeatures =
+    allProductFeaturesFromProps.length > 0
+      ? allProductFeaturesFromProps
+      : allProductFeaturesFromQuery;
 
   const handleSaveTab = useCallback(
     async (tabIndex: number) => {
@@ -86,7 +93,7 @@ export function usePlanCardSave({
 
         // Debug: Log updateData for Setup tab
         if (tabIndex === 2) {
-          console.log('[usePlanCardSave] Saving Setup tab:', {
+          console.log("[usePlanCardSave] Saving Setup tab to memory:", {
             tabIndex,
             updateData,
             calendarIds: updateData.calendarIds,
@@ -98,170 +105,152 @@ export function usePlanCardSave({
           });
         }
 
-        const maxRetries = 3;
-        let retryCount = 0;
-        let lastError: Error | null = null;
-
-        while (retryCount < maxRetries) {
-          try {
-            validateComponentsBeforeSave(
-              tabIndex,
-              updateData.components,
-              metadata.productId,
-              products,
-              plan.metadata.components || []
-            );
-
-            const updateDto = createPartialUpdateDto(
-              plan,
-              updateData,
-              plan.updatedAt
-            );
-
-            // Debug: Log updateDto for Setup tab
-            if (tabIndex === 2) {
-              console.log('[usePlanCardSave] Update DTO for Setup tab:', {
-                calendarIds: updateDto.calendarIds,
-                indicatorIds: updateDto.indicatorIds,
-                teamIds: updateDto.teamIds,
-                teamIdsCount: updateDto.teamIds?.length || 0,
-                updateDtoKeys: Object.keys(updateDto),
-                fullUpdateDto: updateDto,
-              });
-            }
-
-            await updatePlanMutation.mutateAsync({
-              id: plan.id,
-              data: updateDto,
-            });
-
-            await handlePostSaveOperations(
-              tabIndex,
-              updateData,
-              metadata,
-              originalMetadata,
-              allProductFeatures,
-              products,
-              updateFeatureMutation,
-              updateProductMutation
-            );
-
-            await queryClient.invalidateQueries({ queryKey: ["plans"] });
-            await queryClient.invalidateQueries({ queryKey: ["features"] });
-            await queryClient.invalidateQueries({ queryKey: ["products"] });
-            
-                   // Invalidate teams cache when saving Setup tab (tab 2)
-                   // This will invalidate all team queries including ["teams", "detail", id]
-                   if (tabIndex === 2) {
-                     // Invalidate all team-related queries
-                     await queryClient.invalidateQueries({ queryKey: ["teams"] });
-                   }
-
-            // Wait for refetch to complete before updating local metadata
-            await queryClient.refetchQueries({ queryKey: ["plans"] });
-            await queryClient.refetchQueries({ queryKey: ["features"] });
-            await queryClient.refetchQueries({ queryKey: ["products"] });
-            
-            // Refetch teams when saving Setup tab (tab 2)
-            if (tabIndex === 2) {
-              // Refetch all team queries to ensure new teams are loaded
-              await queryClient.refetchQueries({ queryKey: ["teams"] });
-              
-              // Debug: Log after refetch to verify plan was updated
-              console.log('[usePlanCardSave] After refetch for Setup tab:', {
-                planId: plan.id,
-                updateDataTeamIds: updateData.teamIds,
-                updateDataTeamIdsCount: updateData.teamIds?.length || 0,
-              });
-            }
-
-            // Temporarily update localMetadata with updateData to show changes immediately
-            // The useEffect in usePlanCardState will sync from originalMetadata when plan prop updates
-            setLocalMetadata((prev) => {
-              const merged = { ...prev, ...updateData };
-              console.log('[usePlanCardSave] Updating localMetadata:', {
-                tabIndex,
-                updateData,
-                prevTeamIds: prev.teamIds,
-                mergedTeamIds: merged.teamIds,
-                mergedTeamIdsCount: merged.teamIds?.length || 0,
-              });
-              return merged;
-            });
-
-            return;
-          } catch (error: unknown) {
-            lastError =
-              error instanceof Error ? error : new Error(String(error));
-
-            categorizeError(error);
-
-            const shouldContinue = await handleRetryLogic(
-              error,
-              retryCount,
-              maxRetries,
-              tabIndex,
-              queryClient
-            );
-
-            if (shouldContinue) {
-              retryCount++;
-              continue;
-            }
-
-            throw new Error(
-              getErrorMessage(
-                error,
-                `Error saving tab ${tabIndex}. Please try again.`
-              )
-            );
-          }
-        }
-
-        throw (
-          lastError ||
-          new Error(`Failed to save tab ${tabIndex} after multiple retries`)
+        // Validate components before saving to memory
+        validateComponentsBeforeSave(
+          tabIndex,
+          updateData.components,
+          metadata.productId,
+          products,
+          plan.metadata.components || []
         );
+
+        // ⚡ NEW BEHAVIOR: Only save to memory (localMetadata), not to database
+        // The main SAVE button will persist all changes atomically
+        setLocalMetadata((prev) => {
+          const merged = { ...prev, ...updateData };
+          console.log("[usePlanCardSave] Saving tab to memory:", {
+            tabIndex,
+            updateData,
+            prevTeamIds: prev.teamIds,
+            mergedTeamIds: merged.teamIds,
+            mergedTeamIdsCount: merged.teamIds?.length || 0,
+          });
+          return merged;
+        });
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : `Error saving tab ${tabIndex}. Please try again.`;
-        console.error("[handleSaveTab] Error saving tab:", error);
+            : `Error saving tab ${tabIndex} to memory. Please try again.`;
+        console.error("[handleSaveTab] Error saving tab to memory:", error);
         setErrorSnackbar({ open: true, message: errorMessage });
         throw error;
       }
     },
     [
-      plan,
       metadata,
-      originalMetadata,
       products,
-      allProductFeatures,
-      updatePlanMutation,
-      updateFeatureMutation,
-      updateProductMutation,
-      queryClient,
+      plan.metadata.components,
       setLocalMetadata,
       setErrorSnackbar,
     ]
   );
 
-  const handleSaveTimeline = useCallback(async (phasesOverride?: Plan["metadata"]["phases"]) => {
-    const maxRetries = 3;
-    let retryCount = 0;
-    let lastError: Error | null = null;
+  /**
+   * Helper: Detect if a phase ID is temporary (needs immediate persistence)
+   * Temporary IDs are those that start with "phase-" and contain timestamp
+   */
+  const isTemporaryPhaseId = (phaseId: string | undefined): boolean => {
+    if (!phaseId || typeof phaseId !== "string") {
+      return false;
+    }
+    return phaseId.startsWith("phase-") && /phase-\d+/.test(phaseId);
+  };
 
-    while (retryCount < maxRetries) {
-      let updateDto: any = null;
+  /**
+   * Helper: Persist new phases immediately to get real IDs (disconnected objects pattern)
+   * This allows users to continue working (add references, reschedules, metrics) without blocking
+   */
+  const persistNewPhasesImmediately = useCallback(
+    async (
+      phases: Plan["metadata"]["phases"]
+    ): Promise<Plan["metadata"]["phases"]> => {
+      if (!phases || phases.length === 0) return phases;
+
+      // Separate new phases (temporary IDs) from existing phases
+      const newPhases = phases.filter((p) => isTemporaryPhaseId(p.id));
+      const existingPhases = phases.filter((p) => !isTemporaryPhaseId(p.id));
+
+      // If no new phases, return as-is (no persistence needed)
+      if (newPhases.length === 0) {
+        return phases;
+      }
+
+      console.log("[usePlanCardSave] Persisting new phases immediately:", {
+        newPhasesCount: newPhases.length,
+        existingPhasesCount: existingPhases.length,
+        newPhaseIds: newPhases.map((p) => p.id),
+      });
+
       try {
-        // Use phasesOverride if provided, otherwise use localMetadata to get the latest state including metricValues
+        // Persist only the new phases to get real IDs
+        const validatedPhases = validatePhases(phases);
+        validatePhaseData(validatedPhases);
+
+        const updateDto = createPartialUpdateDto(
+          plan,
+          {
+            phases: validatedPhases as typeof localMetadata.phases,
+            milestones: localMetadata.milestones,
+            // Include required fields from plan to ensure backend validation passes
+            itOwner: localMetadata.itOwner ?? plan.metadata.itOwner,
+            productId: localMetadata.productId ?? plan.metadata.productId,
+          },
+          plan.updatedAt
+        );
+
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: updateDto,
+        });
+
+        // Invalidate and refetch to get real IDs
+        queryClient.invalidateQueries({
+          queryKey: ["plans", "detail", plan.id],
+          exact: true,
+        });
+        await queryClient.refetchQueries({
+          queryKey: ["plans", "detail", plan.id],
+          exact: true,
+        });
+
+        // After persistence, the phases should have real IDs from the server
+        // For now, return the validated phases - they will be updated when the plan refetches
+        // The localMetadata will sync from the refetched plan via usePlanCardState
+        console.log("[usePlanCardSave] New phases persisted:", {
+          originalNewPhaseIds: newPhases.map((p) => p.id),
+          validatedPhaseIds: validatedPhases.map((p) => ({
+            id: p.id,
+            name: p.name,
+          })),
+        });
+
+        return validatedPhases as typeof localMetadata.phases;
+      } catch (error: unknown) {
+        console.error(
+          "[persistNewPhasesImmediately] Error persisting new phases:",
+          error
+        );
+        // If persistence fails, still return phases so user can continue working
+        // The main SAVE will retry later
+        return phases;
+      }
+    },
+    [plan, localMetadata.milestones, updatePlanMutation, queryClient]
+  );
+
+  const handleSaveTimeline = useCallback(
+    async (phasesOverride?: Plan["metadata"]["phases"]) => {
+      try {
+        // Use phasesOverride if provided, otherwise use localMetadata to get the latest state
         // Ensure phasesToSave is always an array
-        const phasesToSave = Array.isArray(phasesOverride) 
-          ? phasesOverride 
-          : (Array.isArray(localMetadata.phases) ? localMetadata.phases : []);
-        
-        console.log("[usePlanCardSave] Saving timeline with phases:", {
+        const phasesToSave = Array.isArray(phasesOverride)
+          ? phasesOverride
+          : Array.isArray(localMetadata.phases)
+          ? localMetadata.phases
+          : [];
+
+        console.log("[usePlanCardSave] Saving timeline to memory:", {
           phaseCount: phasesToSave.length,
           phasesToSaveType: typeof phasesToSave,
           isArray: Array.isArray(phasesToSave),
@@ -272,11 +261,13 @@ export function usePlanCardSave({
           phases: phasesToSave.map((p) => ({
             id: p.id,
             name: p.name,
+            isTemporary: isTemporaryPhaseId(p.id),
+            startDate: p.startDate,
+            endDate: p.endDate,
             hasMetricValues: !!p.metricValues,
-            metricValues: p.metricValues,
           })),
         });
-        
+
         const validatedPhases = validatePhases(phasesToSave);
 
         if (validatedPhases.length !== phasesToSave.length) {
@@ -291,125 +282,75 @@ export function usePlanCardSave({
           );
         }
 
-        updateDto = createPartialUpdateDto(
-          plan,
-          {
-            phases: validatedPhases as typeof localMetadata.phases,
-            milestones: localMetadata.milestones,
-          },
-          plan.updatedAt
+        // Validate phase data
+        validatePhaseData(validatedPhases);
+
+        // ⚡ DISCONNECTED OBJECTS PATTERN:
+        // 1. Persist new phases immediately to get real IDs (only if there are new phases)
+        // 2. Save changes to existing phases only in memory (date changes, metricValues, etc.)
+        // The main SAVE button will persist all changes atomically
+        const phasesWithRealIds = await persistNewPhasesImmediately(
+          validatedPhases as typeof localMetadata.phases
         );
 
-        console.log("[usePlanCardSave] ⚡ CRITICAL: Update DTO phases:", {
-          phaseCount: updateDto.phases?.length || 0,
-          phases: updateDto.phases?.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            startDate: p.startDate,
-            endDate: p.endDate,
-            hasMetricValues: !!p.metricValues,
-            metricValues: p.metricValues,
-          })),
-        });
+        // Ensure phasesWithRealIds is always an array (fallback to validatedPhases)
+        const finalPhases: Plan["metadata"]["phases"] =
+          Array.isArray(phasesWithRealIds) && phasesWithRealIds.length > 0
+            ? phasesWithRealIds
+            : (validatedPhases as typeof localMetadata.phases);
 
-        if (updateDto.phases) {
-          validatePhaseData(updateDto.phases);
-        }
-
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: updateDto,
-        });
-
-        await queryClient.invalidateQueries({ queryKey: ["plans"] });
-        await queryClient.refetchQueries({ queryKey: ["plans"] });
-        
-        // ⚡ CRITICAL: Invalidate reschedules queries to refresh reschedule lists
-        await queryClient.invalidateQueries({ queryKey: ["plans", "reschedules", plan.id] });
-        // Also invalidate phase reschedules for all phases
-        if (validatedPhases && validatedPhases.length > 0) {
-          validatedPhases.forEach((phase: any) => {
-            if (phase.id) {
-              queryClient.invalidateQueries({ 
-                queryKey: ["plans", "reschedules", plan.id, "phases", phase.id] 
-              });
-            }
-          });
-        }
-
+        // Update localMetadata with phases (now with real IDs if they were new)
+        // This saves all changes (dates, metrics, etc.) to memory only
         setLocalMetadata((prev) => ({
           ...prev,
-          phases: localMetadata.phases,
+          phases: finalPhases,
           milestones: localMetadata.milestones,
         }));
 
-        return;
-      } catch (error: unknown) {
-        // Log detailed error information for debugging
-        const errorResponseData = (error as any)?.responseData || (error as any)?.response?.data || (error as any)?.data;
-        console.error("[usePlanCardSave] Error saving timeline:", {
-          error,
-          errorMessage: error instanceof Error ? error.message : String(error),
-          errorResponseData,
-          validationErrors: errorResponseData?.errors,
-          validationDetails: errorResponseData?.details,
-          updateDto: updateDto ? {
-            hasPhases: !!updateDto.phases,
-            phaseCount: updateDto.phases?.length || 0,
-            phases: updateDto.phases?.map((p: any) => ({
-              name: p.name,
-              startDate: p.startDate,
-              endDate: p.endDate,
-              color: p.color,
-              hasMetricValues: !!p.metricValues,
-              metricValues: p.metricValues,
-              metricValuesType: typeof p.metricValues,
-              metricValuesKeys: p.metricValues ? Object.keys(p.metricValues) : [],
-            })),
-          } : null,
+        console.log("[usePlanCardSave] Timeline saved to memory:", {
+          phaseCount: finalPhases?.length || 0,
+          newPhasesPersisted:
+            finalPhases?.filter(
+              (p) =>
+                !isTemporaryPhaseId(p.id) &&
+                phasesToSave.some(
+                  (orig) => isTemporaryPhaseId(orig.id) && orig.name === p.name
+                )
+            ).length || 0,
         });
-        
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        const shouldContinue = await handleRetryLogic(
-          error,
-          retryCount,
-          maxRetries,
-          -1,
-          queryClient
-        );
-
-        if (shouldContinue) {
-          retryCount++;
-          continue;
-        }
-
-        throw new Error(
-          getErrorMessage(error, "Error saving timeline. Please try again.")
-        );
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Error saving timeline. Please try again.";
+        console.error("[handleSaveTimeline] Error saving timeline:", error);
+        setErrorSnackbar({ open: true, message: errorMessage });
+        throw error;
       }
-    }
-
-    throw (
-      lastError || new Error("Failed to save timeline after multiple retries")
-    );
-  }, [plan, localMetadata, updatePlanMutation, queryClient, setLocalMetadata]);
+    },
+    [
+      localMetadata,
+      setLocalMetadata,
+      setErrorSnackbar,
+      persistNewPhasesImmediately,
+    ]
+  );
 
   const handleSaveAll = useCallback(async () => {
     // Validate required fields before saving
-    if (!metadata.name?.trim()) {
+    if (!localMetadata.name?.trim()) {
       throw new Error("El nombre del plan es obligatorio");
     }
-    if (!metadata.status) {
+    if (!localMetadata.status) {
       throw new Error("El estado es obligatorio");
     }
-    if (!metadata.startDate) {
+    if (!localMetadata.startDate) {
       throw new Error("La fecha de inicio es obligatoria");
     }
-    if (!metadata.endDate) {
+    if (!localMetadata.endDate) {
       throw new Error("La fecha de fin es obligatoria");
     }
-    if (!metadata.productId) {
+    if (!localMetadata.productId) {
       throw new Error("El producto es obligatorio");
     }
 
@@ -419,6 +360,7 @@ export function usePlanCardSave({
 
     while (retryCount < maxRetries) {
       try {
+        // ⚡ CRITICAL: Save plan atomically with all changes from localMetadata
         await updatePlanMutation.mutateAsync({
           id: plan.id,
           data: createFullUpdateDto(
@@ -430,14 +372,87 @@ export function usePlanCardSave({
           ),
         });
 
-        await queryClient.invalidateQueries({ queryKey: ["plans"] });
-        await queryClient.refetchQueries({ queryKey: ["plans"] });
+        // ⚡ CRITICAL: After saving plan, handle post-save operations atomically
+        // This includes updating feature statuses and component versions
+        // We need to check what changed compared to originalMetadata
+        const updateData = {
+          featureIds: localMetadata.featureIds,
+          components: localMetadata.components,
+        };
 
+        // Determine which tab had changes to execute appropriate post-save operations
+        // Tab 1 (Product) handles features and components
+        if (
+          (updateData.featureIds || updateData.components) &&
+          localMetadata.productId
+        ) {
+          await handlePostSaveOperations(
+            1, // Product tab
+            updateData,
+            localMetadata,
+            originalMetadata,
+            allProductFeatures,
+            products,
+            updateFeatureMutation,
+            updateProductMutation
+          );
+        }
+
+        // ⚡ OPTIMIZATION: Invalidate queries after atomic save
+        queryClient.invalidateQueries({ queryKey: ["plans"] });
+        queryClient.invalidateQueries({ queryKey: ["features"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        queryClient.invalidateQueries({ queryKey: ["teams"] });
+        queryClient.invalidateQueries({
+          queryKey: ["plans", "reschedules", plan.id],
+        });
+
+        // Invalidate phase reschedules for all phases
+        if (localMetadata.phases && localMetadata.phases.length > 0) {
+          localMetadata.phases.forEach((phase) => {
+            if (phase.id) {
+              queryClient.invalidateQueries({
+                queryKey: ["plans", "reschedules", plan.id, "phases", phase.id],
+              });
+            }
+          });
+        }
+
+        // ⚡ OPTIMIZATION: Only refetch the specific plan that was updated
+        queryClient.invalidateQueries({
+          queryKey: ["plans", "detail", plan.id],
+          exact: true,
+        });
+        queryClient.invalidateQueries({ queryKey: ["plans", "list"] });
+        await queryClient.refetchQueries({
+          queryKey: ["plans", "detail", plan.id],
+          exact: true,
+        });
+
+        // Refetch features if they were modified
+        if (localMetadata.productId && updateData.featureIds) {
+          await queryClient.refetchQueries({
+            queryKey: ["features", "list", localMetadata.productId],
+            exact: true,
+          });
+        }
+
+        // Refetch products if components were modified
+        if (localMetadata.productId && updateData.components) {
+          await queryClient.refetchQueries({
+            queryKey: ["products", "detail", localMetadata.productId],
+            exact: true,
+          });
+        }
+
+        // Update localMetadata to reflect saved state (triggers re-render)
         setLocalMetadata((prev) => ({ ...prev }));
 
         return;
       } catch (error: unknown) {
         lastError = error instanceof Error ? error : new Error(String(error));
+
+        categorizeError(error);
 
         const shouldContinue = await handleRetryLogic(
           error,
@@ -462,8 +477,12 @@ export function usePlanCardSave({
   }, [
     plan,
     localMetadata,
-    metadata,
+    originalMetadata,
+    allProductFeatures,
+    products,
     updatePlanMutation,
+    updateFeatureMutation,
+    updateProductMutation,
     queryClient,
     setLocalMetadata,
   ]);
@@ -474,4 +493,3 @@ export function usePlanCardSave({
     handleSaveAll,
   };
 }
-

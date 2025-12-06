@@ -7,12 +7,15 @@ import {
   ValidateNested,
   IsDateString,
   ValidateIf,
-  IsObject,
-} from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { PlanStatus } from '../../domain/plan.entity';
-import { PLAN_VALIDATION_MESSAGES, PLAN_API_PROPERTY_DESCRIPTIONS, PLAN_API_PROPERTY_EXAMPLES } from '../../constants';
+} from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import { PlanStatus, ReleaseStatus } from "../../domain/plan.entity";
+import {
+  PLAN_VALIDATION_MESSAGES,
+  PLAN_API_PROPERTY_DESCRIPTIONS,
+  PLAN_API_PROPERTY_EXAMPLES,
+} from "../../constants";
 
 // Declarar las clases DTO anidadas primero para evitar problemas de inicialización
 export class CreatePlanPhaseDto {
@@ -52,13 +55,20 @@ export class CreatePlanPhaseDto {
   color?: string;
 
   @ApiProperty({
-    description: 'Metric values for this phase (indicatorId -> value)',
-    example: { 'indicator-1': '100', 'indicator-2': '50' },
+    description: "Metric values for this phase (indicatorId -> value)",
+    example: { "indicator-1": "100", "indicator-2": "50" },
     required: false,
   })
   @IsOptional()
-  @IsObject({}, { message: 'metricValues must be an object' })
   metricValues?: Record<string, string>;
+
+  @ApiProperty({
+    description: "Sequential order of this phase (1, 2, 3, etc.)",
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  sequence?: number;
 }
 
 export class CreatePlanTaskDto {
@@ -136,8 +146,21 @@ export class CreatePlanDto {
     example: PlanStatus.PLANNED,
   })
   @IsEnum(PlanStatus)
-  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_STATUS_REQUIRED || 'Status is required' })
+  @IsNotEmpty({
+    message:
+      PLAN_VALIDATION_MESSAGES.PLAN_STATUS_REQUIRED || "Status is required",
+  })
   status: PlanStatus;
+
+  @ApiProperty({
+    description: 'Release status: To Be Defined (default), Success, Rollback, or Partial RollBack',
+    enum: ReleaseStatus,
+    example: ReleaseStatus.TO_BE_DEFINED,
+    required: false,
+  })
+  @IsEnum(ReleaseStatus)
+  @IsOptional()
+  releaseStatus?: ReleaseStatus;
 
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.DESCRIPTION,
@@ -164,7 +187,11 @@ export class CreatePlanDto {
     example: PLAN_API_PROPERTY_EXAMPLES.PRODUCT_ID,
   })
   @IsString()
-  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_PRODUCT_ID_REQUIRED || 'Product ID is required' })
+  @IsNotEmpty({
+    message:
+      PLAN_VALIDATION_MESSAGES.PLAN_PRODUCT_ID_REQUIRED ||
+      "Product ID is required",
+  })
   productId: string;
 
   @ApiProperty({
@@ -179,7 +206,7 @@ export class CreatePlanDto {
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.FEATURES_LIST,
     type: [String],
-    example: ['feature-1', 'feature-2'],
+    example: ["feature-1", "feature-2"],
     required: false,
   })
   @IsArray()
@@ -190,7 +217,7 @@ export class CreatePlanDto {
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.CALENDARS_LIST,
     type: [String],
-    example: ['calendar-1'],
+    example: ["calendar-1"],
     required: false,
   })
   @IsArray()
@@ -198,9 +225,9 @@ export class CreatePlanDto {
   calendarIds?: string[];
 
   @ApiProperty({
-    description: 'List of indicator/KPI IDs associated with this plan',
+    description: "List of indicator/KPI IDs associated with this plan",
     type: [String],
-    example: ['indicator-1', 'indicator-2'],
+    example: ["indicator-1", "indicator-2"],
     required: false,
   })
   @IsArray()
@@ -209,9 +236,9 @@ export class CreatePlanDto {
   indicatorIds?: string[];
 
   @ApiProperty({
-    description: 'List of team IDs associated with this plan',
+    description: "List of team IDs associated with this plan",
     type: [String],
-    example: ['team-1', 'team-2'],
+    example: ["team-1", "team-2"],
     required: false,
   })
   @IsArray()
@@ -220,12 +247,11 @@ export class CreatePlanDto {
   teamIds?: string[];
 
   @ApiProperty({
-    description: 'ID of the lead talent assigned to this plan',
-    example: 'talent-1',
+    description: "ID of the lead talent assigned to this plan",
+    example: "talent-1",
     required: false,
   })
   @IsString()
   @IsOptional()
   leadId?: string;
 }
-

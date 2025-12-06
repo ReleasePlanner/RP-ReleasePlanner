@@ -44,6 +44,14 @@ const PlanReschedulesTab = lazy(() =>
   ).then((module) => ({ default: module.PlanReschedulesTab }))
 );
 
+const PlanRcaTab = lazy(() =>
+  import(
+    /* webpackChunkName: "plan-rca-tab" */
+    /* webpackPrefetch: true */
+    "../../PlanRcaTab/PlanRcaTab"
+  ).then((module) => ({ default: module.PlanRcaTab }))
+);
+
 export type TabPanelsProps = {
   readonly tabValue: number;
   readonly name: string;
@@ -68,6 +76,7 @@ export type TabPanelsProps = {
   readonly planUpdatedAt?: string | Date;
   readonly plan?: Plan;
   readonly originalMetadata?: Plan["metadata"]; // Original metadata for comparing changes
+  readonly localMetadata?: Plan["metadata"]; // Current metadata with pending changes in memory
   readonly onNameChange?: (name: string) => void;
   readonly onDescriptionChange?: (description: string) => void;
   readonly onStatusChange?: (status: PlanStatus) => void;
@@ -110,6 +119,7 @@ export function TabPanels({
   planUpdatedAt,
   plan,
   originalMetadata,
+  localMetadata,
   onNameChange,
   onDescriptionChange,
   onStatusChange,
@@ -143,19 +153,12 @@ export function TabPanels({
           status={status}
           startDate={startDate}
           endDate={endDate}
-          productId={productId}
-          originalProductId={originalProductId}
-          itOwner={itOwner}
-          leadId={leadId}
           teamIds={teamIds}
           onNameChange={onNameChange}
           onDescriptionChange={onDescriptionChange}
           onStatusChange={onStatusChange}
           onStartDateChange={onStartDateChange}
           onEndDateChange={onEndDateChange}
-          onProductChange={onProductChange}
-          onITOwnerChange={onITOwnerChange}
-          onLeadIdChange={onLeadIdChange}
         />
       </TabPanel>
 
@@ -186,11 +189,18 @@ export function TabPanels({
         >
           <PlanProductTab
             productId={productId}
+            originalProductId={originalProductId}
+            itOwner={itOwner}
+            leadId={leadId}
+            teamIds={teamIds}
             featureIds={featureIds}
             components={components}
             planId={id}
             planUpdatedAt={planUpdatedAt}
             plan={plan}
+            onProductChange={onProductChange}
+            onITOwnerChange={onITOwnerChange}
+            onLeadIdChange={onLeadIdChange}
             onFeatureIdsChange={onFeatureIdsChange}
             onComponentsChange={onComponentsChange}
           />
@@ -299,8 +309,35 @@ export function TabPanels({
           <PlanReschedulesTab
             planId={id}
             originalPhases={originalMetadata?.phases || []}
-            currentPhases={plan?.metadata?.phases || []}
+            currentPhases={localMetadata?.phases || plan?.metadata?.phases || []}
           />
+        </Suspense>
+      </TabPanel>
+
+      {/* Tab 5: RCA - Lazy loaded */}
+      <TabPanel
+        value={tabValue}
+        index={5}
+        onSave={undefined}
+        isSaving={false}
+        hasPendingChanges={false}
+      >
+        <Suspense
+          fallback={
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 200,
+                p: 3,
+              }}
+            >
+              <CircularProgress size={24} />
+            </Box>
+          }
+        >
+          <PlanRcaTab planId={id} />
         </Suspense>
       </TabPanel>
     </>

@@ -4,10 +4,7 @@
  * Converts between local Plan format (with metadata) and API Plan format (flat structure)
  */
 
-import type {
-  Plan as LocalPlan,
-  PlanReferenceType,
-} from "../types";
+import type { Plan as LocalPlan, PlanReferenceType } from "../types";
 import type {
   Plan as APIPlan,
   UpdatePlanDto,
@@ -27,47 +24,62 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
       startDate: apiPlan.startDate,
       endDate: apiPlan.endDate,
       status: apiPlan.status,
+      releaseStatus: apiPlan.releaseStatus || "To Be Defined",
       description: apiPlan.description,
       phases: apiPlan.phases?.map((p, index, array) => {
         // If phase doesn't have dates, assign default dates based on plan range
         let startDate = p.startDate;
         let endDate = p.endDate;
-        
+
         if (!startDate || !endDate) {
           // Calculate default dates based on plan range
           const planStart = new Date(apiPlan.startDate);
           const planEnd = new Date(apiPlan.endDate);
-          const planDuration = Math.max(1, Math.ceil((planEnd.getTime() - planStart.getTime()) / (1000 * 60 * 60 * 24)));
-          
+          const planDuration = Math.max(
+            1,
+            Math.ceil(
+              (planEnd.getTime() - planStart.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          );
+
           // Distribute phases evenly across the plan duration
           const phaseCount = array.length;
-          const phaseDuration = Math.max(1, Math.floor(planDuration / Math.max(1, phaseCount)));
-          
+          const phaseDuration = Math.max(
+            1,
+            Math.floor(planDuration / Math.max(1, phaseCount))
+          );
+
           if (!startDate) {
             const defaultStart = new Date(planStart);
-            defaultStart.setDate(defaultStart.getDate() + (index * phaseDuration));
+            defaultStart.setDate(
+              defaultStart.getDate() + index * phaseDuration
+            );
             startDate = defaultStart.toISOString().slice(0, 10);
           }
-          
+
           if (!endDate) {
             const defaultEnd = new Date(startDate);
             defaultEnd.setDate(defaultEnd.getDate() + phaseDuration);
             // Ensure end date doesn't exceed plan end date
-            endDate = defaultEnd.getTime() > planEnd.getTime() 
-              ? planEnd.toISOString().slice(0, 10) 
-              : defaultEnd.toISOString().slice(0, 10);
+            endDate =
+              defaultEnd.getTime() > planEnd.getTime()
+                ? planEnd.toISOString().slice(0, 10)
+                : defaultEnd.toISOString().slice(0, 10);
           }
-          
-          console.warn('[planConverters] Phase missing dates, assigned defaults:', {
-            phaseId: p.id,
-            phaseName: p.name,
-            originalStartDate: p.startDate,
-            originalEndDate: p.endDate,
-            assignedStartDate: startDate,
-            assignedEndDate: endDate,
-          });
+
+          console.warn(
+            "[planConverters] Phase missing dates, assigned defaults:",
+            {
+              phaseId: p.id,
+              phaseName: p.name,
+              originalStartDate: p.startDate,
+              originalEndDate: p.endDate,
+              assignedStartDate: startDate,
+              assignedEndDate: endDate,
+            }
+          );
         }
-        
+
         return {
           id: p.id,
           name: p.name,
@@ -75,6 +87,7 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
           endDate,
           color: p.color,
           metricValues: p.metricValues || {},
+          sequence: p.sequence, // Preserve sequence from API
         };
       }),
       productId: apiPlan.productId,
@@ -225,6 +238,7 @@ export function convertLocalPlanToUpdateDto(
     startDate: localPlan.metadata.startDate,
     endDate: localPlan.metadata.endDate,
     status: localPlan.metadata.status,
+    releaseStatus: localPlan.metadata.releaseStatus,
     description: localPlan.metadata.description,
     phases: localPlan.metadata.phases?.map((p) => ({
       id: p.id, // Include ID to identify existing phases for reschedule tracking
@@ -233,6 +247,7 @@ export function convertLocalPlanToUpdateDto(
       endDate: p.endDate,
       color: p.color,
       metricValues: p.metricValues || {},
+      sequence: p.sequence, // Include sequence
     })),
     productId: localPlan.metadata.productId,
     itOwner: localPlan.metadata.itOwner,
@@ -249,61 +264,85 @@ export function convertLocalPlanToUpdateDto(
 // Helper functions to reduce cognitive complexity
 function mapPhasesToDto(phases: LocalPlan["metadata"]["phases"]) {
   if (!phases) return undefined;
-  
+
   // Filter out invalid phases (missing required fields)
   const validPhases = phases.filter((p) => {
-    const isValid = 
-      p.name && 
-      p.name.trim() !== "" && 
-      p.startDate && 
-      p.startDate.trim() !== "" && 
-      p.endDate && 
+    const isValid =
+      p.name &&
+      p.name.trim() !== "" &&
+      p.startDate &&
+      p.startDate.trim() !== "" &&
+      p.endDate &&
       p.endDate.trim() !== "";
-    
+
     if (!isValid) {
-      console.warn('[planConverters] Filtering out invalid phase in mapPhasesToDto:', {
-        phaseId: p.id,
-        name: p.name,
-        hasStartDate: !!p.startDate,
-        hasEndDate: !!p.endDate,
-        startDate: p.startDate,
-        endDate: p.endDate,
-      });
+      console.warn(
+        "[planConverters] Filtering out invalid phase in mapPhasesToDto:",
+        {
+          phaseId: p.id,
+          name: p.name,
+          hasStartDate: !!p.startDate,
+          hasEndDate: !!p.endDate,
+          startDate: p.startDate,
+          endDate: p.endDate,
+        }
+      );
     }
-    
+
     return isValid;
   });
-  
+
   if (validPhases.length === 0) {
-    console.warn('[planConverters] No valid phases after filtering');
+    console.warn("[planConverters] No valid phases after filtering");
     return [];
   }
-  
+
   return validPhases.map((p) => {
-    const phaseDto: any = {
-      id: p.id, // Include ID to identify existing phases for reschedule tracking
-      name: p.name.trim(),
-      startDate: p.startDate.trim(),
-      endDate: p.endDate.trim(),
-      color: p.color || "#185ABD", // Default color if missing
-    };
-    
     // Always include metricValues - ensure it's always an object
     // This ensures the field is always present in the DTO, even if empty
-    if (p.metricValues && typeof p.metricValues === 'object' && !Array.isArray(p.metricValues)) {
+    let metricValues: Record<string, string> = {};
+    if (
+      p.metricValues &&
+      typeof p.metricValues === "object" &&
+      !Array.isArray(p.metricValues)
+    ) {
       // Use the provided metricValues
-      phaseDto.metricValues = p.metricValues;
-      console.log('[planConverters.mapPhasesToDto] Including metricValues:', {
+      metricValues = p.metricValues;
+      console.log("[planConverters.mapPhasesToDto] Including metricValues:", {
         phaseName: p.name,
         metricValues: p.metricValues,
         keys: Object.keys(p.metricValues),
       });
     } else {
       // Default to empty object if not provided or invalid
-      phaseDto.metricValues = {};
-      console.log('[planConverters.mapPhasesToDto] Using empty metricValues for phase:', p.name);
+      console.log(
+        "[planConverters.mapPhasesToDto] Using empty metricValues for phase:",
+        p.name
+      );
     }
-    
+
+    const phaseDto: {
+      id: string;
+      name: string;
+      startDate: string;
+      endDate: string;
+      color: string;
+      metricValues: Record<string, string>;
+      sequence?: number;
+    } = {
+      id: p.id, // Include ID to identify existing phases for reschedule tracking
+      name: p.name.trim(),
+      startDate: (p.startDate || "").trim(), // Already validated above
+      endDate: (p.endDate || "").trim(), // Already validated above
+      color: p.color || "#185ABD", // Default color if missing
+      metricValues, // Include metricValues
+    };
+
+    // Include sequence if provided
+    if (p.sequence !== undefined) {
+      phaseDto.sequence = p.sequence;
+    }
+
     return phaseDto;
   });
 }
@@ -337,13 +376,15 @@ function mapReferencesToDto(references: LocalPlan["metadata"]["references"]) {
       r.milestoneColor && { milestoneColor: r.milestoneColor }),
     // Include files for document type references
     ...(r.type === "document" &&
-      r.files && { files: r.files.map((f) => ({
-        id: f.id,
-        name: f.name,
-        size: f.size,
-        type: f.type,
-        url: f.url,
-      })) }),
+      r.files && {
+        files: r.files.map((f) => ({
+          id: f.id,
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          url: f.url,
+        })),
+      }),
   }));
 }
 
@@ -372,6 +413,7 @@ export function createPartialUpdateDto(
     "startDate",
     "endDate",
     "status",
+    "releaseStatus",
     "description",
     "productId",
     "itOwner",
@@ -439,6 +481,7 @@ export function createFullUpdateDto(
     startDate: localPlan.metadata.startDate,
     endDate: localPlan.metadata.endDate,
     status: localPlan.metadata.status,
+    releaseStatus: localPlan.metadata.releaseStatus,
     description: localPlan.metadata.description,
     productId: localPlan.metadata.productId,
     itOwner: localPlan.metadata.itOwner,
@@ -465,6 +508,7 @@ export function createFullUpdateDto(
       endDate: p.endDate,
       color: p.color,
       metricValues: p.metricValues || {},
+      sequence: p.sequence, // Include sequence
     })),
     milestones: localPlan.metadata.milestones?.map((m) => ({
       name: m.name,
@@ -489,13 +533,15 @@ export function createFullUpdateDto(
         r.milestoneColor && { milestoneColor: r.milestoneColor }),
       // Include files for document type references
       ...(r.type === "document" &&
-        r.files && { files: r.files.map((f) => ({
-          id: f.id,
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          url: f.url,
-        })) }),
+        r.files && {
+          files: r.files.map((f) => ({
+            id: f.id,
+            name: f.name,
+            size: f.size,
+            type: f.type,
+            url: f.url,
+          })),
+        }),
     })),
   };
 }

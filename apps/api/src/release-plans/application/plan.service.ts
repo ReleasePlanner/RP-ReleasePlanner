@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { In } from "typeorm";
-import { Plan, PlanStatus } from "../domain/plan.entity";
+import { Plan, PlanStatus, ReleaseStatus } from "../domain/plan.entity";
 import { PlanPhase } from "../domain/plan-phase.entity";
 import { PlanTask } from "../domain/plan-task.entity";
 import { PlanMilestone } from "../domain/plan-milestone.entity";
@@ -37,6 +37,7 @@ import {
 } from "@rp-release-planner/rp-shared";
 import { RescheduleTypeService } from "../../reschedule-types/application/reschedule-type.service";
 import { RescheduleType } from "../../reschedule-types/domain/reschedule-type.entity";
+import { BasePhaseService } from "../../base-phases/application/base-phase.service";
 
 @Injectable()
 export class PlanService {
@@ -48,6 +49,7 @@ export class PlanService {
     private readonly repository: IPlanRepository,
     @Inject("IFeatureRepository")
     private readonly featureRepository: IFeatureRepository,
+    private readonly basePhaseService: BasePhaseService,
     private readonly rescheduleTypeService: RescheduleTypeService
   ) {}
 
@@ -124,12 +126,14 @@ export class PlanService {
     }
 
     // Create plan with normalized name (owner field removed - use itOwner instead)
+    // Default releaseStatus to "To Be Defined" if not provided
     const plan = new Plan(
       normalizedName,
       dto.startDate,
       dto.endDate,
       dto.status,
-      dto.description
+      dto.description,
+      dto.releaseStatus || ReleaseStatus.TO_BE_DEFINED
     );
 
     if (dto.description) {
@@ -170,10 +174,11 @@ export class PlanService {
       });
     }
 
-    // Add phases if provided
-    if (dto.phases) {
+    // Add phases: use provided phases or default phases from maintenance
+    if (dto.phases && dto.phases.length > 0) {
+      // Use provided phases with sequence
       validateArray(dto.phases, "Phases");
-      dto.phases.forEach((p) => {
+      dto.phases.forEach((p, index) => {
         // Defensive: Validate phase data
         if (!p || !p.name) {
           throw new Error("Phase name is required");
@@ -186,10 +191,44 @@ export class PlanService {
           p.startDate,
           p.endDate,
           p.color,
-          p.metricValues
+          p.metricValues,
+          p.sequence !== undefined ? p.sequence : index + 1 // Use provided sequence or assign sequential number
         );
         plan.addPhase(phase);
       });
+    } else {
+      // No phases provided - use default phases from maintenance
+      // findAll() already returns phases ordered by sequence
+      const defaultPhases = await this.basePhaseService.findAll();
+      const phasesToAdd = defaultPhases.filter((phase) => phase.isDefault);
+
+      if (phasesToAdd.length > 0) {
+        console.log(
+          `[PlanService.create] Adding ${phasesToAdd.length} default phases to plan with their maintenance sequence`
+        );
+        phasesToAdd.forEach((defaultPhase, index) => {
+          // Use the sequence from maintenance, or fallback to index + 1 if not set
+          const sequence =
+            defaultPhase.sequence !== undefined &&
+            defaultPhase.sequence !== null
+              ? defaultPhase.sequence
+              : index + 1;
+
+          console.log(
+            `[PlanService.create] Adding phase "${defaultPhase.name}" with sequence ${sequence}`
+          );
+
+          const phase = new PlanPhase(
+            defaultPhase.name,
+            undefined, // No dates by default
+            undefined,
+            defaultPhase.color,
+            {},
+            sequence // Use sequence from maintenance
+          );
+          plan.addPhase(phase);
+        });
+      }
     }
 
     const created = await this.repository.create(plan);
@@ -318,6 +357,9 @@ export class PlanService {
     }
     if (dto.status !== undefined) {
       plan.status = dto.status;
+    }
+    if (dto.releaseStatus !== undefined) {
+      plan.releaseStatus = dto.releaseStatus;
     }
     if (dto.description !== undefined) {
       plan.description = dto.description;
@@ -876,12 +918,14 @@ export class PlanService {
             }
 
             this.logger.debug(
-              `[PlanService.update] Processing phase: id=${normalizedPhaseId || "none"}, name=${
-                p.name
-              }, startDate=${p.startDate}, endDate=${
+              `[PlanService.update] Processing phase: id=${
+                normalizedPhaseId || "none"
+              }, name=${p.name}, startDate=${p.startDate}, endDate=${
                 p.endDate
               }, existsInMap=${
-                normalizedPhaseId ? existingPhasesMap.has(normalizedPhaseId) : false
+                normalizedPhaseId
+                  ? existingPhasesMap.has(normalizedPhaseId)
+                  : false
               }`
             );
 
@@ -1285,6 +1329,10 @@ export class PlanService {
               existingPhase.endDate = p.endDate;
               existingPhase.color = p.color;
               existingPhase.metricValues = p.metricValues || {};
+              // Update sequence if provided, otherwise preserve existing sequence
+              if (p.sequence !== undefined) {
+                existingPhase.sequence = p.sequence;
+              }
               phasesToUpdate.push(existingPhase);
             } else {
               // New phase (no ID, invalid ID, or temporary ID)
@@ -1298,13 +1346,20 @@ export class PlanService {
                   `[PlanService.update] ⚠️ Phase has valid ID "${normalizedPhaseId}" but not found in existing phases map. Creating as new phase.`
                 );
               }
-              
+
+              // Calculate sequence: use provided sequence or assign based on position in array
+              const sequence =
+                p.sequence !== undefined
+                  ? p.sequence
+                  : dto.phases!.findIndex((ph) => ph === p) + 1;
+
               const phase = new PlanPhase(
                 p.name,
                 p.startDate,
                 p.endDate,
                 p.color,
-                p.metricValues
+                p.metricValues,
+                sequence
               );
               phase.planId = planWithPhases.id;
               phasesToCreate.push(phase);
@@ -1328,7 +1383,7 @@ export class PlanService {
               }
             }
           });
-          
+
           existingPhasesMap.forEach((phase, id) => {
             if (!dtoPhaseIds.has(id)) {
               phasesToRemove.push(phase);
@@ -1404,10 +1459,13 @@ export class PlanService {
             try {
               // Use QueryBuilder to avoid relation inference issues
               const persistedReschedule = await manager
-                .createQueryBuilder(PhaseReschedule, 'reschedule')
-                .leftJoinAndSelect('reschedule.rescheduleType', 'rescheduleType')
-                .leftJoinAndSelect('reschedule.owner', 'owner')
-                .where('reschedule.id = :id', { id: rescheduleId })
+                .createQueryBuilder(PhaseReschedule, "reschedule")
+                .leftJoinAndSelect(
+                  "reschedule.rescheduleType",
+                  "rescheduleType"
+                )
+                .leftJoinAndSelect("reschedule.owner", "owner")
+                .where("reschedule.id = :id", { id: rescheduleId })
                 .getOne();
 
               if (persistedReschedule) {
@@ -2290,9 +2348,9 @@ export class PlanService {
 
     // Load reschedules using QueryBuilder to explicitly use table name and avoid relation inference
     const reschedules = await manager
-      .createQueryBuilder(PhaseReschedule, 'reschedule')
-      .where('reschedule.planPhaseId = :planPhaseId', { planPhaseId })
-      .orderBy('reschedule.rescheduledAt', 'DESC')
+      .createQueryBuilder(PhaseReschedule, "reschedule")
+      .where("reschedule.planPhaseId = :planPhaseId", { planPhaseId })
+      .orderBy("reschedule.rescheduledAt", "DESC")
       .getMany();
 
     console.log(
@@ -2303,37 +2361,46 @@ export class PlanService {
     );
 
     // Load reschedule types and owners separately if needed
-    const rescheduleTypeIds = [...new Set(reschedules.map(r => r.rescheduleTypeId).filter(Boolean))];
-    const ownerIds = [...new Set(reschedules.map(r => r.ownerId).filter(Boolean))];
-    
-    const RescheduleType = require('../../reschedule-types/domain/reschedule-type.entity').RescheduleType;
-    const Owner = require('../../owners/domain/owner.entity').Owner;
-    
+    const rescheduleTypeIds = [
+      ...new Set(reschedules.map((r) => r.rescheduleTypeId).filter(Boolean)),
+    ];
+    const ownerIds = [
+      ...new Set(reschedules.map((r) => r.ownerId).filter(Boolean)),
+    ];
+
+    const RescheduleType =
+      require("../../reschedule-types/domain/reschedule-type.entity").RescheduleType;
+    const Owner = require("../../owners/domain/owner.entity").Owner;
+
     const rescheduleTypesMap = new Map<string, any>();
     const ownersMap = new Map<string, any>();
-    
+
     if (rescheduleTypeIds.length > 0) {
       const rescheduleTypes = await manager.find(RescheduleType, {
         where: { id: In(rescheduleTypeIds) } as any,
       });
-      rescheduleTypes.forEach(rt => {
+      rescheduleTypes.forEach((rt) => {
         if (rt.id) rescheduleTypesMap.set(rt.id, rt);
       });
     }
-    
+
     if (ownerIds.length > 0) {
       const owners = await manager.find(Owner, {
         where: { id: In(ownerIds) } as any,
       });
-      owners.forEach(o => {
+      owners.forEach((o) => {
         if (o.id) ownersMap.set(o.id, o);
       });
     }
 
     if (reschedules.length > 0) {
-      const rescheduleType = reschedules[0].rescheduleTypeId ? rescheduleTypesMap.get(reschedules[0].rescheduleTypeId) : null;
-      const owner = reschedules[0].ownerId ? ownersMap.get(reschedules[0].ownerId) : null;
-      
+      const rescheduleType = reschedules[0].rescheduleTypeId
+        ? rescheduleTypesMap.get(reschedules[0].rescheduleTypeId)
+        : null;
+      const owner = reschedules[0].ownerId
+        ? ownersMap.get(reschedules[0].ownerId)
+        : null;
+
       console.log(`[PlanService.getPhaseReschedules] Sample reschedule:`, {
         id: reschedules[0].id,
         planPhaseId: reschedules[0].planPhaseId,
@@ -2349,9 +2416,11 @@ export class PlanService {
     }
 
     return reschedules.map((r: PhaseReschedule) => {
-      const rescheduleType = r.rescheduleTypeId ? rescheduleTypesMap.get(r.rescheduleTypeId) : null;
+      const rescheduleType = r.rescheduleTypeId
+        ? rescheduleTypesMap.get(r.rescheduleTypeId)
+        : null;
       const owner = r.ownerId ? ownersMap.get(r.ownerId) : null;
-      
+
       return {
         id: r.id,
         planPhaseId: r.planPhaseId,
@@ -2438,9 +2507,9 @@ export class PlanService {
     // Load reschedules using QueryBuilder to explicitly use table name and avoid relation inference
     // We'll load rescheduleType and owner separately if needed
     const reschedules = await manager
-      .createQueryBuilder(PhaseReschedule, 'reschedule')
-      .where('reschedule.planPhaseId IN (:...phaseIds)', { phaseIds })
-      .orderBy('reschedule.rescheduledAt', 'DESC')
+      .createQueryBuilder(PhaseReschedule, "reschedule")
+      .where("reschedule.planPhaseId IN (:...phaseIds)", { phaseIds })
+      .orderBy("reschedule.rescheduledAt", "DESC")
       .getMany();
 
     console.log(
@@ -2461,38 +2530,45 @@ export class PlanService {
     }
 
     // Load reschedule types and owners separately if needed
-    const rescheduleTypeIds = [...new Set(reschedules.map(r => r.rescheduleTypeId).filter(Boolean))];
-    const ownerIds = [...new Set(reschedules.map(r => r.ownerId).filter(Boolean))];
-    
-    const RescheduleType = require('../../reschedule-types/domain/reschedule-type.entity').RescheduleType;
-    const Owner = require('../../owners/domain/owner.entity').Owner;
-    
+    const rescheduleTypeIds = [
+      ...new Set(reschedules.map((r) => r.rescheduleTypeId).filter(Boolean)),
+    ];
+    const ownerIds = [
+      ...new Set(reschedules.map((r) => r.ownerId).filter(Boolean)),
+    ];
+
+    const RescheduleType =
+      require("../../reschedule-types/domain/reschedule-type.entity").RescheduleType;
+    const Owner = require("../../owners/domain/owner.entity").Owner;
+
     const rescheduleTypesMap = new Map<string, any>();
     const ownersMap = new Map<string, any>();
-    
+
     if (rescheduleTypeIds.length > 0) {
       const rescheduleTypes = await manager.find(RescheduleType, {
         where: { id: In(rescheduleTypeIds) } as any,
       });
-      rescheduleTypes.forEach(rt => {
+      rescheduleTypes.forEach((rt) => {
         if (rt.id) rescheduleTypesMap.set(rt.id, rt);
       });
     }
-    
+
     if (ownerIds.length > 0) {
       const owners = await manager.find(Owner, {
         where: { id: In(ownerIds) } as any,
       });
-      owners.forEach(o => {
+      owners.forEach((o) => {
         if (o.id) ownersMap.set(o.id, o);
       });
     }
 
     return reschedules.map((r: PhaseReschedule) => {
       const phase = phasesMap.get(r.planPhaseId);
-      const rescheduleType = r.rescheduleTypeId ? rescheduleTypesMap.get(r.rescheduleTypeId) : null;
+      const rescheduleType = r.rescheduleTypeId
+        ? rescheduleTypesMap.get(r.rescheduleTypeId)
+        : null;
       const owner = r.ownerId ? ownersMap.get(r.ownerId) : null;
-      
+
       return {
         id: r.id,
         planPhaseId: r.planPhaseId,

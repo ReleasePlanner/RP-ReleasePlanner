@@ -14,11 +14,11 @@ export function prepareTabData(
       updateData.status = metadata.status;
       updateData.startDate = metadata.startDate;
       updateData.endDate = metadata.endDate;
+      break;
+    case 1: // Product (Features + Components)
       updateData.productId = metadata.productId;
       updateData.itOwner = metadata.itOwner;
       updateData.leadId = metadata.leadId;
-      break;
-    case 1: // Product (Features + Components)
       updateData.featureIds = metadata.featureIds;
       updateData.components = filterValidComponents(metadata.components || []);
       break;
@@ -50,9 +50,6 @@ function validateCommonData(metadata: Plan["metadata"]): void {
   }
   if (!metadata.endDate) {
     throw new Error("La fecha de fin es obligatoria");
-  }
-  if (!metadata.productId) {
-    throw new Error("El producto es obligatorio");
   }
 }
 

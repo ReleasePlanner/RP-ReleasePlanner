@@ -5,12 +5,13 @@
  * Refactored with Separation of Concerns (SoC)
  */
 
-import { PageLayout, PageToolbar, BaseEditDialog, type ViewMode } from "@/components";
+import { PageLayout, PageToolbar, BaseEditDialog } from "@/components";
 import {
   useBasePhases,
   useCreateBasePhase,
   useUpdateBasePhase,
   useDeleteBasePhase,
+  useReorderBasePhases,
 } from "@/api/hooks";
 import {
   usePhasesMaintenanceState,
@@ -48,19 +49,20 @@ export function PhasesMaintenancePage() {
     setFormData,
   } = usePhasesMaintenanceState();
 
-  // API hooks
+  // API hooks - MUST be called before any conditional returns
   const { data: phases = [], isLoading, error } = useBasePhases();
   const createMutation = useCreateBasePhase();
   const updateMutation = useUpdateBasePhase();
   const deleteMutation = useDeleteBasePhase();
+  const reorderMutation = useReorderBasePhases();
 
-  // Filter data
+  // Filter data - MUST be called before any conditional returns
   const { filteredPhases } = usePhasesMaintenanceData({
     phases,
     searchQuery,
   });
 
-  // Event handlers
+  // Event handlers - MUST be called before any conditional returns
   const {
     handleOpenDialog,
     handleCloseDialog,
@@ -69,6 +71,8 @@ export function PhasesMaintenancePage() {
     handleDeleteConfirm,
     handleDuplicate,
     handleCloseDeleteDialog,
+    handleMoveUp,
+    handleMoveDown,
   } = usePhasesMaintenanceHandlers({
     editingPhase,
     formData,
@@ -81,14 +85,16 @@ export function PhasesMaintenancePage() {
     createMutation,
     updateMutation,
     deleteMutation,
+    reorderMutation,
+    phases: filteredPhases,
   });
 
-  // Loading state
+  // Loading state - AFTER all hooks
   if (isLoading) {
     return <PhasesMaintenanceLoadingState />;
   }
 
-  // Error state
+  // Error state - AFTER all hooks
   if (error) {
     return <PhasesMaintenanceErrorState error={error} />;
   }
@@ -123,6 +129,8 @@ export function PhasesMaintenancePage() {
           onEdit={handleOpenDialog}
           onDelete={handleDeleteClick}
           onDuplicate={handleDuplicate}
+          onMoveUp={handleMoveUp}
+          onMoveDown={handleMoveDown}
         />
       )}
 

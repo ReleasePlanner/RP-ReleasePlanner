@@ -4,6 +4,7 @@ export type BasePhase = {
   color: string;
 };
 export type PlanStatus = "planned" | "in_progress" | "done" | "paused";
+export type ReleaseStatus = "To Be Defined" | "Success" | "Rollback" | "Partial RollBack";
 
 export type PlanPhase = {
   id: string;
@@ -12,13 +13,14 @@ export type PlanPhase = {
   endDate?: string; // ISO date (optional until set)
   color?: string;
   metricValues?: Record<string, string>; // indicatorId -> value
+  sequence?: number; // Sequential order of phases (1, 2, 3, etc.)
 };
 
 export type PlanComponent = {
-  componentId: string; // ID del componente del productoen el plan
+  componentId: string; // ID del componente del producto en el plan
+  currentVersion: string; // Versión actual del componente en el producto (al momento de asignar al plan)
+  finalVersion: string; // Versión final que se usará
 };
-currentVersion: string; // Versión actual del componente en el producto (al momento de asignar al plan)
-finalVersion: string; // Versión final que se usará
 
 export type PlanMilestone = {
   id: string;
@@ -78,6 +80,19 @@ export type PlanReference = {
   files?: PlanReferenceFile[]; // Files attached to document reference
 };
 
+export type PlanRca = {
+  id: string;
+  supportTicketNumber?: string; // Nro Support Ticket
+  rcaNumber?: string; // Nro RCA
+  keyIssuesTags: string[]; // Tag Key issues
+  learningsTags: string[]; // Tag para Learnings
+  technicalDescription?: string; // Technical Description
+  referenceFileUrl?: string; // Link para adicionar el file de referencia
+  planId: string;
+  createdAt: string; // ISO date
+  updatedAt: string; // ISO date
+};
+
 export type PlanMetadata = {
   id: string;
   name: string;
@@ -85,6 +100,7 @@ export type PlanMetadata = {
   startDate: string; // ISO date
   endDate: string; // ISO date
   status: PlanStatus;
+  releaseStatus?: ReleaseStatus;
   description?: string;
   phases?: PlanPhase[]; // ordered list of phases
   productId?: string; // ID of the associated product
@@ -97,6 +113,7 @@ export type PlanMetadata = {
   teamIds?: string[]; // IDs of teams associated with this plan
   milestones?: PlanMilestone[]; // Milestones for this plan
   references?: PlanReference[]; // References (links, documents, notes, milestones) for this plan
+  rcas?: PlanRca[]; // Root Cause Analysis records for this plan
   // Note: cellData has been removed - references are now handled via plan_references table
 };
 

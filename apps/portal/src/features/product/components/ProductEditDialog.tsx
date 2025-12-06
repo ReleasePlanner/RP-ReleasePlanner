@@ -4,15 +4,11 @@
  * Minimalist and elegant Material UI dialog for creating and editing products
  */
 
-import {
-  TextField,
-  Stack,
-  Box,
-  useTheme,
-  alpha,
-} from "@mui/material";
+import { TextField, Stack, Box, useTheme, Tabs, Tab } from "@mui/material";
 import { BaseEditDialog } from "@/components";
+import { ProductDependenciesSection } from "./ProductDependenciesSection";
 import type { Product } from "@/features/releasePlans/components/Plan/CommonDataCard";
+import { useState } from "react";
 
 interface ProductEditDialogProps {
   open: boolean;
@@ -30,7 +26,8 @@ export function ProductEditDialog({
   onProductChange,
 }: ProductEditDialogProps) {
   const theme = useTheme();
-  const isEditing = product?.name && product.name.trim() !== "";
+  const isEditing = !!(product?.id && product.id.trim() !== "");
+  const [activeTab, setActiveTab] = useState(0);
 
   if (!product) return null;
 
@@ -45,125 +42,268 @@ export function ProductEditDialog({
           ? "Modify the product details"
           : "Create a new product to manage components"
       }
-      maxWidth="sm"
+      maxWidth={isEditing ? "md" : "sm"}
       onSave={() => onSave(product)}
       saveButtonText={isEditing ? "Save Changes" : "Create Product"}
       isFormValid={!!product.name?.trim()}
     >
-      <Stack spacing={3} sx={{ width: "100%" }}>
-        {/* Spacer to ensure controls are below header divider */}
-        <Box sx={{ pt: 1 }} />
-        
-        {/* Product Name */}
-        <TextField
-          autoFocus
-          fullWidth
-          size="small"
-          label="Product Name"
-          placeholder="e.g., Release Planner Suite"
-          value={product.name || ""}
-          onChange={(e) => {
-            onProductChange({
-              ...product,
-              name: e.target.value,
-            });
-          }}
-          required
-          InputLabelProps={{
-            shrink: true,
-            sx: {
-              fontSize: "0.625rem",
-              fontWeight: 500,
-              "&.MuiInputLabel-shrink": {
-                backgroundColor: theme.palette.background.paper,
-                paddingLeft: "6px",
-                paddingRight: "6px",
-                zIndex: 1,
+      {isEditing ? (
+        <Box>
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              mb: 2,
+              "& .MuiTab-root": {
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                textTransform: "none",
+                minHeight: 40,
               },
-            },
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              fontSize: "0.6875rem",
-              "& input": {
-                py: 0.625,
-                fontSize: "0.6875rem",
-              },
-              "&:hover": {
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.primary.main,
-                },
-              },
-              "&.Mui-focused": {
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderWidth: 2,
-                  borderColor: theme.palette.primary.main,
-                },
-              },
-            },
-            "& .MuiFormHelperText-root": {
-              marginTop: "4px",
-              marginLeft: "0px",
-              fontSize: "0.625rem",
-            },
-          }}
-        />
+            }}
+          >
+            <Tab label="General" />
+            <Tab label="Dependencies" />
+          </Tabs>
 
-        {/* Description */}
-        <TextField
-          fullWidth
-          size="small"
-          label="Description"
-          multiline
-          rows={4}
-          value={product.description || ""}
-          onChange={(e) => {
-            onProductChange({
-              ...product,
-              description: e.target.value,
-            });
-          }}
-          placeholder="Brief description of the product and its purpose..."
-          InputLabelProps={{
-            shrink: true,
-            sx: {
-              fontSize: "0.625rem",
-              fontWeight: 500,
-              "&.MuiInputLabel-shrink": {
-                backgroundColor: theme.palette.background.paper,
-                paddingLeft: "6px",
-                paddingRight: "6px",
-                zIndex: 1,
+          {activeTab === 0 && (
+            <Stack spacing={3} sx={{ width: "100%", pt: 1 }}>
+              {/* Product Name */}
+              <TextField
+                autoFocus
+                fullWidth
+                size="small"
+                label="Product Name"
+                placeholder="e.g., Release Planner Suite"
+                value={product.name || ""}
+                onChange={(e) => {
+                  onProductChange({
+                    ...product,
+                    name: e.target.value,
+                  });
+                }}
+                required
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                      zIndex: 1,
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.6875rem",
+                    "& input": {
+                      py: 0.625,
+                      fontSize: "0.6875rem",
+                    },
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "4px",
+                    marginLeft: "0px",
+                    fontSize: "0.625rem",
+                  },
+                }}
+              />
+
+              {/* Description */}
+              <TextField
+                fullWidth
+                size="small"
+                label="Description"
+                multiline
+                rows={4}
+                value={product.description || ""}
+                onChange={(e) => {
+                  onProductChange({
+                    ...product,
+                    description: e.target.value,
+                  });
+                }}
+                placeholder="Brief description of the product and its purpose..."
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                      zIndex: 1,
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.6875rem",
+                    "& textarea": {
+                      py: 0.625,
+                      fontSize: "0.6875rem",
+                    },
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "4px",
+                    marginLeft: "0px",
+                    fontSize: "0.625rem",
+                  },
+                }}
+              />
+            </Stack>
+          )}
+
+          {activeTab === 1 && (
+            <Box sx={{ pt: 1 }}>
+              <ProductDependenciesSection productId={product.id} />
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <Stack spacing={3} sx={{ width: "100%" }}>
+          {/* Spacer to ensure controls are below header divider */}
+          <Box sx={{ pt: 1 }} />
+
+          {/* Product Name */}
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="Product Name"
+            placeholder="e.g., Release Planner Suite"
+            value={product.name || ""}
+            onChange={(e) => {
+              onProductChange({
+                ...product,
+                name: e.target.value,
+              });
+            }}
+            required
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.625rem",
+                fontWeight: 500,
+                "&.MuiInputLabel-shrink": {
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
+                },
               },
-            },
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              fontSize: "0.6875rem",
-              "& textarea": {
-                py: 0.625,
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
                 fontSize: "0.6875rem",
-              },
-              "&:hover": {
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.primary.main,
+                "& input": {
+                  py: 0.625,
+                  fontSize: "0.6875rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
                 },
               },
-              "&.Mui-focused": {
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderWidth: 2,
-                  borderColor: theme.palette.primary.main,
+              "& .MuiFormHelperText-root": {
+                marginTop: "4px",
+                marginLeft: "0px",
+                fontSize: "0.625rem",
+              },
+            }}
+          />
+
+          {/* Description */}
+          <TextField
+            fullWidth
+            size="small"
+            label="Description"
+            multiline
+            rows={4}
+            value={product.description || ""}
+            onChange={(e) => {
+              onProductChange({
+                ...product,
+                description: e.target.value,
+              });
+            }}
+            placeholder="Brief description of the product and its purpose..."
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.625rem",
+                fontWeight: 500,
+                "&.MuiInputLabel-shrink": {
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
                 },
               },
-            },
-            "& .MuiFormHelperText-root": {
-              marginTop: "4px",
-              marginLeft: "0px",
-              fontSize: "0.625rem",
-            },
-          }}
-        />
-      </Stack>
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.6875rem",
+                "& textarea": {
+                  py: 0.625,
+                  fontSize: "0.6875rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "4px",
+                marginLeft: "0px",
+                fontSize: "0.625rem",
+              },
+            }}
+          />
+        </Stack>
+      )}
     </BaseEditDialog>
   );
 }

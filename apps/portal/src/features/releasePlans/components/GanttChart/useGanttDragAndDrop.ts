@@ -12,7 +12,7 @@ type DragState = {
 type EditDragState = {
   phaseId: string;
   phaseIdx: number;
-  mode: "move" | "resize-left" | "resize-right";
+  mode: "move";
   anchorIdx: number;
   currentIdx: number;
   originalStartIdx: number;
@@ -131,7 +131,7 @@ export function useGanttDragAndDrop({
       preview.style.cssText = `
         position: absolute;
         pointer-events: none;
-        z-index: 6;
+        z-index: 1000;
         will-change: left, top, width;
         transform: translateZ(0);
         backface-visibility: hidden;
@@ -144,7 +144,8 @@ export function useGanttDragAndDrop({
         height: 100%;
         border-radius: 2px;
         border: 2px solid #217346;
-        background-color: rgba(33, 115, 70, 0.1);
+        background-color: rgba(33, 115, 70, 0.2);
+        box-shadow: 0 0 4px rgba(33, 115, 70, 0.3);
       `;
       
       preview.appendChild(previewInner);
@@ -159,6 +160,9 @@ export function useGanttDragAndDrop({
     const MAX_RETRIES = 20; // Try for up to 1 second (20 * 50ms)
     
     const findAndInit = () => {
+      // Only try to find once per render to avoid loops
+      if (previewElementRef.current) return;
+      
       const tracksContainer = content.querySelector('.relative') as HTMLElement;
       if (tracksContainer) {
         initializePreview(tracksContainer);
@@ -182,76 +186,132 @@ export function useGanttDragAndDrop({
     };
   }, [contentRef]);
 
+  // Ensure preview is initialized before drag starts
+  const ensurePreviewInitialized = useCallback(() => {
+    if (previewElementRef.current) return true;
+    
+    const content = contentRef.current;
+    if (!content) {
+      return false;
+    }
+    
+    // Try multiple ways to find the tracks container
+    let tracksContainer = content.querySelector('.relative') as HTMLElement;
+    
+    // If not found, try to find any div with relative positioning
+    if (!tracksContainer) {
+      const allDivs = content.querySelectorAll('div');
+      for (const div of Array.from(allDivs)) {
+        const style = getComputedStyle(div);
+        if (style.position === 'relative' && div.children.length > 0) {
+          tracksContainer = div as HTMLElement;
+          break;
+        }
+      }
+    }
+    
+    // Fallback: use content itself
+    if (!tracksContainer) {
+      tracksContainer = content;
+    }
+    
+    // Initialize preview immediately
+    if (getComputedStyle(tracksContainer).position !== 'relative') {
+      tracksContainer.style.position = 'relative';
+    }
+    
+    const preview = document.createElement('div');
+    preview.setAttribute('data-preview', 'true');
+    preview.style.cssText = `
+      position: absolute;
+      pointer-events: none;
+      z-index: 1000;
+      will-change: left, top, width;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-font-smoothing: subpixel-antialiased;
+      display: none;
+    `;
+    
+    const previewInner = document.createElement('div');
+    previewInner.style.cssText = `
+      height: 100%;
+      border-radius: 2px;
+      border: 2px solid #217346;
+      background-color: rgba(33, 115, 70, 0.2);
+      box-shadow: 0 0 4px rgba(33, 115, 70, 0.3);
+    `;
+    
+    preview.appendChild(previewInner);
+    tracksContainer.appendChild(preview);
+    
+    previewElementRef.current = preview;
+    previewInnerRef.current = previewInner;
+    
+    return true;
+  }, [contentRef]);
+
   useEffect(() => {
     // Sync refs with state
     dragRef.current = drag;
     editDragRef.current = editDrag;
     
+    // ⚡ CRITICAL: Ensure preview is initialized IMMEDIATELY when drag starts
+    // This must happen synchronously, not async
+    if ((drag || editDrag) && !previewElementRef.current) {
+      ensurePreviewInitialized();
+    }
+    
     // Show/hide preview element based on state and update position immediately
     const preview = previewElementRef.current;
-    if (preview) {
-      if (drag || editDrag) {
-        preview.style.display = 'block';
+    if (!preview) return;
+    
+    if (drag || editDrag) {
+      // Ensure preview is visible and on top
+      preview.style.display = 'block';
+      preview.style.zIndex = '1000';
+      preview.style.visibility = 'visible';
+      
+      // Update preview position immediately when drag starts
+      if (editDrag) {
+        const {
+          mode,
+          currentIdx,
+          originalStartIdx,
+          originalLen,
+          phaseIdx,
+        } = editDrag;
+        let newStartIdx = originalStartIdx;
+        let newLen = originalLen;
         
-        // Update preview position immediately when drag starts
-        if (editDrag) {
-          const {
-            mode,
-            currentIdx,
-            originalStartIdx,
-            originalLen,
-            phaseIdx,
-            anchorIdx,
-          } = editDrag;
-          let newStartIdx = originalStartIdx;
-          let newLen = originalLen;
-          
-          if (mode === "move") {
-            const delta = currentIdx - anchorIdx;
-            newStartIdx = Math.max(
-              0,
-              Math.min(daysRef.current.length - originalLen, originalStartIdx + delta)
-            );
-            newLen = originalLen;
-          } else if (mode === "resize-left") {
-            newStartIdx = Math.max(
-              0,
-              Math.min(originalStartIdx + originalLen - 1, currentIdx)
-            );
-            newLen = Math.max(1, originalStartIdx + originalLen - newStartIdx);
-          } else if (mode === "resize-right") {
-            // For resize-right: dragging right (currentIdx > anchorIdx) increases days, dragging left (currentIdx < anchorIdx) decreases days
-            // anchorIdx is the right edge (originalStartIdx + originalLen - 1)
-            // We want the end to be at currentIdx, so the length is currentIdx - originalStartIdx + 1
-            const proposedEndIdx = Math.max(originalStartIdx, currentIdx);
-            newLen = Math.max(
-              1,
-              Math.min(
-                daysRef.current.length - originalStartIdx,
-                proposedEndIdx - originalStartIdx + 1
-              )
-            );
-          }
-          
-          const left = newStartIdx * pxPerDayRef.current;
-          const width = newLen * pxPerDayRef.current;
-          const top = laneTop(phaseIdx);
-          
-          updatePreviewDOM(left, top, width, trackHeight);
-        } else if (drag) {
-          const a = Math.min(drag.startIdx, drag.currentIdx);
-          const b = Math.max(drag.startIdx, drag.currentIdx);
-          const left = a * pxPerDayRef.current;
-          const width = (b - a + 1) * pxPerDayRef.current;
-          const top = laneTop(drag.phaseIdx);
-          
-          updatePreviewDOM(left, top, width, trackHeight);
+        if (mode === "move") {
+          const delta = currentIdx - editDrag.anchorIdx;
+          newStartIdx = Math.max(
+            0,
+            Math.min(daysRef.current.length - originalLen, originalStartIdx + delta)
+          );
+          newLen = originalLen;
         }
-      } else {
-        preview.style.display = 'none';
+        
+        const left = newStartIdx * pxPerDayRef.current;
+        const width = newLen * pxPerDayRef.current;
+        const top = laneTop(phaseIdx);
+        
+        updatePreviewDOM(left, top, width, trackHeight);
+      } else if (drag) {
+        const a = Math.min(drag.startIdx, drag.currentIdx);
+        const b = Math.max(drag.startIdx, drag.currentIdx);
+        const left = a * pxPerDayRef.current;
+        const width = (b - a + 1) * pxPerDayRef.current;
+        const top = laneTop(drag.phaseIdx);
+        
+        updatePreviewDOM(left, top, width, trackHeight);
       }
+    } else {
+      preview.style.display = 'none';
     }
-  }, [drag, editDrag, trackHeight, updatePreviewDOM]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag, editDrag, trackHeight]);
 
   useEffect(() => {
     // Only add listeners if there's an active drag
@@ -288,6 +348,11 @@ export function useGanttDragAndDrop({
       // Only process if there's an active drag
       if (!dragRef.current && !editDragRef.current) return;
       
+      // Ensure preview is initialized - try multiple times if needed
+      if (!previewElementRef.current) {
+        ensurePreviewInitialized();
+      }
+      
       // Cancel previous frame if pending
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
@@ -296,6 +361,14 @@ export function useGanttDragAndDrop({
       // Use requestAnimationFrame for smooth updates
       rafId = requestAnimationFrame(() => {
         rafId = null;
+        const preview = previewElementRef.current;
+        if (!preview) return;
+        
+        // Ensure preview is visible
+        preview.style.display = 'block';
+        preview.style.zIndex = '1000';
+        preview.style.visibility = 'visible';
+        
         const idx = getDayIndexFast(e.clientX);
         
         // Always update - don't skip even if index is the same (for smooth preview updates)
@@ -304,18 +377,16 @@ export function useGanttDragAndDrop({
         
         if (dragRef.current) {
           const drag = dragRef.current;
-          if (idx !== drag.currentIdx) {
-            drag.currentIdx = idx;
-            
-            // Update DOM directly - no React re-render
-            const a = Math.min(drag.startIdx, drag.currentIdx);
-            const b = Math.max(drag.startIdx, drag.currentIdx);
-            const left = a * pxPerDayRef.current;
-            const width = (b - a + 1) * pxPerDayRef.current;
-            const top = laneTop(drag.phaseIdx);
-            
-            updatePreviewDOM(left, top, width, trackHeight);
-          }
+          drag.currentIdx = idx;
+          
+          // Update DOM directly - no React re-render
+          const a = Math.min(drag.startIdx, drag.currentIdx);
+          const b = Math.max(drag.startIdx, drag.currentIdx);
+          const left = a * pxPerDayRef.current;
+          const width = (b - a + 1) * pxPerDayRef.current;
+          const top = laneTop(drag.phaseIdx);
+          
+          updatePreviewDOM(left, top, width, trackHeight);
         }
         
         if (editDragRef.current) {
@@ -334,29 +405,6 @@ export function useGanttDragAndDrop({
               Math.min(daysRef.current.length - editDrag.originalLen, editDrag.originalStartIdx + delta)
             );
             newLen = editDrag.originalLen;
-          } else if (editDrag.mode === "resize-left") {
-            // For resize-left: dragging left (idx < anchorIdx) increases days, dragging right (idx > anchorIdx) decreases days
-            // anchorIdx is the left edge (originalStartIdx)
-            // The new start is at idx, and the length adjusts accordingly
-            newStartIdx = Math.max(
-              0,
-              Math.min(editDrag.originalStartIdx + editDrag.originalLen - 1, idx)
-            );
-            newLen = Math.max(1, editDrag.originalStartIdx + editDrag.originalLen - newStartIdx);
-          } else if (editDrag.mode === "resize-right") {
-            // For resize-right: dragging right (idx > anchorIdx) increases days, dragging left (idx < anchorIdx) decreases days
-            // anchorIdx is the right edge (originalStartIdx + originalLen - 1)
-            // The start stays the same, only the end (and length) changes
-            // The end should be at idx (inclusive), so length = idx - originalStartIdx + 1
-            const proposedEndIdx = Math.max(editDrag.originalStartIdx, idx);
-            newLen = Math.max(
-              1,
-              Math.min(
-                daysRef.current.length - editDrag.originalStartIdx,
-                proposedEndIdx - editDrag.originalStartIdx + 1
-              )
-            );
-            newStartIdx = editDrag.originalStartIdx; // Start doesn't change in resize-right
           }
           
           const left = newStartIdx * pxPerDayRef.current;
@@ -412,39 +460,33 @@ export function useGanttDragAndDrop({
             Math.min(days.length - originalLen, originalStartIdx + delta)
           );
           newLen = originalLen;
-        } else if (mode === "resize-left") {
-          // For resize-left: dragging left (currentIdx < anchorIdx) increases days, dragging right (currentIdx > anchorIdx) decreases days
-          // anchorIdx is the left edge (originalStartIdx)
-          newStartIdx = Math.max(
-            0,
-            Math.min(originalStartIdx + originalLen - 1, currentIdx)
-          );
-          newLen = Math.max(1, originalStartIdx + originalLen - newStartIdx);
-        } else if (mode === "resize-right") {
-          // For resize-right: dragging right (currentIdx > anchorIdx) increases days, dragging left (currentIdx < anchorIdx) decreases days
-          // anchorIdx is the right edge (originalStartIdx + originalLen - 1)
-          // We want the end to be at currentIdx, so the length is currentIdx - originalStartIdx + 1
-          // Ensure currentIdx is at least originalStartIdx to maintain minimum length of 1
-          const proposedEndIdx = Math.max(originalStartIdx, currentIdx);
-          newLen = Math.max(
-            1,
-            Math.min(
-              days.length - originalStartIdx,
-              proposedEndIdx - originalStartIdx + 1
-            )
-          );
         }
         const clampedStart = Math.max(
           0,
           Math.min(days.length - 1, newStartIdx)
         );
+        // Calculate end index correctly: startIdx + length - 1 (since length includes start day)
+        // ⚡ CRITICAL: Use the calculated newLen to determine the end position
+        // Ensure minimum of clampedStart + 1 to maintain at least 1 day duration
+        const calculatedEndIdx = clampedStart + newLen - 1;
         const clampedEndIndex = Math.max(
-          clampedStart,
-          Math.min(days.length - 1, clampedStart + newLen)
+          clampedStart + 1, // Ensure end is at least 1 day after start
+          Math.min(days.length - 1, calculatedEndIdx) // But use calculated end if it's larger
         );
         const s = days[clampedStart]?.toISOString().slice(0, 10);
         const e = days[clampedEndIndex]?.toISOString().slice(0, 10);
-        if (s && e && onPhaseRangeChange) onPhaseRangeChange(phaseId, s, e);
+        
+        // ⚡ CRITICAL: Ensure endDate is always after startDate
+        if (s && e && e > s && onPhaseRangeChange) {
+          onPhaseRangeChange(phaseId, s, e);
+        } else if (s && e && e <= s) {
+          // If endDate is before or equal to startDate, adjust it to be 1 day after start
+          const adjustedEndIdx = Math.min(days.length - 1, clampedStart + 1);
+          const adjustedEnd = days[adjustedEndIdx]?.toISOString().slice(0, 10);
+          if (adjustedEnd && onPhaseRangeChange) {
+            onPhaseRangeChange(phaseId, s, adjustedEnd);
+          }
+        }
       }
       
       setDrag(null);
@@ -465,7 +507,7 @@ export function useGanttDragAndDrop({
         cancelAnimationFrame(rafId);
       }
     };
-  }, [drag, editDrag, days, onPhaseRangeChange, clientXToDayIndex, updatePreviewDOM, trackHeight]);
+  }, [drag, editDrag, days, onPhaseRangeChange, ensurePreviewInitialized, trackHeight]);
 
   return { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex };
 }

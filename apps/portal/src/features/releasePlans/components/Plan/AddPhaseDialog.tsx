@@ -91,7 +91,9 @@ export default function AddPhaseDialog({
     newPhaseName,
     newPhaseColor,
     validatePhaseName,
-    planStartDate
+    existingPhases,
+    planStartDate,
+    planEndDate
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

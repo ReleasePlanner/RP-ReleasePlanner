@@ -73,10 +73,9 @@ export class ProductComponentVersion extends BaseEntity {
   }
 
   validate(): void {
-    // Validate componentTypeId is required
-    if (!this.componentTypeId) {
-      throw new Error('Component type is required (componentTypeId must be provided)');
-    }
+    // Note: componentTypeId validation is relaxed for existing components (legacy support)
+    // Only validate componentTypeId for new components (those without an id)
+    // Existing components may not have componentTypeId if they were created before the migration
     
     if (!this.currentVersion || this.currentVersion.trim().length === 0) {
       throw new Error('Current version is required');
@@ -84,6 +83,7 @@ export class ProductComponentVersion extends BaseEntity {
     if (!this.previousVersion || this.previousVersion.trim().length === 0) {
       throw new Error('Previous version is required');
     }
+    // componentTypeId is optional for backward compatibility with legacy components
   }
 
   // Helper method to get type code

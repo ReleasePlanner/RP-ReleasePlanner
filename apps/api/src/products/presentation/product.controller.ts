@@ -11,29 +11,33 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
+  Patch,
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
-} from '@nestjs/swagger';
-import { ProductService } from '../application/product.service';
-import { CreateProductDto } from '../application/dto/create-product.dto';
-import { UpdateProductDto } from '../application/dto/update-product.dto';
-import { ProductResponseDto } from '../application/dto/product-response.dto';
+} from "@nestjs/swagger";
+import { ProductService } from "../application/product.service";
+import { CreateProductDto } from "../application/dto/create-product.dto";
+import { UpdateProductDto } from "../application/dto/update-product.dto";
+import { ProductResponseDto } from "../application/dto/product-response.dto";
+import { CreateProductDependencyDto } from "../application/dto/create-product-dependency.dto";
+import { UpdateProductDependencyDto } from "../application/dto/update-product-dependency.dto";
+import { ProductDependencyResponseDto } from "../application/dto/product-dependency-response.dto";
 import {
   PRODUCT_API_OPERATION_SUMMARIES,
   PRODUCT_API_RESPONSE_DESCRIPTIONS,
   PRODUCT_HTTP_STATUS_CODES,
   PRODUCT_API_PARAM_DESCRIPTIONS,
-} from '../constants';
-import { API_TAGS } from '../../common/constants';
-import { Public } from '../../auth/decorators/public.decorator';
+} from "../constants";
+import { API_TAGS } from "../../common/constants";
+import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags(API_TAGS.PRODUCTS)
-@Controller('products')
+@Controller("products")
 @Public() // TODO: Remove this in production - temporary for development
 export class ProductController {
   constructor(private readonly service: ProductService) {}
@@ -49,10 +53,112 @@ export class ProductController {
     return this.service.findAll();
   }
 
-  @Get(':id')
+  // ⚡ CRITICAL: Dependency endpoints must be defined BEFORE :id route to avoid route conflicts
+  @Get(":productId/dependencies")
+  @ApiOperation({ summary: "Get all dependencies for a product" })
+  @ApiParam({
+    name: "productId",
+    description: "Product ID",
+    example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.OK,
+    description: "Product dependencies retrieved successfully",
+    type: [ProductDependencyResponseDto],
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.NOT_FOUND,
+    description: "Product not found",
+  })
+  async getProductDependencies(
+    @Param("productId") productId: string
+  ): Promise<ProductDependencyResponseDto[]> {
+    return this.service.getProductDependencies(productId);
+  }
+
+  @Post(":productId/dependencies")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Add a dependency to a product" })
+  @ApiParam({
+    name: "productId",
+    description: "Product ID",
+    example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiBody({ type: CreateProductDependencyDto })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.CREATED,
+    description: "Product dependency created successfully",
+    type: ProductDependencyResponseDto,
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.BAD_REQUEST,
+    description: "Invalid input",
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.CONFLICT,
+    description: "Dependency already exists or self-dependency",
+  })
+  async addProductDependency(
+    @Param("productId") productId: string,
+    @Body() dto: CreateProductDependencyDto
+  ): Promise<ProductDependencyResponseDto> {
+    return this.service.addProductDependency(productId, dto);
+  }
+
+  @Patch("dependencies/:dependencyId")
+  @ApiOperation({ summary: "Update a product dependency" })
+  @ApiParam({
+    name: "dependencyId",
+    description: "Product Dependency ID",
+    example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiBody({ type: UpdateProductDependencyDto })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.OK,
+    description: "Product dependency updated successfully",
+    type: ProductDependencyResponseDto,
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.NOT_FOUND,
+    description: "Product dependency not found",
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.CONFLICT,
+    description: "Duplicate dependency or self-dependency",
+  })
+  async updateProductDependency(
+    @Param("dependencyId") dependencyId: string,
+    @Body() dto: UpdateProductDependencyDto
+  ): Promise<ProductDependencyResponseDto> {
+    return this.service.updateProductDependency(dependencyId, dto);
+  }
+
+  @Delete("dependencies/:dependencyId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a product dependency" })
+  @ApiParam({
+    name: "dependencyId",
+    description: "Product Dependency ID",
+    example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.NO_CONTENT,
+    description: "Product dependency deleted successfully",
+  })
+  @ApiResponse({
+    status: PRODUCT_HTTP_STATUS_CODES.NOT_FOUND,
+    description: "Product dependency not found",
+  })
+  async deleteProductDependency(
+    @Param("dependencyId") dependencyId: string
+  ): Promise<void> {
+    return this.service.deleteProductDependency(dependencyId);
+  }
+
+  @Get(":id")
   @ApiOperation({ summary: PRODUCT_API_OPERATION_SUMMARIES.GET_BY_ID })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PRODUCT_API_PARAM_DESCRIPTIONS.ID,
     example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -65,7 +171,7 @@ export class ProductController {
     status: PRODUCT_HTTP_STATUS_CODES.NOT_FOUND,
     description: PRODUCT_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async findById(@Param('id') id: string): Promise<ProductResponseDto> {
+  async findById(@Param("id") id: string): Promise<ProductResponseDto> {
     return this.service.findById(id);
   }
 
@@ -90,10 +196,10 @@ export class ProductController {
     return this.service.create(dto);
   }
 
-  @Put(':id')
+  @Put(":id")
   @ApiOperation({ summary: PRODUCT_API_OPERATION_SUMMARIES.UPDATE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PRODUCT_API_PARAM_DESCRIPTIONS.ID,
     example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -112,23 +218,23 @@ export class ProductController {
     description: PRODUCT_API_RESPONSE_DESCRIPTIONS.CONFLICT,
   })
   async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateProductDto,
+    @Param("id") id: string,
+    @Body() dto: UpdateProductDto
   ): Promise<ProductResponseDto> {
     try {
       return await this.service.update(id, dto);
     } catch (error) {
-      console.error('ProductController.update error:', error);
-      console.error('Request payload:', JSON.stringify(dto, null, 2));
+      console.error("ProductController.update error:", error);
+      console.error("Request payload:", JSON.stringify(dto, null, 2));
       throw error;
     }
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: PRODUCT_API_OPERATION_SUMMARIES.DELETE })
   @ApiParam({
-    name: 'id',
+    name: "id",
     description: PRODUCT_API_PARAM_DESCRIPTIONS.ID,
     example: PRODUCT_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
   })
@@ -140,8 +246,7 @@ export class ProductController {
     status: PRODUCT_HTTP_STATUS_CODES.NOT_FOUND,
     description: PRODUCT_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
   })
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(@Param("id") id: string): Promise<void> {
     return this.service.delete(id);
   }
 }
-

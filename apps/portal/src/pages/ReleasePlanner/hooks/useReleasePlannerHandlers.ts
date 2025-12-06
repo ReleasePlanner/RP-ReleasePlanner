@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useAppSelector } from "@/store/hooks";
 import type { Plan as LocalPlan, PlanStatus } from "@/features/releasePlans/types";
 import type { BasePhase } from "@/api/services/basePhases.service";
 import type { ViewMode, SortOption, FilterStatus } from "./useReleasePlannerState";
@@ -17,8 +18,6 @@ interface UseReleasePlannerHandlersProps {
   sortBy: SortOption;
   searchQuery: string;
   statusFilter: FilterStatus;
-  showFilters: boolean;
-  localExpandedStates: Record<string, boolean>;
   setDialogOpen: (open: boolean) => void;
   setDeleteDialogOpen: (open: boolean) => void;
   setPlanToDelete: (plan: LocalPlan | null) => void;
@@ -27,10 +26,8 @@ interface UseReleasePlannerHandlersProps {
   setSnackbar: (snackbar: { open: boolean; message: string }) => void;
   setViewMode: (mode: ViewMode) => void;
   setSortBy: (sort: SortOption) => void;
-  setSearchQuery: (query: string) => void;
-  setStatusFilter: (filter: FilterStatus) => void;
-  setShowFilters: (show: boolean) => void;
-  setLocalExpandedStates: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+    setSearchQuery: (query: string) => void;
+    setStatusFilter: (filter: FilterStatus) => void;
   plans: LocalPlan[];
   deleteMutation: {
     mutateAsync: (id: string) => Promise<unknown>;
@@ -44,7 +41,7 @@ interface UseReleasePlannerHandlersProps {
       status: PlanStatus;
       productId: string;
       description?: string;
-      phases?: Array<{ name: string; color: string; startDate: string; endDate: string }>;
+      phases?: Array<{ name: string; color: string; startDate: string; endDate: string; sequence?: number }>;
     }) => Promise<unknown>;
   };
   basePhases: BasePhase[];
@@ -63,11 +60,9 @@ export function useReleasePlannerHandlers({
   snackbar,
   viewMode,
   sortBy,
-  searchQuery,
-  statusFilter,
-  showFilters,
-  localExpandedStates,
-  setDialogOpen,
+    searchQuery,
+    statusFilter,
+    setDialogOpen,
   setDeleteDialogOpen,
   setPlanToDelete,
   setContextMenu,
@@ -75,16 +70,17 @@ export function useReleasePlannerHandlers({
   setSnackbar,
   setViewMode,
   setSortBy,
-  setSearchQuery,
-  setStatusFilter,
-  setShowFilters,
-  setLocalExpandedStates,
-  plans,
+    setSearchQuery,
+    setStatusFilter,
+    plans,
   deleteMutation,
   createMutation,
   basePhases,
   dispatch,
 }: UseReleasePlannerHandlersProps) {
+  // Get expanded states from Redux (source of truth)
+  const expandedStates = useAppSelector((s) => s.ui.planExpandedByPlanId ?? {});
+  
   const handleAddButtonClick = useCallback(() => setDialogOpen(true), [setDialogOpen]);
   
   const handleDialogClose = useCallback(() => setDialogOpen(false), [setDialogOpen]);
@@ -187,23 +183,47 @@ export function useReleasePlannerHandlers({
       endDate: string,
       productId: string
     ) => {
-      let phases: Array<{ name: string; color: string; startDate: string; endDate: string }> | undefined;
+      let phases: Array<{ name: string; color: string; startDate: string; endDate: string; sequence?: number }> | undefined;
       
-      if (basePhases.length > 0) {
+      // ⚡ CRITICAL: Filter only phases marked as default
+      const defaultPhases = basePhases.filter((bp) => bp.isDefault === true);
+      
+      if (defaultPhases.length > 0) {
         const planStart = new Date(startDate);
+        const planEnd = new Date(endDate);
         
-        phases = basePhases.map((bp) => {
-          const phaseStart = new Date(planStart);
-          const phaseEnd = new Date(phaseStart);
-          phaseEnd.setDate(phaseEnd.getDate() + 7);
+        // ⚡ CRITICAL: Each default phase has 1 day duration
+        const phaseDurationDays = 1;
+        
+        // ⚡ CRITICAL: Calculate sequential dates - each phase starts where the previous one ends
+        phases = [];
+        let currentStart = new Date(planStart);
+        
+        for (let index = 0; index < defaultPhases.length; index++) {
+          const bp = defaultPhases[index];
+          const phaseStart = new Date(currentStart);
           
-          return {
+          // Each phase lasts 1 day
+          const phaseEnd = new Date(phaseStart);
+          phaseEnd.setDate(phaseEnd.getDate() + phaseDurationDays);
+          
+          // Ensure last phase doesn't exceed plan end date
+          const finalEndDate = phaseEnd.getTime() > planEnd.getTime()
+            ? planEnd
+            : phaseEnd;
+          
+          phases.push({
             name: bp.name,
             color: bp.color,
             startDate: phaseStart.toISOString().slice(0, 10),
-            endDate: phaseEnd.toISOString().slice(0, 10),
-          };
-        });
+            endDate: finalEndDate.toISOString().slice(0, 10),
+            sequence: index + 1, // Sequential order (1, 2, 3, etc.)
+          });
+          
+          // Next phase starts the day after this phase ends
+          currentStart = new Date(finalEndDate);
+          currentStart.setDate(currentStart.getDate() + 1);
+        }
       }
       
       await createMutation.mutateAsync({
@@ -234,26 +254,15 @@ export function useReleasePlannerHandlers({
   
   const handlePlanToggle = useCallback(
     (planId: string) => {
-      setLocalExpandedStates((prev) => {
-        const newExpanded = !prev[planId];
-        
-        if (typeof globalThis.window !== "undefined" && "requestIdleCallback" in globalThis.window) {
-          globalThis.requestIdleCallback(() => {
-            dispatch(setPlanExpanded({ planId, expanded: newExpanded }));
-          });
-        } else {
-          setTimeout(() => {
-            dispatch(setPlanExpanded({ planId, expanded: newExpanded }));
-          }, 0);
-        }
-        
-        return {
-          ...prev,
-          [planId]: newExpanded,
-        };
-      });
+      // Get current state from Redux to toggle (source of truth)
+      const currentExpanded = expandedStates[planId] ?? false;
+      const newExpanded = !currentExpanded;
+      
+      // Update Redux state directly (source of truth)
+      // Redux updates are synchronous and fast, no need for local state duplication
+      dispatch(setPlanExpanded({ planId, expanded: newExpanded }));
     },
-    [setLocalExpandedStates, dispatch]
+    [expandedStates, dispatch]
   );
   
   // Use utility function directly - no need for useCallback since it's a pure function

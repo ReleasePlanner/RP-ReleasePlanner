@@ -6,7 +6,6 @@ import PlanListItem from "../../components/PlanListItem";
 
 export type ReleasePlannerPlansListProps = {
   readonly plans: Plan[];
-  readonly localExpandedStates: Record<string, boolean>;
   readonly expandedStates: Record<string, boolean>;
   readonly onToggle: (planId: string) => void;
   readonly onDelete: (plan: Plan, event: React.MouseEvent) => void;
@@ -22,7 +21,6 @@ export type ReleasePlannerPlansListProps = {
 export const ReleasePlannerPlansList = memo(
   function ReleasePlannerPlansList({
     plans,
-    localExpandedStates,
     expandedStates,
     onToggle,
     onDelete,
@@ -43,9 +41,8 @@ export const ReleasePlannerPlansList = memo(
         }}
       >
         {plans.map((p, index) => {
-          // Use local state for instant UI feedback, fallback to Redux state
-          const expanded =
-            localExpandedStates[p.id] ?? expandedStates[p.id] ?? false;
+          // Use Redux state as source of truth
+          const expanded = expandedStates[p.id] ?? false;
 
           return (
             <PlanListItem
@@ -81,11 +78,8 @@ export const ReleasePlannerPlansList = memo(
       return false;
     }
 
-    // Reference equality for state objects
-    if (
-      prevProps.localExpandedStates !== nextProps.localExpandedStates ||
-      prevProps.expandedStates !== nextProps.expandedStates
-    ) {
+    // Reference equality for expanded states
+    if (prevProps.expandedStates !== nextProps.expandedStates) {
       return false;
     }
 

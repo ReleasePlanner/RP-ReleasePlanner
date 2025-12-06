@@ -3,6 +3,7 @@ import { L } from "../../../../../utils/logging/simpleLogging";
 import type {
   Plan,
   PlanStatus,
+  ReleaseStatus,
   PlanPhase,
   PlanComponent,
 } from "../../../types";
@@ -42,10 +43,16 @@ export function usePlanCardHandlers({
 }: UsePlanCardHandlersProps) {
   const handlePhaseUpdate = useCallback(
     (updatedPhases: PlanPhase[]) => {
-      setLocalMetadata((prev) => ({
-        ...prev,
-        phases: updatedPhases,
-      }));
+      setLocalMetadata((prev) => {
+        // ⚡ CRITICAL: Create a new array to ensure React detects the change
+        // This ensures the GanttChart re-renders with the updated phase positions
+        const newPhases = [...updatedPhases];
+        
+        return {
+          ...prev,
+          phases: newPhases,
+        };
+      });
     },
     [setLocalMetadata]
   );
@@ -139,6 +146,16 @@ export function usePlanCardHandlers({
     [setLocalMetadata]
   );
 
+  const handleReleaseStatusChange = useCallback(
+    (releaseStatus: ReleaseStatus | undefined) => {
+      setLocalMetadata((prev) => ({
+        ...prev,
+        releaseStatus,
+      }));
+    },
+    [setLocalMetadata]
+  );
+
   const handleITOwnerChange = useCallback(
     (itOwnerId: string) => {
       setLocalMetadata((prev) => ({
@@ -181,25 +198,29 @@ export function usePlanCardHandlers({
     [openEdit, log]
   );
 
-  const handlePhaseRangeChangeOptimized = (
-    phaseId: string,
-    startDate: string,
-    endDate: string
-  ) => {
-    return L.time(
-      () => {
-        handlePhaseRangeChange(
-          phaseId,
-          startDate,
-          endDate,
-          handlePhaseUpdate
+  const handlePhaseRangeChangeOptimized = useCallback(
+    (phaseId: string, startDate: string, endDate: string) => {
+      // ⚡ CRITICAL: Update localMetadata directly using functional update
+      // This ensures we always use the latest state, not a stale closure
+      setLocalMetadata((prev) => {
+        // Get current phases from prev (always up-to-date)
+        const currentPhases = prev.phases ?? plan.metadata.phases ?? [];
+        
+        // ⚡ CRITICAL: Create a new array with new objects to ensure React detects the change
+        const updatedPhases = currentPhases.map((p) =>
+          p.id === phaseId 
+            ? { ...p, startDate, endDate } // Create new object for updated phase
+            : { ...p } // Create new object for unchanged phases too
         );
-        return { phaseId, startDate, endDate };
-      },
-      "Phase drag operation",
-      "PlanCard"
-    );
-  };
+        
+        return {
+          ...prev,
+          phases: updatedPhases,
+        };
+      });
+    },
+    [setLocalMetadata, plan.metadata.phases]
+  );
 
   const handleFeatureIdsChange = useCallback(
     (newFeatureIds: string[]) => {
@@ -221,15 +242,6 @@ export function usePlanCardHandlers({
     [setLocalMetadata]
   );
 
-  const handleReorderPhases = useCallback(
-    (reorderedPhases: PlanPhase[]) => {
-      setLocalMetadata((prev) => ({
-        ...prev,
-        phases: reorderedPhases,
-      }));
-    },
-    [setLocalMetadata]
-  );
 
   const handleCalendarIdsChange = useCallback(
     (newCalendarIds: string[]) => {
@@ -253,7 +265,7 @@ export function usePlanCardHandlers({
 
   const handleTeamIdsChange = useCallback(
     (newTeamIds: string[]) => {
-      console.log('[usePlanCardHandlers] handleTeamIdsChange called:', {
+      console.log("[usePlanCardHandlers] handleTeamIdsChange called:", {
         newTeamIds,
         newTeamIdsCount: newTeamIds.length,
         newTeamIdsIsArray: Array.isArray(newTeamIds),
@@ -263,7 +275,7 @@ export function usePlanCardHandlers({
           ...prev,
           teamIds: newTeamIds || [],
         };
-        console.log('[usePlanCardHandlers] Updating localMetadata:', {
+        console.log("[usePlanCardHandlers] Updating localMetadata:", {
           prevTeamIds: prev.teamIds,
           prevTeamIdsCount: prev.teamIds?.length || 0,
           newTeamIds: updated.teamIds,
@@ -302,12 +314,12 @@ export function usePlanCardHandlers({
     handleProductChange,
     handleDescriptionChange,
     handleStatusChange,
+    handleReleaseStatusChange,
     handleITOwnerChange,
     handleStartDateChange,
     handleEndDateChange,
     openEditOptimized,
     handlePhaseRangeChangeOptimized,
-    handleReorderPhases,
     handleFeatureIdsChange,
     handleComponentsChange,
     handleCalendarIdsChange,
@@ -318,4 +330,3 @@ export function usePlanCardHandlers({
     handlePhaseUpdate,
   };
 }
-

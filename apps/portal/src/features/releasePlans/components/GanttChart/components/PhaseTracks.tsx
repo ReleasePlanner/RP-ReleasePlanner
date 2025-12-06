@@ -40,7 +40,7 @@ export function PhaseTracks({
         const top = lanePositions.get(phase.id) ?? 0;
         return (
           <GanttLane
-            key={`lane-${phase.id}`}
+            key={`lane-${phase.id ?? idx}`}
             top={top}
             height={GANTT_DIMENSIONS.TRACK_HEIGHT}
             index={idx}
@@ -49,7 +49,7 @@ export function PhaseTracks({
       })}
 
       {/* Phase bars (visual indicators) */}
-      {phases.map((phase) => {
+      {phases.map((phase, idx) => {
         if (!phase.startDate || !phase.endDate) return null;
         const top = lanePositions.get(phase.id) ?? 0;
         const ts = new Date(phase.startDate);
@@ -60,7 +60,7 @@ export function PhaseTracks({
         const width = len * pxPerDay;
         return (
           <PhaseBar
-            key={`bar-${phase.id}`}
+            key={`bar-${phase.id ?? idx}`}
             left={left}
             top={top}
             width={width}

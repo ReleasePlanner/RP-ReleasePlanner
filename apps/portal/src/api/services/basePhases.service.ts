@@ -1,13 +1,15 @@
 /**
  * Base Phases API Service
  */
-import { httpClient } from '../httpClient';
-import { API_ENDPOINTS } from '../config';
+import { httpClient } from "../httpClient";
+import { API_ENDPOINTS } from "../config";
 
 export interface BasePhase {
   id: string;
   name: string;
   color: string;
+  isDefault?: boolean; // Indicates if this phase should be included by default when creating a new plan
+  sequence?: number; // Sequential order for displaying phases in maintenance (1, 2, 3, etc.)
   createdAt: string;
   updatedAt: string;
 }
@@ -15,11 +17,15 @@ export interface BasePhase {
 export interface CreateBasePhaseDto {
   name: string;
   color: string;
+  isDefault?: boolean; // Indicates if this phase should be included by default when creating a new plan
+  sequence?: number; // Sequential order for displaying phases in maintenance (1, 2, 3, etc.)
 }
 
 export interface UpdateBasePhaseDto {
   name?: string;
   color?: string;
+  isDefault?: boolean; // Indicates if this phase should be included by default when creating a new plan
+  sequence?: number; // Sequential order for displaying phases in maintenance (1, 2, 3, etc.)
 }
 
 export const basePhasesService = {
@@ -36,11 +42,22 @@ export const basePhasesService = {
   },
 
   async update(id: string, data: UpdateBasePhaseDto): Promise<BasePhase> {
-    return httpClient.put<BasePhase>(`${API_ENDPOINTS.BASE_PHASES}/${id}`, data);
+    return httpClient.put<BasePhase>(
+      `${API_ENDPOINTS.BASE_PHASES}/${id}`,
+      data
+    );
   },
 
   async delete(id: string): Promise<void> {
     return httpClient.delete<void>(`${API_ENDPOINTS.BASE_PHASES}/${id}`);
   },
-};
 
+  async reorderPhases(phaseIds: string[]): Promise<BasePhase[]> {
+    return httpClient.patch<BasePhase[]>(
+      `${API_ENDPOINTS.BASE_PHASES}/reorder`,
+      {
+        phaseIds,
+      }
+    );
+  },
+};

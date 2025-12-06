@@ -29,176 +29,177 @@ export type GanttPhasesProps = {
  * Follows SRP - only handles phase visualization and interactions
  * ⚡ OPTIMIZATION: Memoized to prevent unnecessary re-renders
  */
-export const GanttPhases = memo(function GanttPhases({
-  phases,
-  start,
-  days,
-  pxPerDay,
-  trackHeight,
-  onEditPhase,
-  clientXToDayIndex,
-  setEditDrag,
-}: GanttPhasesProps) {
-  const theme = useTheme();
+export const GanttPhases = memo(
+  function GanttPhases({
+    phases,
+    start,
+    days,
+    pxPerDay,
+    trackHeight,
+    onEditPhase,
+    clientXToDayIndex,
+    setEditDrag,
+  }: GanttPhasesProps) {
+    const theme = useTheme();
 
-  // Create segments for phases (excluding weekends)
-  const phaseSegments = useMemo(() => {
-    return phases
-      .map((phase, idx) => {
-        if (!phase.startDate || !phase.endDate) return null;
+    // Create segments for phases (excluding weekends)
+    const phaseSegments = useMemo(() => {
+      return phases
+        .map((phase, idx) => {
+          if (!phase.startDate || !phase.endDate) return null;
 
-        const ts = new Date(phase.startDate);
-        const te = new Date(phase.endDate);
-        const offset = Math.max(0, daysBetween(start, ts));
-        const len = Math.max(1, daysBetween(ts, te));
-        const top = laneTop(idx);
-        const color = phase.color ?? theme.palette.secondary.main;
+          const ts = new Date(phase.startDate);
+          const te = new Date(phase.endDate);
+          const offset = Math.max(0, daysBetween(start, ts));
+          const len = Math.max(1, daysBetween(ts, te));
+          const top = laneTop(idx);
+          const color = phase.color ?? theme.palette.secondary.main;
 
-        // Build weekday-only segments so weekends keep non-working color
-        const segments: { startIdx: number; length: number }[] = [];
-        let segStart: number | null = null;
+          // Build weekday-only segments so weekends keep non-working color
+          const segments: { startIdx: number; length: number }[] = [];
+          let segStart: number | null = null;
 
-        for (let di = 0; di < len; di++) {
-          const dayIdx = offset + di;
-          const d = days[dayIdx];
-          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          for (let di = 0; di < len; di++) {
+            const dayIdx = offset + di;
+            const d = days[dayIdx];
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
-          if (isWeekend) {
-            if (segStart !== null) {
-              segments.push({
-                startIdx: segStart,
-                length: dayIdx - segStart,
-              });
-              segStart = null;
+            if (isWeekend) {
+              if (segStart !== null) {
+                segments.push({
+                  startIdx: segStart,
+                  length: dayIdx - segStart,
+                });
+                segStart = null;
+              }
+            } else {
+              if (segStart === null) segStart = dayIdx;
             }
-          } else {
-            if (segStart === null) segStart = dayIdx;
           }
-        }
 
-        if (segStart !== null) {
-          segments.push({
-            startIdx: segStart,
-            length: offset + len - segStart,
-          });
-        }
+          if (segStart !== null) {
+            segments.push({
+              startIdx: segStart,
+              length: offset + len - segStart,
+            });
+          }
 
-        return {
-          phase,
-          idx,
-          top,
-          color,
-          offset,
-          len,
-          segments,
-        };
-      })
-      .filter(Boolean);
-  }, [phases, start, days, theme.palette.secondary.main]);
+          return {
+            phase,
+            idx,
+            top,
+            color,
+            offset,
+            len,
+            segments,
+          };
+        })
+        .filter(Boolean);
+    }, [phases, start, days, theme.palette.secondary.main]);
 
-  const tooltip = (phase: PlanPhase, len: number) => (
-    <div className="text-[11px] leading-3.5">
-      <div>
-        <strong>{phase.name}</strong>
-      </div>
-      <div>
-        {phase.startDate} → {phase.endDate}
-      </div>
-      <div>Duration: {len} days</div>
-      {phase.color && <div>Color: {phase.color}</div>}
-    </div>
-  );
+    const tooltip = (phase: PlanPhase, len: number) => {
+      const isDark = theme.palette.mode === "dark";
+      const textColor = isDark ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
+      
+      return (
+        <div style={{ fontSize: "11px", lineHeight: 1.75, color: textColor }}>
+          <div>
+            <strong>{phase.name}</strong>
+          </div>
+          <div>
+            {phase.startDate} → {phase.endDate}
+          </div>
+          <div>Duration: {len} days</div>
+          {phase.color && <div>Color: {phase.color}</div>}
+        </div>
+      );
+    };
 
-  return (
-    <>
-      {phaseSegments.flatMap((phaseData) => {
-        if (!phaseData) return [];
-
-        const { phase, idx, top, color, offset, len, segments } = phaseData;
-
-        if (segments.length === 0) return [];
-
-        return segments.map((seg, sIdx) => {
-          const left = seg.startIdx * pxPerDay;
-          const width = seg.length * pxPerDay;
-
-          return (
-            <PhaseBar
-              key={`${phase.id}-seg-${sIdx}`}
-              left={left}
-              top={top}
-              width={width}
-              height={trackHeight}
-              color={color}
-              label={sIdx === 0 ? phase.name : undefined}
-              title={`${phase.name} (${phase.startDate} → ${phase.endDate})`}
-              ariaLabel={`${phase.name} from ${phase.startDate} to ${phase.endDate}`}
-              tooltipContent={tooltip(phase, len)}
-              testIdSuffix={phase.id}
-              onDoubleClick={() => {
-                if (onEditPhase) onEditPhase(phase.id);
-              }}
-              onStartMove={(e) => {
-                const anchorIdx = clientXToDayIndex(e.clientX);
-                setEditDrag({
-                  phaseId: phase.id,
-                  phaseIdx: idx,
-                  mode: "move",
-                  anchorIdx,
-                  currentIdx: anchorIdx,
-                  originalStartIdx: offset,
-                  originalLen: len,
-                });
-              }}
-              onStartResizeLeft={(e) => {
-                const anchorIdx = clientXToDayIndex(e.clientX);
-                setEditDrag({
-                  phaseId: phase.id,
-                  phaseIdx: idx,
-                  mode: "resize-left",
-                  anchorIdx,
-                  currentIdx: anchorIdx,
-                  originalStartIdx: offset,
-                  originalLen: len,
-                });
-              }}
-              onStartResizeRight={(e) => {
-                const anchorIdx = clientXToDayIndex(e.clientX);
-                setEditDrag({
-                  phaseId: phase.id,
-                  phaseIdx: idx,
-                  mode: "resize-right",
-                  anchorIdx,
-                  currentIdx: anchorIdx,
-                  originalStartIdx: offset,
-                  originalLen: len,
-                });
-              }}
-            />
-          );
-        });
-      })}
-    </>
-  );
-}, (prevProps, nextProps) => {
-  // ⚡ OPTIMIZATION: Custom comparison to prevent unnecessary re-renders
-  // Only re-render if phases or relevant props change
-  if (prevProps.phases.length !== nextProps.phases.length) return false;
-  if (prevProps.days.length !== nextProps.days.length) return false;
-  if (prevProps.pxPerDay !== nextProps.pxPerDay) return false;
-  if (prevProps.trackHeight !== nextProps.trackHeight) return false;
-  if (prevProps.start.getTime() !== nextProps.start.getTime()) return false;
-  
-  // Deep comparison of phases (check if any phase changed)
-  return prevProps.phases.every((p, i) => {
-    const nextPhase = nextProps.phases[i];
     return (
-      nextPhase &&
-      p.id === nextPhase.id &&
-      p.startDate === nextPhase.startDate &&
-      p.endDate === nextPhase.endDate &&
-      p.color === nextPhase.color &&
-      p.name === nextPhase.name
+      <>
+        {phaseSegments.flatMap((phaseData) => {
+          if (!phaseData) return [];
+
+          const { phase, idx, top, color, offset, len, segments } = phaseData;
+
+          if (segments.length === 0) return [];
+
+          return segments.map((seg, sIdx) => {
+            const left = seg.startIdx * pxPerDay;
+            const width = seg.length * pxPerDay;
+
+            return (
+              <PhaseBar
+                key={`${phase.id ?? idx}-seg-${sIdx}`}
+                left={left}
+                top={top}
+                width={width}
+                height={trackHeight}
+                color={color}
+                label={sIdx === 0 ? phase.name : undefined}
+                title={`${phase.name} (${phase.startDate} → ${phase.endDate})`}
+                ariaLabel={`${phase.name} from ${phase.startDate} to ${phase.endDate}`}
+                tooltipContent={tooltip(phase, len)}
+                testIdSuffix={phase.id}
+                onDoubleClick={() => {
+                  if (onEditPhase) onEditPhase(phase.id);
+                }}
+                onStartMove={(e) => {
+                  const anchorIdx = clientXToDayIndex(e.clientX);
+                  setEditDrag({
+                    phaseId: phase.id,
+                    phaseIdx: idx,
+                    mode: "move",
+                    anchorIdx,
+                    currentIdx: anchorIdx,
+                    originalStartIdx: offset,
+                    originalLen: len,
+                  });
+                }}
+              />
+            );
+          });
+        })}
+      </>
     );
-  });
-});
+  },
+  (prevProps, nextProps) => {
+    // ⚡ OPTIMIZATION: Custom comparison to prevent unnecessary re-renders
+    // Return false (re-render) if any relevant prop changed
+    if (prevProps.phases.length !== nextProps.phases.length) return false;
+    if (prevProps.days.length !== nextProps.days.length) return false;
+    if (prevProps.pxPerDay !== nextProps.pxPerDay) return false;
+    if (prevProps.trackHeight !== nextProps.trackHeight) return false;
+    if (prevProps.start.getTime() !== nextProps.start.getTime()) return false;
+
+    // IMPORTANT: Check if phase order changed by comparing IDs at each index
+    // If order changed, we need to re-render to update the timeline positions
+    const orderMatches = prevProps.phases.every((p, i) => {
+      const nextPhase = nextProps.phases[i];
+      return nextPhase && p.id === nextPhase.id;
+    });
+
+    if (!orderMatches) return false; // Order changed, need to re-render
+
+    // ⚡ CRITICAL: Deep comparison of phases - must detect date changes
+    // Return false (re-render) if ANY phase has different dates
+    const phasesMatch = prevProps.phases.every((p, i) => {
+      const nextPhase = nextProps.phases[i];
+      if (!nextPhase || p.id !== nextPhase.id) return false;
+      
+      // Compare dates as strings - if they differ, we need to re-render
+      if (p.startDate !== nextPhase.startDate || p.endDate !== nextPhase.endDate) {
+        return false; // Dates changed, need to re-render
+      }
+      
+      // Compare other properties
+      return (
+        p.color === nextPhase.color &&
+        p.name === nextPhase.name
+      );
+    });
+    
+    // If phases don't match, re-render
+    return phasesMatch;
+  }
+);

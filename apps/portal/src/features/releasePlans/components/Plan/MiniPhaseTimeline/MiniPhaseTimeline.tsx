@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   TimelineMonths,
   TimelineWeeks,
@@ -24,7 +25,7 @@ const ROW_HEIGHTS = {
   days: 12,
 } as const;
 
-export default function MiniPhaseTimeline({
+const MiniPhaseTimeline = memo(function MiniPhaseTimeline({
   phase,
   calendarStart,
   pxPerDay = 6,
@@ -107,4 +108,19 @@ export default function MiniPhaseTimeline({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // ⚡ CRITICAL: Compare phase dates to detect changes
+  // Return false (re-render) if phase dates changed
+  if (prevProps.phase.id !== nextProps.phase.id) return false;
+  if (prevProps.phase.startDate !== nextProps.phase.startDate) return false;
+  if (prevProps.phase.endDate !== nextProps.phase.endDate) return false;
+  if (prevProps.phase.color !== nextProps.phase.color) return false;
+  if (prevProps.calendarStart !== nextProps.calendarStart) return false;
+  if (prevProps.height !== nextProps.height) return false;
+  if (prevProps.pxPerDay !== nextProps.pxPerDay) return false;
+  
+  // If all properties match, skip re-render
+  return true;
+});
+
+export default MiniPhaseTimeline;
